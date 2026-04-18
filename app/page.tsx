@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Trophy, Users, Video } from 'lucide-react';
 import { supabase } from '@/lib/supabase'; // Import de ton client
+import Link from 'next/link';
 
 export default function Home() {
 	const [count, setCount] = useState<number | null>(null);
@@ -42,6 +43,8 @@ export default function Home() {
           Suivez les scores en direct, consultez votre classement ELO et accédez aux contenus exclusifs du club.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+          <Link href="/classement" className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-xl font-bold hover:scale-105 transition-transform">Voir le Classement <Trophy size={20} />
+          </Link>
           <button className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-xl font-bold hover:scale-105 transition-transform">
             Voir le Classement <Trophy size={20} />
           </button>
