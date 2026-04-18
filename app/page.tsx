@@ -12,7 +12,7 @@ export default function Home() {
 	    // Petite fonction pour compter les joueurs
 	    const fetchJoueurs = async () => {
 	      const { count, error } = await supabase
-	        .from('joueurs')
+	        .from('profiles')
 	        .select('*', { count: 'exact', head: true });
 	      
 	      if (!error) setCount(count);

@@ -8,9 +8,9 @@ export default function StatsCard({ label, value, color }: { label: string, valu
   };
 
   return (
-    <div className={`bg-gray-900 border ${colors[color]} p-4 rounded-xl text-center`}>
-      <p className="text-xs uppercase tracking-wider mb-1 opacity-70">{label}</p>
-      <p className="text-2xl font-bold text-white">{value}</p>
+    <div className={`p-4 rounded-xl border bg-gray-900/50 ${colors[color] || colors.gray}`}>
+      <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">{label}</p>
+      <p className="text-2xl font-black font-mono text-white">{value}</p>
     </div>
   );
 }
