@@ -69,7 +69,13 @@ async function recompute() {
   for (const g of games) {
     const team1 = teamsMap[g.team_1_id];
     const team2 = teamsMap[g.team_2_id];
+    const sc1 = g.score_1;
+    const sc2 = g.score_2;
     if (!team1 || !team2) continue;
+    let  _win = false;
+    if (sc1>sc2) _win = true;
+    if (sc1==sc2) _win = null;
+    const win = [_win, _win, !_win, !_win ]
 
     const avgPst1 = (currentElo[team1.tireur_id].pst + currentElo[team1.pointeur_id].pst) / 2;
     const avgPst2 = (currentElo[team2.tireur_id].pst + currentElo[team2.pointeur_id].pst) / 2;
@@ -94,19 +100,27 @@ async function recompute() {
     const leaderboard = Object.entries(currentElo)
       .map(([id, scores]) => ({ id: parseInt(id), pst: scores.pst }))
       .sort((a, b) => b.pst - a.pst);
+    const leaderboard_modern = Object.entries(currentElo)
+      .map(([id, scores]) => ({ id: parseInt(id), modern: scores.modern }))
+      .sort((a, b) => b.modern - a.modern);
+
 
     // 3. Création des entrées d'historique pour les 4 joueurs du match
     const pids = [team1.tireur_id, team1.pointeur_id, team2.tireur_id, team2.pointeur_id];
     
-    pids.forEach(pid => {
+    pids.forEach( (pid,i) => {
       const rank = leaderboard.findIndex(p => p.id === pid) + 1;
+      const rank_modern = leaderboard_modern.findIndex(p => p.id === pid) + 1;
       historyEntries.push({
         player_id: pid,
         game_id: g.id,
         year: g.year,
         elo_value: currentElo[pid].pst,
         elo_modern_value: currentElo[pid].modern,
-        rank_at_time: rank
+        rank_at_time: rank,
+        modern_rank_at_time: rank_modern,
+        type: g.type,
+        win: win[i]
       });
     });
   }
