@@ -30,7 +30,7 @@ export async function POST() {
       .order('year', { ascending: true })
       .order('id', { ascending: true });
 
-    const historyEntries = [];
+    const historyEntries: any[] = [];
 
     for (const g of games!) {
       const avgPst1 = (currentElo[g.team1.tireur_id].pst + currentElo[g.team1.pointeur_id].pst) / 2;
