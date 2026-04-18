@@ -1,13 +1,20 @@
-// Exemple de ce qu'on va récupérer pour un joueur
-const { data: profile } = await supabase
-  .from('profiles')
-  .select(`
-    *,
-    elo_history (*), 
-    teams (
+import { createClient } from '@/utils/supabase/server';
+
+export async function getPlayerProfile(playerId: number) {
+  const supabase = await createClient();
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select(`
       *,
-      games_as_team1:games!team_1_id (*),
-      games_as_team2:games!team_2_id (*)
-    )
-  `)
-  .eq('id', playerId);
+      elo_history!fk_elo_player (
+        elo_value,
+        elo_modern_value,
+        year
+      )
+    `)
+    .eq('id', playerId)
+    .single();
+
+  return { profile, error };
+}
