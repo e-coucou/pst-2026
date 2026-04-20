@@ -38,7 +38,7 @@ export default function SeasonHistory({ stats }: { stats: SeasonStat[] }) {
             <th className="p-4">Rôle</th>
             <th className="p-4 text-center">V/N/D</th>
             <th className="p-4 text-center">Place</th>
-            <th className="p-4 text-right">ELO</th>
+            <th className="p-4 text-right">Rang</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-800">
@@ -59,7 +59,7 @@ export default function SeasonHistory({ stats }: { stats: SeasonStat[] }) {
               <td className="p-4 text-center">
                 <div className="flex flex-col">
                   <span className="text-xs font-bold">{s.finale_jouee}</span>
-                  <span className="text-[10px] text-gray-500">Rang: {s.palmares}</span>
+                  <span className="text-[16px] text-gray-500">{s.palmares}</span>
                 </div>
               </td>
               <td className="p-4 text-right">
