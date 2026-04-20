@@ -8,121 +8,98 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
   const supabase = await createClient();
   const playerId = parseInt(id, 10);
 
-  // 1. Profil
+  // 1. Profil de base
   const { data: player } = await supabase.from('profiles').select('*').eq('id', playerId).single();
+
+  
   if (!player) return <div className="p-20 text-white">Joueur introuvable</div>;
 
-  // 2. Historique ELO
+  // 2. Historique ELO pour le graphique (on garde le select simple ici)
   const { data: history } = await supabase
     .from('elo_history')
     .select('*')
     .eq('player_id', playerId)
     .order('game_id', { ascending: true });
 
-  // 3. Équipes (SANS la colonne palmares qui n'existe pas)
-  const { data: teamsTireur } = await supabase
-    .from('teams')
-    .select('id, nom, pointeur_id, tireur_id')
-    .eq('tireur_id', playerId);
-
-  const { data: teamsPointeur } = await supabase
-    .from('teams')
-    .select('id, nom, pointeur_id, tireur_id')
-    .eq('pointeur_id', playerId);
-
-  // 4. Récupération de TOUS les profils pour les noms des partenaires
-  const { data: allProfiles } = await supabase.from('profiles').select('id, nom');
-  const profileMap = Object.fromEntries(allProfiles?.map(p => [p.id, p.nom]) || []);
+  // 3. RECUPERATION DES STATS PAR SAISON (Ta requête SQL puissante)
+  // On utilise .rpc() si tu as créé une fonction PostgreSQL, 
+  // sinon on peut utiliser une vue ou adapter le composant SeasonHistory pour qu'il appelle l'API
+  const { data: seasonStats } = await supabase.rpc('get_player_stats', { p_id: playerId });
+  console.log("📊 Stats récupérées:", seasonStats?.length || 0, "lignes");
 
   const eloHistory = history || [];
   const lastEntry = eloHistory[eloHistory.length - 1];
 
-  // Construction de la liste des équipes
-  const allTeams = [
-    ...(teamsTireur || []).map(t => ({ 
-      id: t.id, 
-      nom: t.nom, 
-      role: 'Tireur', 
-      partenaire: profileMap[t.pointeur_id] || "Inconnu" 
-    })),
-    ...(teamsPointeur || []).map(t => ({ 
-      id: t.id, 
-      nom: t.nom, 
-      role: 'Pointeur', 
-      partenaire: profileMap[t.tireur_id] || "Inconnu"
-    }))
-  ];
+  // Calcul du ratio global
+  const totalWins = seasonStats?.reduce((acc: number, curr: any) => acc + curr.victoires, 0) || 0;
+  const totalLost = seasonStats?.reduce((acc: number, curr: any) => acc + curr.defaites, 0) || 0;
+  const totalMatches = eloHistory.length;
+  const winRatio = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8 bg-black text-white min-h-screen">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8 bg-black text-white min-h-screen font-sans">
       
-      {/* HEADER */}
-      <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 flex justify-between items-center shadow-2xl">
+      {/* HEADER : Identité et Rang */}
+      <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800 flex flex-col md:flex-row justify-between items-center shadow-2xl gap-6">
         <div>
-          <h1 className="text-4xl font-black uppercase italic tracking-tighter">{player.nom}</h1>
-          <p className="text-blue-400 font-bold text-sm mt-1 uppercase">Classement : #{lastEntry?.rank_at_time || "--"}</p>
+          <h1 className="text-5xl font-black uppercase italic tracking-tighter text-white">
+            {player.nom}
+          </h1>
+          <div className="flex items-center gap-3 mt-2">
+            <span className="bg-blue-500 text-white text-[10px] font-black px-2 py-0.5 rounded">PROFIL OFFICIEL</span>
+            <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">
+              Classement Actuel : <span className="text-blue-400">#{lastEntry?.rank_at_time || "--"}</span>
+            </p>
+          </div>
         </div>
-        <div className="flex gap-4">
-           <div className="bg-blue-600/10 p-4 rounded-xl border border-blue-600/30 text-center min-w-[100px]">
-             <p className="text-[10px] text-blue-400 font-bold uppercase mb-1">ELO PST</p>
-             <p className="text-2xl font-mono font-black">{(lastEntry?.elo_value || 100).toFixed(1)}</p>
+
+        <div className="flex gap-4 w-full md:w-auto">
+           <div className="flex-1 bg-gradient-to-br from-blue-600/20 to-transparent p-5 rounded-2xl border border-blue-500/30 text-center min-w-[120px]">
+             <p className="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest">ELO PST</p>
+             <p className="text-3xl font-mono font-black">{(lastEntry?.elo_value || 100).toFixed(1)}</p>
            </div>
-           <div className="bg-purple-600/10 p-4 rounded-xl border border-purple-600/30 text-center min-w-[100px]">
-             <p className="text-[10px] text-purple-400 font-bold uppercase mb-1">Modern</p>
-             <p className="text-2xl font-mono font-black">{(lastEntry?.elo_modern_value || 100).toFixed(1)}</p>
+           <div className="flex-1 bg-gradient-to-br from-purple-600/20 to-transparent p-5 rounded-2xl border border-purple-500/30 text-center min-w-[120px]">
+             <p className="text-[10px] text-purple-400 font-black uppercase mb-1 tracking-widest">Modern</p>
+             <p className="text-3xl font-mono font-black">{(lastEntry?.elo_modern_value || 100).toFixed(1)}</p>
            </div>
         </div>
       </div>
 
-      {/* GRAPHIQUE */}
-      <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 h-[350px]">
-        <EloChart history={eloHistory} />
-      </div>
-
-      {/* STATS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard label="Matchs" value={eloHistory.length} color="gray" />
-        <StatsCard label="Tireur" value={teamsTireur?.length || 0} color="orange" />
-        <StatsCard label="Pointeur" value={teamsPointeur?.length || 0} color="purple" />
-        <StatsCard label="Ratio" value="65%" color="green" />
-      </div>
-
-      {/* PALMARÈS (Tableau simplifié et fonctionnel) */}
-      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden shadow-xl">
-        <div className="p-6 border-b border-gray-800 bg-gray-900/50">
-           <h2 className="text-xl font-bold uppercase italic tracking-widest">Équipes</h2>
+      {/* GRAPHIQUE ELO */}
+      <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-inner">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 text-center">Progression de carrière</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-gray-500 text-[10px] uppercase tracking-widest border-b border-gray-800">
-                <th className="p-4">Équipe</th>
-                <th className="p-4">Rôle</th>
-                <th className="p-4">Partenaire</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {allTeams.map((team) => (
-                <tr key={team.id} className="text-sm hover:bg-white/5 transition-colors">
-                  <td className="p-4 font-bold text-white">{team.nom}</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${team.role === 'Tireur' ? 'bg-orange-900/30 text-orange-400 border border-orange-500/20' : 'bg-purple-900/30 text-purple-400 border border-purple-500/20'}`}>
-                      {team.role}
-                    </span>
-                  </td>
-                  <td className="p-4 text-gray-400 font-medium">{team.partenaire}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="h-[300px]">
+          <EloChart history={eloHistory} />
         </div>
       </div>
 
-      {/* SAISONS (Vérifie si ce composant affiche quelque chose maintenant) */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-white uppercase italic tracking-widest">Saisons</h2>
-        <SeasonHistory playerId={player.id} />
+      {/* STATS CARDS */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <StatsCard label="Matchs" value={totalMatches} color="gray" />
+        <StatsCard label="Victoires" value={totalWins} color="green" />
+        <StatsCard label="Nuls" value={totalMatches -totalWins - totalLost} color="magenta" />
+        <StatsCard label="Défaites" value={totalLost} color="red" />
+        <StatsCard label="Ratio" value={`${winRatio}%`} color="blue" />
+		<StatsCard 
+   			label="Goal Avg" 
+    		value={(seasonStats?.reduce((acc: number, curr: any) => acc + Number(curr.goalavg), 0) || 0)} 
+    		color={winRatio > 50 ? "green" : "orange"} 
+  		/>
+        </div>
+
+      {/* HISTORIQUE DES SAISONS (Le nouveau composant) */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-black uppercase italic tracking-tighter">Historique des Saisons</h2>
+          <div className="h-px flex-1 bg-gray-800"></div>
+        </div>
+        
+        {/* On passe les données déjà calculées par SQL au composant */}
+        <SeasonHistory stats={seasonStats || []} />
       </div>
+
     </div>
   );
 }

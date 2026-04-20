@@ -19,7 +19,7 @@ async function recompute() {
   }
 
   // 1. Récupérer les Settings
-  console.log("⚙️ Chargement des paramètres...");
+  console.log("⚙️  Chargement des paramètres...");
   const { data: settingsData } = await supabase.from('settings').select('*');
   const s: any = {};
   settingsData?.forEach(item => s[item.key] = item.value);
@@ -72,10 +72,9 @@ async function recompute() {
     const sc1 = g.score_1;
     const sc2 = g.score_2;
     if (!team1 || !team2) continue;
-    let  _win = false;
-    if (sc1>sc2) _win = true;
-    if (sc1==sc2) _win = null;
-    const win = [_win, _win, !_win, !_win ]
+    const  _win = Math.sign(sc1-sc2)
+    const win = [_win, _win, -_win, -_win ]
+    const scores = [[sc1,sc2],[sc1,sc2],[sc2,sc1],[sc2,sc1]]
 
     const avgPst1 = (currentElo[team1.tireur_id].pst + currentElo[team1.pointeur_id].pst) / 2;
     const avgPst2 = (currentElo[team2.tireur_id].pst + currentElo[team2.pointeur_id].pst) / 2;
@@ -120,7 +119,9 @@ async function recompute() {
         rank_at_time: rank,
         modern_rank_at_time: rank_modern,
         type: g.type,
-        win: win[i]
+        win: win[i],
+        sc_p: (i<2?sc1:sc2),
+        sc_c: (i<2?sc2:sc1),
       });
     });
   }
