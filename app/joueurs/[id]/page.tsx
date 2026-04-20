@@ -97,7 +97,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
         </div>
         
         {/* On passe les données déjà calculées par SQL au composant */}
-        <SeasonHistory stats={seasonStats || []} />
+        <SeasonHistory stats = {seasonStats || [] } />
       </div>
 
     </div>
