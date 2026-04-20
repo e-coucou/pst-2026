@@ -24,7 +24,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
   // 3. RECUPERATION DES STATS PAR SAISON (Ta requête SQL puissante)
   // On utilise .rpc() si tu as créé une fonction PostgreSQL, 
   // sinon on peut utiliser une vue ou adapter le composant SeasonHistory pour qu'il appelle l'API
-  const { data: seasonStats } = await supabase.rpc('get_player_stats', { p_id: playerId });
+  const { data: seasonStats } = await supabase.rpc('get_player_stats', { p_id: playerId } as { data: any[] | null});
   console.log("📊 Stats récupérées:", seasonStats?.length || 0, "lignes");
 
   const eloHistory = history || [];
@@ -97,7 +97,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
         </div>
         
         {/* On passe les données déjà calculées par SQL au composant */}
-        <SeasonHistory stats = {seasonStats || [] } />
+        <SeasonHistory stats = {seasonStats as any || [] } />
       </div>
 
     </div>
