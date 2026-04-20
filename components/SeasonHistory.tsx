@@ -48,7 +48,7 @@ export default function SeasonHistory({ stats }: { stats: SeasonStat[] }) {
               <td className="p-4">{s.partenaire}</td>
               <td className="p-4">
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  s.role_joueur === 'Tireur' ? 'bg-orange-500/20 text-orange-400' : 'bg-purple-500/20 text-purple-400'
+                  s.role === 'Tireur' ? 'bg-orange-500/20 text-orange-400' : 'bg-purple-500/20 text-purple-400'
                 }`}>
                   {s.role}
                 </span>
