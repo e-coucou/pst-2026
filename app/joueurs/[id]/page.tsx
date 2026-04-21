@@ -15,17 +15,26 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
   if (!player) return <div className="p-20 text-white">Joueur introuvable</div>;
 
   // 2. Historique ELO pour le graphique (on garde le select simple ici)
+  const { data: historyAll } = await supabase
+    .from('history_all')
+    .select('*')
+    .eq('player_id', playerId)
+    .order('game_id', { ascending: true });
+    
   const { data: history } = await supabase
     .from('elo_history')
     .select('*')
     .eq('player_id', playerId)
     .order('game_id', { ascending: true });
 
+  const { data: ranking } = await supabase.rpc('get_player_elo', { p_id: playerId });
+
+
   // 3. RECUPERATION DES STATS PAR SAISON (Ta requête SQL puissante)
   // On utilise .rpc() si tu as créé une fonction PostgreSQL, 
   // sinon on peut utiliser une vue ou adapter le composant SeasonHistory pour qu'il appelle l'API
   const { data: seasonStats } = await supabase.rpc('get_player_stats', { p_id: playerId });
-  console.log("📊 Stats récupérées:", seasonStats?.length || 0, "lignes");
+  //console.log("📊 Stats récupérées:", seasonStats?.length || 0, "lignes");
 
   const eloHistory = history || [];
   const lastEntry = eloHistory[eloHistory.length - 1];
@@ -55,7 +64,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 
         <div className="flex gap-4 w-full md:w-auto">
            <div className="flex-1 bg-gradient-to-br from-blue-600/20 to-transparent p-5 rounded-2xl border border-blue-500/30 text-center min-w-[120px]">
-             <p className="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest">ELO PST</p>
+             <p className="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-widest">ELO</p>
              <p className="text-3xl font-mono font-black">{(lastEntry?.elo_value || 100).toFixed(1)}</p>
            </div>
            <div className="flex-1 bg-gradient-to-br from-purple-600/20 to-transparent p-5 rounded-2xl border border-purple-500/30 text-center min-w-[120px]">
@@ -79,9 +88,9 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <StatsCard label="Matchs" value={totalMatches} color="gray" />
         <StatsCard label="Victoires" value={totalWins} color="green" />
-        <StatsCard label="Nuls" value={totalMatches -totalWins - totalLost} color="magenta" />
-        <StatsCard label="Défaites" value={totalLost} color="red" />
-        <StatsCard label="Ratio" value={`${winRatio}%`} color="blue" />
+        <StatsCard label="Nuls" value={totalMatches -totalWins - totalLost} color="blue" />
+        <StatsCard label="Défaites" value={totalLost} color="orange" />
+        <StatsCard label="Ratio" value={`${winRatio}%`} color="purple" />
 		<StatsCard 
    			label="Goal Avg" 
     		value={(seasonStats?.reduce((acc: number, curr: any) => acc + Number(curr.goalavg), 0) || 0)} 

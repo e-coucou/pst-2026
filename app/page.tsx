@@ -45,9 +45,6 @@ export default function Home() {
         <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/classement" className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-xl font-bold hover:scale-105 transition-transform">Voir le Classement <Trophy size={20} />
           </Link>
-          <button className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-xl font-bold hover:scale-105 transition-transform">
-            Voir le Classement <Trophy size={20} />
-          </button>
           <button className="flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition-colors text-slate-700">
             Dernières Vidéos <Video size={20} />
           </button>

@@ -65,6 +65,7 @@ async function recompute() {
 
   console.log(`🧐 Analyse de ${games.length} matchs...`);
   const historyEntries: any[] = [];
+  const historyAll: any[] = [];
 
   for (const g of games) {
     const team1 = teamsMap[g.team_1_id];
@@ -124,6 +125,20 @@ async function recompute() {
         sc_c: (i<2?sc2:sc1),
       });
     });
+
+    players.forEach( (p,i) => {
+      const rank = leaderboard.findIndex(l => l.id === p.id) + 1;
+      const rank_modern = leaderboard_modern.findIndex(l => l.id === p.id) + 1;
+    	historyAll.push({
+    		player_id: p.id,
+    		game_id: g.id,
+    		year: g.year,
+    		elo_value: currentElo[p.id].pst,
+    		elo_modern_value: currentElo[p.id].modern,
+    		rank: rank,
+    		rank_modern: rank_modern
+    	})	
+    });
   }
 
   // 4. Sauvegarde
@@ -137,6 +152,17 @@ async function recompute() {
       break;
     }
   }
+  
+  console.log(`💾 Sauvegarde de ${historyAll.length} points...`);
+  for (let i = 0; i < historyAll.length; i += chunkSize) {
+    const chunk = historyAll.slice(i, i + chunkSize);
+    const { error } = await supabase.from('history_all').insert(chunk);
+    if (error) {
+      console.error("❌ Erreur insertion:", error);
+      break;
+    }
+  }
+ 
   console.log("✨ Terminé !");
 }
 

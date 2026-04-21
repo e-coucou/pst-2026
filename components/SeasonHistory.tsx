@@ -22,7 +22,7 @@ interface SeasonStat {
 // Mise à jour de l'interface des Props
 export default function SeasonHistory({ stats }: { stats: SeasonStat[] }) {
 
-  console.log("Stats reçues par le composant :", stats);
+  //console.log("Stats reçues par le composant :", stats);
   // Vérification de sécurité
   if (!stats || stats.length === 0) {
     return <div className="p-4 text-gray-500 italic">Aucune donnée historique trouvée.</div>;
@@ -58,13 +58,13 @@ export default function SeasonHistory({ stats }: { stats: SeasonStat[] }) {
               </td>
               <td className="p-4 text-center">
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold">{s.finale_jouee}</span>
-                  <span className="text-[16px] text-gray-500">{s.palmares}</span>
+                  <span className="text-xs text-gray-400 font-bold">{s.finale_jouee}</span>
+                  <span className="text-[14px] text-gray-300 font-bold">{s.palmares=='-'?'#'+s.classement:s.palmares}</span>
                 </div>
               </td>
               <td className="p-4 text-right">
                 <span className="bg-gray-800 px-2 py-1 rounded text-xs font-mono text-blue-400">
-                  {s.rang}
+                  {s.classement}
                 </span>
               </td>
             </tr>
