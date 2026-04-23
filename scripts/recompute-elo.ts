@@ -140,9 +140,9 @@ async function recompute() {
     	.map(([id, scores]) => ({ id: parseInt(id), pst: scores.modern }))
     	.sort((a, b) => b.pst - a.pst);
 	// 3. Mapping des rangs (Dictionnaire pour performance O(1))
-	const ranksElo = {};
+	const ranksElo: Record<number, number> = {};
 	sortedElo.forEach((item, index) => { ranksElo[item.id] = index + 1; });
-	const ranksModern = {};
+	const ranksModern: Record<number, number> = {};
 	sortedModern.forEach((item, index) => { ranksModern[item.id] = index + 1; });
     	
     players.forEach( (p,i) => {
