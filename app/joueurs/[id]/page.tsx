@@ -10,7 +10,6 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 
   // 1. Profil de base
   const { data: player } = await supabase.from('profiles').select('*').eq('id', playerId).single();
-
   
   if (!player) return <div className="p-20 text-white">Joueur introuvable</div>;
 
@@ -29,12 +28,23 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 
   const { data: ranking } = await supabase.rpc('get_player_elo', { p_id: playerId });
 
-
   // 3. RECUPERATION DES STATS PAR SAISON (Ta requête SQL puissante)
   // On utilise .rpc() si tu as créé une fonction PostgreSQL, 
   // sinon on peut utiliser une vue ou adapter le composant SeasonHistory pour qu'il appelle l'API
   const { data: seasonStats } = await supabase.rpc('get_player_stats', { p_id: playerId });
   //console.log("📊 Stats récupérées:", seasonStats?.length || 0, "lignes");
+
+  // 4. Fusionner les deux
+  const mergedStats = seasonStats?.map(ms => {
+    const eloInfo = ranking?.find(er => er.annee === ms.annee);
+      return {
+        ...ms,
+        // On remplace ou on ajoute les valeurs de la table history_all
+        rank_elo_final: eloInfo?.rank_elo || ms.rank_elo, 
+        rank_elo_modern_final: eloInfo?.rank_modern_elo || ms.rank_modern_elo
+      };
+    });
+  console.log(mergedStats[0], seasonStats[0], ranking[0])
 
   const eloHistory = history || [];
   const lastEntry = eloHistory[eloHistory.length - 1];
@@ -106,7 +116,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
         </div>
         
         {/* On passe les données déjà calculées par SQL au composant */}
-        <SeasonHistory stats = {seasonStats as any || [] } />
+        <SeasonHistory stats = {mergedStats as any || [] } />
       </div>
 
     </div>

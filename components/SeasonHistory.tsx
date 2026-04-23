@@ -17,6 +17,8 @@ interface SeasonStat {
   palmares: string;
   finale_jouee: string;
   rang: number;
+  rank_elo_final: number;
+  rank_elo_modern_final: number;
 }
 
 // Mise à jour de l'interface des Props
@@ -64,7 +66,7 @@ export default function SeasonHistory({ stats }: { stats: SeasonStat[] }) {
               </td>
               <td className="p-4 text-right">
                 <span className="bg-gray-800 px-2 py-1 rounded text-xs font-mono text-blue-400">
-                  {s.classement}
+                  {s.rank_elo_final}/{s.rank_elo_modern_final}
                 </span>
               </td>
             </tr>

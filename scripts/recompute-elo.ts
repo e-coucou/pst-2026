@@ -17,6 +17,12 @@ async function recompute() {
     console.error("❌ Erreur lors du reset:", deleteError);
     return;
   }
+  console.log("🔄 Reset de history_all...");
+  const { error: deleteError } = await supabase.from('history_all').delete().neq('id', 0);
+  if (deleteError) {
+    console.error("❌ Erreur lors du reset:", deleteError);
+    return;
+  }
 
   // 1. Récupérer les Settings
   console.log("⚙️  Chargement des paramètres...");
@@ -126,17 +132,28 @@ async function recompute() {
       });
     });
 
+	// 2. Création rapide du Leaderboard (Tri)
+	const sortedElo = Object.entries(currentElo)
+    	.map(([id, scores]) => ({ id: parseInt(id), pst: scores.pst }))
+    	.sort((a, b) => b.pst - a.pst);
+	const sortedModern = Object.entries(currentElo)
+    	.map(([id, scores]) => ({ id: parseInt(id), pst: scores.modern }))
+    	.sort((a, b) => b.pst - a.pst);
+	// 3. Mapping des rangs (Dictionnaire pour performance O(1))
+	const ranksElo = {};
+	sortedElo.forEach((item, index) => { ranksElo[item.id] = index + 1; });
+	const ranksModern = {};
+	sortedModern.forEach((item, index) => { ranksModern[item.id] = index + 1; });
+    	
     players.forEach( (p,i) => {
-      const rank = leaderboard.findIndex(l => l.id === p.id) + 1;
-      const rank_modern = leaderboard_modern.findIndex(l => l.id === p.id) + 1;
     	historyAll.push({
     		player_id: p.id,
     		game_id: g.id,
     		year: g.year,
     		elo_value: currentElo[p.id].pst,
     		elo_modern_value: currentElo[p.id].modern,
-    		rank: rank,
-    		rank_modern: rank_modern
+    		rank: ranksElo[p.id],
+    		rank_modern: ranksModern[p.id]
     	})	
     });
   }
