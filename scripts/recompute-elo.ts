@@ -14,13 +14,13 @@ async function recompute() {
   console.log("🔄 Reset de l'historique...");
   const { error: err1 } = await supabase.from('elo_history').delete().neq('id', 0);
   if (err1) {
-    console.error("❌ Erreur lors du reset:", deleteError);
+    console.error("❌ Erreur lors du reset:", err1);
     return;
   }
   console.log("🔄 Reset de history_all...");
   const { error: err2 } = await supabase.from('history_all').delete().neq('id', 0);
   if (err2) {
-    console.error("❌ Erreur lors du reset:", deleteError);
+    console.error("❌ Erreur lors du reset:", err2);
     return;
   }
 
