@@ -35,7 +35,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
   //console.log("📊 Stats récupérées:", seasonStats?.length || 0, "lignes");
 
   // 4. Fusionner les deux
-  const mergedStats = seasonStats?.map(ms => {
+  const mergedStats = seasonStats?.map(any: ms => {
     const eloInfo = ranking?.find(er => er.annee === ms.annee);
       return {
         ...ms,
