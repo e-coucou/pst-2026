@@ -12,14 +12,14 @@ const supabase = createClient(
 
 async function recompute() {
   console.log("🔄 Reset de l'historique...");
-  const { error: deleteError } = await supabase.from('elo_history').delete().neq('id', 0);
-  if (deleteError) {
+  const { error: err1 } = await supabase.from('elo_history').delete().neq('id', 0);
+  if (err1) {
     console.error("❌ Erreur lors du reset:", deleteError);
     return;
   }
   console.log("🔄 Reset de history_all...");
-  const { error: deleteError } = await supabase.from('history_all').delete().neq('id', 0);
-  if (deleteError) {
+  const { error: err2 } = await supabase.from('history_all').delete().neq('id', 0);
+  if (err2) {
     console.error("❌ Erreur lors du reset:", deleteError);
     return;
   }
