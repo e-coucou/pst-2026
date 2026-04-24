@@ -100,10 +100,16 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
                 
                 <div className="space-y-1">
                   {yearlyMatches.map((m, idx) => (
-                    <div key={idx} className="grid grid-cols-16 items-center py-3 px-4 bg-gray-900/30 rounded-lg border border-white/5 hover:bg-white/5 transition-colors">
+                  
+					<div key={idx} className="flex flex-col md:grid md:grid-cols-12 gap-3 items-center py-3 px-4 bg-gray-900/30 rounded-lg border border-white/5 hover:bg-white/5 transition-colors">
+{/*                    <div key={idx} className="grid grid-cols-16 items-center py-3 px-4 bg-gray-900/30 rounded-lg border border-white/5 hover:bg-white/5 transition-colors">*/}
                       {/* TYPE MATCH */}
-                      <div className="col-span-2 gap-2 md:col-span-2">
-                        < div className="md:flex-col flex">
+
+<div className="flex items-center justify-between w-full md:col-span-3">
+    <div className="flex items-center gap-2">
+    
+{/*                      <div className="col-span-2 gap-2 md:col-span-2">
+                        < div className="md:flex-col flex">*/}
                         <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
                           m.type === 'Finale' ? 'bg-yellow-500 text-black' : 'bg-gray-800 text-gray-400'
                         }`}>
@@ -114,13 +120,15 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
                       </div>
 
                       {/* RÉSULTAT & SCORE */}
-                      <div className="col-span-5 md:col-span-3 flex items-center gap-1">
-                        <div className={`w-2 h-2 rounded-full ${m.win > 0 ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`} />
+<div className="flex items-center gap-2 md:ml-auto">
+      <div className={`w-2 h-2 rounded-full ${m.win > 0 ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`} />
+{/*                      <div className="col-span-5 md:col-span-3 flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${m.win > 0 ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`} /> */}
                         <span className="font-mono text-lg font-black text-white">{m.sc_p} <span className="text-gray-600 text-sm">-</span> {m.sc_c}
                         </span>
                       </div>
 
-                      {/* EVOLUTION ELO */}
+                      {/* EVOLUTION ELO 
                       <div className="hidden md:flex col-span-4 gap-8">
                         <div className="flex flex-col">
                           <span className="text-[9px] text-gray-600 font-black uppercase">ELO</span>
@@ -130,21 +138,41 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
                           <span className="text-[9px] text-gray-600 font-black uppercase">Moderne</span>
                           <span className="text-sm font-mono font-bold text-purple-400">{m.elo_modern_value.toFixed(1)}</span>
                         </div>
-                      </div>
+                      </div>*/}
                       
                       {/* Les Adversaires */}
-                      <div className="hidden md:flex col-span-3 gap-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-mono text-orange-400">tireur: {m.tireur}</span>
-                          <span className="text-sm font-mono text-purple-400">pointeur: {m.pointeur}</span>
+<div className="flex justify-between w-full md:col-span-4 border-t border-white/5 pt-2 md:border-0 md:pt-0">
+    <div className="flex flex-col">
+{/*                      <div className="md:flex col-span-3 gap-4">
+                        <div className="flex flex-col">*/}
+                          <span className="text-sm font-mono text-orange-400 truncate max-w-[120px]">{m.tireur}</span>
+                          <span className="text-sm font-mono text-purple-400 truncate max-w-[120px]">{m.pointeur}</span>
                         </div>
                       </div>
 
-                      {/* RANG AU MOMENT DU MATCH */}
-                      <div className="col-span-7 md:col-span-3 text-right flex flex-col">
+{/* BLOC DROITE : ELO & RANG (Caché sur mobile ou réorganisé) */}
+  <div className="hidden md:flex col-span-3 gap-6 justify-center">
+    <div className="text-center">
+      <p className="text-[8px] text-gray-600 font-black uppercase">ELO</p>
+      <p className="text-sm font-mono font-bold text-blue-400">{m.elo_value.toFixed(1)}</p>
+    </div>
+    <div className="text-center">
+      <p className="text-[8px] text-gray-600 font-black uppercase">Moderne</p>
+      <p className="text-sm font-mono font-bold text-purple-400">{m.elo_modern_value.toFixed(1)}</p>
+    </div>
+  </div>
+
+  <div className="flex justify-between items-center w-full md:w-auto md:col-span-2 md:text-right border-t border-white/5 pt-2 md:border-0 md:pt-0">
+    <span className="text-[8px] text-gray-600 font-black uppercase md:hidden">Rang Final</span>
+    <span className="text-xs font-black italic text-gray-400">#{m.rank_at_time} <span className="md:hidden">Global</span></span>
+  </div>
+
+
+                      {/* RANG AU MOMENT DU MATCH 
+                      <div className="col-span-7 md:col-span-3 text-right flex flex-col md:flex md:flex-col">
                         <span className="text-[9px] text-gray-600 font-black uppercase">Rang</span>
                         <span className="text-xs font-black italic text-gray-400">#{m.rank_at_time} Global</span>
-                      </div>
+                      </div>*/}
                     </div>
                   ))}
                 </div>
