@@ -42,7 +42,7 @@ async function recompute() {
   };
 
   // 2. Récupérer les Joueurs et les Équipes
-  const { data: players } = await supabase.from('profiles').select('id');
+  const { data: players } = await supabase.from('profiles').select('*');
   const { data: teams } = await supabase.from('teams').select('*');
   
   if (!players || !teams) {
@@ -117,6 +117,7 @@ async function recompute() {
     pids.forEach( (pid,i) => {
       const rank = leaderboard.findIndex(p => p.id === pid) + 1;
       const rank_modern = leaderboard_modern.findIndex(p => p.id === pid) + 1;
+      const adv_id = ((i%2)+2)-i;
       historyEntries.push({
         player_id: pid,
         game_id: g.id,
@@ -129,6 +130,11 @@ async function recompute() {
         win: win[i],
         sc_p: (i<2?sc1:sc2),
         sc_c: (i<2?sc2:sc1),
+        poule:g.poule,
+        tireur_id: pids[adv_id],
+        pointeur_id: pids[adv_id+1],
+        tireur: players?.find(n => n.id === pids[adv_id])?.nom || 'unk',
+        pointeur: players?.find(n => n.id=== pids[adv_id+1])?.nom || 'unk'
       });
     });
 
@@ -153,7 +159,10 @@ async function recompute() {
     		elo_value: currentElo[p.id].pst,
     		elo_modern_value: currentElo[p.id].modern,
     		rank: ranksElo[p.id],
-    		rank_modern: ranksModern[p.id]
+    		rank_modern: ranksModern[p.id],
+    		poule: g.poule,
+    		team1_id: g.team_1_id,
+    		team2_id: g.team_2_id
     	})	
     });
   }

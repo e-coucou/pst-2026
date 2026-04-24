@@ -1,5 +1,163 @@
- import { createClient } from '@/utils/supabase/server'
+'use client'
 
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, Swords, Trophy, Target } from 'lucide-react';
+
+interface SeasonStat {
+  annee: number;
+  role: string;
+  partenaire: string;
+  victoires: number;
+  defaites: number;
+  nuls: number;
+  palmares: string;
+  classement: number;
+  finale_jouee: string;
+  rank_elo_final: number;
+  rank_elo_modern_final: number;
+  elo?: number; // Optionnel selon ta fusion
+}
+
+// On ajoute 'fullHistory' pour avoir le détail des matchs
+export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats: SeasonStat[], fullHistory: any[], historyAll: any[] }) {
+  const [expandedYear, setExpandedYear] = useState<number | null>(null);
+
+  if (!stats || stats.length === 0) {
+    return <div className="p-4 text-gray-500 italic">Aucune donnée historique trouvée.</div>;
+  }
+
+//  console.log('coucou',historyAll);
+
+  return (
+    <div className="space-y-3">
+      {/* HEADER DU "FAUX" TABLEAU */}
+      <div className="hidden md:grid grid-cols-12 px-6 py-2 text-[10px] uppercase tracking-widest text-gray-500 font-black">
+        <div className="col-span-1">Saison</div>
+        <div className="col-span-3">Partenaire & Rôle</div>
+        <div className="col-span-2 text-center">V/N/D</div>
+        <div className="col-span-3 text-center">Résultat</div>
+        <div className="col-span-2 text-right">Rangs (C/M)</div>
+        <div className="col-span-1"></div>
+      </div>
+
+      {/* LISTE DES SAISONS */}
+      {stats.map((s, i) => {
+        const isExpanded = expandedYear === s.annee;
+        
+        // On filtre les matchs du joueur pour cette année précise
+        const yearlyMatches = fullHistory
+          .filter(h => h.year === s.annee)
+          .sort((a, b) => a.game_id - b.game_id);
+
+        return (
+          <div key={i} className={`group border transition-all duration-200 ${
+            isExpanded ? 'bg-gray-900/50 border-blue-500/50 shadow-lg' : 'bg-gray-900 border-gray-800 hover:border-gray-700'
+          } rounded-xl overflow-hidden`}>
+            
+            {/* LIGNE PRINCIPALE */}
+            <div 
+              onClick={() => setExpandedYear(isExpanded ? null : s.annee)}
+              className="grid grid-cols-6 md:grid-cols-12 items-center p-4 md:px-6 cursor-pointer"
+            >
+              <div className="col-span-2 md:col-span-1 flex flex-col">
+                <span className="text-sm font-bold text-gray-200">{s.annee}</span>
+                <span className={`text-[10px] font-black uppercase tracking-tighter ${
+                  s.role === 'Tireur' ? 'text-orange-400' : 'text-purple-400'
+                }`}>{s.role}</span>
+              </div>
+              <div className="col-span-2 text-xl font-black italic text-white">{s.partenaire}</div>
+
+              <div className="hidden md:block col-span-2 text-center font-mono font-bold text-gray-400">
+                {s.victoires}/{s.nuls}/{s.defaites}
+              </div>
+
+              <div className="col-span-2 md:col-span-3 text-center">
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-gray-500 font-black uppercase">{s.finale_jouee}</span>
+                  <span className="text-xs font-bold text-blue-400">
+                    {s.palmares === '-' ? `Place: #${s.classement}` : s.palmares}
+                  </span>
+                </div>
+              </div>
+
+              <div className="col-span-1 md:col-span-2 text-right">
+                <span className="bg-black/50 px-2 py-1 rounded border border-gray-800 text-[11px] font-mono font-bold text-blue-400">
+                  #{s.rank_elo_final} <span className="text-gray-600">/</span> <span className="text-purple-400">#{s.rank_elo_modern_final}</span>
+                </span>
+              </div>
+
+              <div className="col-span-1 text-right flex justify-end">
+                {isExpanded ? <ChevronUp className="text-blue-500" /> : <ChevronDown className="text-gray-600" />}
+              </div>
+            </div>
+
+            {/* NIVEAU 2 : DÉTAILS DES MATCHS (ACCORDÉON) */}
+            {isExpanded && (
+              <div className="bg-black/40 border-t border-gray-800 p-4 md:p-6 space-y-2">
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mb-4 flex items-center gap-2">
+                  <Swords size={12} /> Détail des rencontres tournois {s.annee}
+                </h4>
+                
+                <div className="space-y-1">
+                  {yearlyMatches.map((m, idx) => (
+                    <div key={idx} className="grid grid-cols-16 items-center py-3 px-4 bg-gray-900/30 rounded-lg border border-white/5 hover:bg-white/5 transition-colors">
+                      {/* TYPE MATCH */}
+                      <div className="col-span-2 gap-2 md:col-span-2">
+                        < div className="md:flex-col flex">
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                          m.type === 'Finale' ? 'bg-yellow-500 text-black' : 'bg-gray-800 text-gray-400'
+                        }`}>
+                          {m.type?.toUpperCase() || 'POULE'}
+                        </span >
+                        <span className="text-[9px] font-black px-1.5 py-0.5 text-gray-200"> {m.poule || ''}</span>
+						</div>
+                      </div>
+
+                      {/* RÉSULTAT & SCORE */}
+                      <div className="col-span-5 md:col-span-3 flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${m.win > 0 ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`} />
+                        <span className="font-mono text-lg font-black text-white">{m.sc_p} <span className="text-gray-600 text-sm">-</span> {m.sc_c}
+                        </span>
+                      </div>
+
+                      {/* EVOLUTION ELO */}
+                      <div className="hidden md:flex col-span-4 gap-8">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] text-gray-600 font-black uppercase">ELO</span>
+                          <span className="text-sm font-mono font-bold text-blue-400">{m.elo_value.toFixed(1)}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] text-gray-600 font-black uppercase">Moderne</span>
+                          <span className="text-sm font-mono font-bold text-purple-400">{m.elo_modern_value.toFixed(1)}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Les Adversaires */}
+                      <div className="hidden md:flex col-span-3 gap-4">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-mono text-orange-400">tireur: {m.tireur}</span>
+                          <span className="text-sm font-mono text-purple-400">pointeur: {m.pointeur}</span>
+                        </div>
+                      </div>
+
+                      {/* RANG AU MOMENT DU MATCH */}
+                      <div className="col-span-7 md:col-span-3 text-right flex flex-col">
+                        <span className="text-[9px] text-gray-600 font-black uppercase">Rang</span>
+                        <span className="text-xs font-black italic text-gray-400">#{m.rank_at_time} Global</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+/*
+import { createClient } from '@/utils/supabase/server'
 
 interface SeasonStat {
   id: number;
@@ -23,7 +181,6 @@ interface SeasonStat {
 
 // Mise à jour de l'interface des Props
 export default function SeasonHistory({ stats }: { stats: SeasonStat[] }) {
-
   //console.log("Stats reçues par le composant :", stats);
   // Vérification de sécurité
   if (!stats || stats.length === 0) {
@@ -76,3 +233,5 @@ export default function SeasonHistory({ stats }: { stats: SeasonStat[] }) {
     </div>
   );
 }
+
+*/

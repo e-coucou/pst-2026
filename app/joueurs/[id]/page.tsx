@@ -46,10 +46,12 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
         rank_elo_modern_final: eloInfo?.rank_modern_elo || ms.rank_modern_elo
       };
     });
-  console.log(mergedStats[0], seasonStats[0], ranking[0])
+//  console.log(mergedStats[0], seasonStats[0], ranking[0])
 
   const eloHistory = history || [];
   const lastEntry = eloHistory[eloHistory.length - 1];
+
+  console.log(eloHistory[0])
 
   // Calcul du ratio global
   const totalWins = seasonStats?.reduce((acc: number, curr: any) => acc + curr.victoires, 0) || 0;
@@ -130,14 +132,19 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
         </div>
 
       {/* HISTORIQUE DES SAISONS (Le nouveau composant) */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-black uppercase italic tracking-tighter">Historique des Saisons</h2>
-          <div className="h-px flex-1 bg-gray-800"></div>
-        </div>
+		<div className="space-y-6">
+		  <div className="flex items-center gap-4">
+		    <h2 className="text-2xl font-black uppercase italic tracking-tighter">Historique des Saisons</h2>
+		    <div className="h-px flex-1 bg-gray-800"></div>
+		  </div>
+		  
+		  {/* On passe mergedStats ET eloHistory */}
+		  <SeasonHistory 
+		    stats={mergedStats as any || []} 
+		    fullHistory={eloHistory as any || []}
+		    historyAll={historyAll as any || []}
+		  />
         
-        {/* On passe les données déjà calculées par SQL au composant */}
-        <SeasonHistory stats = {mergedStats as any || [] } />
       </div>
 
     </div>
