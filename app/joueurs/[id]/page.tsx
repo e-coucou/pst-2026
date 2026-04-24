@@ -2,6 +2,8 @@ import { createClient } from '@/utils/supabase/server';
 import EloChart from '@/components/EloChart';
 import StatsCard from '@/components/StatsCard';
 import SeasonHistory from '@/components/SeasonHistory';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
 
 export default async function PlayerProfile({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -57,7 +59,26 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8 bg-black text-white min-h-screen font-sans">
-      
+	  {/* BOUTON RETOUR */}
+	  {/*
+		<div className="mb-4">
+		<Link 
+		   href="/classement" 
+		   className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
+		   >
+		   <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+		   <span className="text-sm font-bold uppercase tracking-widest">Retour au classement</span>
+  	    </Link>
+	  </div>
+	  */}
+	  <nav className="flex text-xs font-black uppercase tracking-tighter text-gray-500 gap-2 mb-2">
+	    <Link href="/" className="hover:text-blue-500">Accueil</Link>
+	    <span>/</span>
+	    <Link href="/classement" className="hover:text-blue-500">Classement</Link>
+	    <span>/</span>
+	    <span className="text-blue-400">{player.nom}</span>
+	  </nav>
+
       {/* HEADER : Identité et Rang */}
       <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800 flex flex-col md:flex-row justify-between items-center shadow-2xl gap-6">
         <div>

@@ -1,7 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
-import { Trophy, Medal, ArrowRight } from 'lucide-react';
-
+import { Trophy, Medal, ArrowRight, ChevronLeft } from 'lucide-react';
 
 export default async function Leaderboard() {
   const supabase = await createClient();
@@ -52,6 +51,17 @@ export default async function Leaderboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
+	{/* BOUTON RETOUR */}
+	<div className="mb-4">
+	  <Link 
+	    href="/" 
+	    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
+	  >
+	    <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+	    <span className="text-sm font-bold uppercase tracking-widest">Retour</span>
+	  </Link>
+	</div>
+
       {/* HEADER */}
       <div className="bg-blue-700 text-white pt-16 pb-24 px-6 text-center shadow-inner">
         <h1 className="text-4xl font-extrabold flex justify-center items-center gap-3 italic tracking-tight">

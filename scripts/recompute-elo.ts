@@ -18,7 +18,7 @@ async function recompute() {
     return;
   }
   console.log("🔄 Reset de history_all...");
-  const { error: err2 } = await supabase.from('history_all').delete().neq('id', 0);
+  const { error: err2 } = await supabase.from('history_all').delete().gt('year', 0);
   if (err2) {
     console.error("❌ Erreur lors du reset:", err2);
     return;
