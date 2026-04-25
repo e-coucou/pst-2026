@@ -208,11 +208,10 @@ const classementRamatuelle = calculerClassement(ramatuelle);
 		                  </div>
 		                </td>
 		                <td>
-        <div className={`flex flex-col text-xs md:text-base font-bold`}>
-          <span className="text-red-500 uppercase">{team.tireur}</span>
-          <span className="text-white uppercase leading-none">{team.pointeur}</span>
-        </div>
- 
+					        <div className={`flex flex-col text-base md:text-base font-bold`}>
+					          <span className="text-red-500 uppercase">{team.tireur}</span>
+					          <span className="text-white uppercase leading-none">{team.pointeur}</span>
+					        </div>
 		                </td>
 		                <td className="px-2 py-3 text-center font-mono text-xs">{team.v}</td>
 		                <td className="px-2 py-3 text-center font-mono text-xs text-gray-500">{team.d}</td>
@@ -299,7 +298,7 @@ function MatchRow({ match, size = 'md' }: { match: any, size?: 'xs' | 'sm' | 'md
       {/* TEAM 1 */}
       <div className="flex-1 text-center">
         <p className={`${isLarge ? 'text-sm md:text-3xl' : 'text-xs md:text-sm'} font-black uppercase italic leading-none mb-1`}>{match.team_1?.nom}</p>
-        <div className={`flex flex-col ${isLarge ? 'text-[20px] md:text-2xl' : 'text-[8px] md:text-[11px]'} font-bold`}>
+        <div className={`flex flex-col ${isLarge ? 'text-[16px] md:text-4xl' : 'text-[12px] md:text-[11px]'} font-bold`}>
           <span className="text-red-500 uppercase">{match.team_1?.tireur?.nom}</span>
           <span className="text-white uppercase leading-none">{match.team_1?.pointeur?.nom}</span>
         </div>
@@ -315,7 +314,7 @@ function MatchRow({ match, size = 'md' }: { match: any, size?: 'xs' | 'sm' | 'md
       {/* TEAM 2 */}
       <div className="flex-1 text-center">
         <p className={`${isLarge ? 'text-sm md:text-3xl' : 'text-xs md:text-sm'} font-black uppercase italic leading-none mb-1`}>{match.team_2?.nom}</p>
-        <div className={`flex flex-col ${isLarge ? 'text-[20px] md:text-2xl' : 'text-[8px] md:text-[11px]'} font-bold`}>
+        <div className={`flex flex-col ${isLarge ? 'text-[16px] md:text-4xl' : 'text-[12px] md:text-[11px]'} font-bold`}>
           <span className="text-red-500 uppercase">{match.team_2?.tireur?.nom}</span>
           <span className="text-white uppercase leading-none">{match.team_2?.pointeur?.nom}</span>
         </div>
