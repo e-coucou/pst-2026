@@ -5,6 +5,7 @@ import SeasonHistory from '@/components/SeasonHistory';
 import Link from 'next/link';
 import { ChevronLeft, Zap, Target, Award, Swords, Video, Users } from 'lucide-react';
 
+
 export default async function PlayerProfile({ params }: { params: Promise<{ id: string }> }) {
 
   // 1. On attend les params (Obligatoire en Next 15/16)
@@ -45,6 +46,9 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
     signedPhotoUrl = urlData?.signedUrl;
   }
   // debug pour toi dans le terminal :
+   signedPhotoUrl = player.photo 
+    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/joueurs_photos/${player.photo}`
+    : null;
   console.log("URL Signée finale :", signedPhotoUrl);
 
   // 3. Fusion des stats
