@@ -35,21 +35,14 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
     return <div className="p-20 text-white uppercase font-black tracking-widest text-center">Athlète non identifié</div>;
   }
 
-  // 2. Gestion de la PHOTO PRIVÉE (URL Signée)
-
   let signedPhotoUrl = null;
-  if (player.photo) {
-    const filePath = player.photo;
+  if (player.photo_url) {
+    const filePath = player.photo_url;
     const { data: urlData } = await supabase.storage
       .from('joueurs_photos')
       .createSignedUrl(filePath, 3600); // URL valable 1h
     signedPhotoUrl = urlData?.signedUrl;
   }
-  // debug pour toi dans le terminal :
-   signedPhotoUrl = player.photo 
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/joueurs_photos/${player.photo}`
-    : null;
-  console.log("URL Signée finale :", signedPhotoUrl);
 
   // 3. Fusion des stats
   const mergedStats = seasonStats?.map((ms: any) => {
@@ -89,7 +82,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 		        <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-2 border-white/10 bg-black">
 		          {player.photo_url ? (
 		            <img 
-		              src={player.photo_url} // URL signée récupérée via ton fetch
+		              src={signedPhotoUrl} // URL signée récupérée via ton fetch
 		              alt={player.nom}
 		              className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
 		            />

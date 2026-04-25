@@ -1,20 +1,41 @@
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
-import { Trophy, ArrowRight, ChevronLeft, Target, Zap } from 'lucide-react';
+import { Trophy, ArrowRight, ChevronLeft, Target, Zap, User } from 'lucide-react';
 
 export default async function Leaderboard() {
   const supabase = await createClient();
 
-  // 1. Récupération des données
+  // 1. Récupération des profils et de l'historique
   const [profilesRes, historyRes] = await Promise.all([
-    supabase.from('profiles').select('id, nom'),
+    supabase.from('profiles').select('id, nom, photo_url'),
     supabase.from('elo_history').select('player_id, elo_value').order('id', { ascending: false })
   ]);
 
   const profiles = profilesRes.data || [];
   const rawHistory = historyRes.data || [];
 
-  // 2. Mapping des scores les plus récents
+  // 2. SIGNATURE GROUPÉE DES PHOTOS (Pour la sécurité)
+  // On récupère tous les noms de fichiers non nuls
+  const filePaths = profiles
+    .map(p => p.photo_url)
+    .filter((path): path is string => Boolean(path));
+
+  let signedUrls: Record<string, string> = {};
+
+  if (filePaths.length > 0) {
+    const { data } = await supabase.storage
+      .from('joueurs_photos')
+      .createSignedUrls(filePaths, 3600); // On signe tout d'un coup pour 1h
+
+    // On crée un dictionnaire { "jean.jpg": "https://token..." }
+    data?.forEach(item => {
+      if (item.path && item.signedUrl) {
+        signedUrls[item.path] = item.signedUrl;
+      }
+    });
+  }
+
+  // 3. Mapping des scores les plus récents
   const latestScoresMap: Record<string, number> = {};
   rawHistory.forEach(entry => {
     const pid = String(entry.player_id);
@@ -23,13 +44,15 @@ export default async function Leaderboard() {
     }
   });
 
-  // 3. Construction du tableau final
+  // 4. Construction du tableau final
   const leaderboard = profiles.map(p => {
     const pid = String(p.id);
     return {
       id: p.id,
       nom: p.nom || `Joueur #${p.id}`,
-      elo: latestScoresMap[pid] ?? 100 // 100 par défaut
+      elo: latestScoresMap[pid] ?? 100,
+      // On récupère l'URL signée depuis notre dictionnaire
+      photo: p.photo_url ? signedUrls[p.photo_url] : null 
     };
   }).sort((a, b) => b.elo - a.elo);
 
@@ -39,79 +62,57 @@ export default async function Leaderboard() {
 
   return (
     <div className="min-h-screen bg-black text-white pb-20">
+      {/* ... (Le header reste le même) ... */}
       
-      {/* HEADER SAINT-TROPEZ STYLE */}
-      <div className="relative pt-20 pb-24 px-6 overflow-hidden">
-        {/* Effet de lueur rouge en arrière-plan */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
-        
-        <div className="max-w-4xl mx-auto relative text-center">
-          <h1 className="text-6xl md:text-8xl font-black uppercase italic tracking-tighter leading-none mb-4">
-            résidence <span className="text-red-600">PST</span>
-          </h1>
-          <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.5em] italic">
-            Classement Officiel des Joueurs
-          </p>
-        </div>
-      </div>
-
-      {/* LISTE DES JOUEURS - LOOK SPORT-TECH */}
-      <div className="max-w-2xl mx-auto -mt-12 px-4 relative z-10">
+      <div className="max-w-2xl mx-auto -mt-8 mb-10 px-4 relative z-10">
         <div className="bg-zinc-900/50 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
-          
           <div className="divide-y divide-white/5">
             {leaderboard.map((player, index) => {
               const isTop3 = index < 3;
               const rankColor = index === 0 ? 'text-red-600' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-orange-500' : 'text-zinc-700';
 
               return (
-                <Link 
-                  key={player.id} 
-                  href={`/joueurs/${player.id}`}
-                  className="flex items-center p-6 hover:bg-white/5 active:bg-red-600/5 transition-all group relative"
-                >
-                  {/* EFFET DE LIGNE AU SURVOL */}
-                  <div className="absolute left-0 w-1 h-0 bg-red-600 group-hover:h-full transition-all duration-300" />
-
+                <Link key={player.id} href={`/joueurs/${player.id}`} className="flex items-center p-6 hover:bg-white/5 transition-all group">
                   {/* RANG */}
                   <div className={`w-12 flex justify-center text-3xl font-black italic ${rankColor}`}>
                     {index + 1}
                   </div>
 
-                  {/* INFOS JOUEUR */}
-                  <div className="flex-1 ml-6">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      {isTop3 && <Zap size={14} className="text-red-600 fill-red-600" />}
-                      <span className="text-lg font-black uppercase italic tracking-tight text-white group-hover:text-red-500 transition-colors">
-                        {player.nom}
-                      </span>
-                    </div>
+                  {/* VIGNETTE PHOTO SIGNÉE */}
+                  <div className="ml-4 relative">
+                    {player.photo ? (
+                      <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 group-hover:border-red-600/50 transition-colors">
+                        <img src={player.photo} alt={player.nom} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center border border-white/5">
+                        <User size={20} className="text-zinc-600" />
+                      </div>
+                    )}
                   </div>
 
-                  {/* ELO SCORE BOX */}
+                  {/* INFOS */}
+                  <div className="flex-1 ml-6">
+                    <span className="text-lg font-black uppercase italic text-white group-hover:text-red-500 transition-colors">
+                      {player.nom}
+                    </span>
+                  </div>
+
+                  {/* ELO */}
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="text-[9px] text-gray-600 font-black uppercase leading-none mb-1 tracking-widest">ELO</p>
-                      <div className="flex items-baseline gap-1">
-                        <p className="text-3xl font-mono font-black italic text-white leading-none">
-                          {player.elo.toFixed(0)}
-                        </p>
-                        <span className="text-red-600 font-black text-xs"> pts</span>
-                      </div>
+                      <p className="text-[9px] text-gray-600 font-black uppercase mb-1">ELO</p>
+                      <p className="text-3xl font-mono font-black italic text-white leading-none">
+                        {player.elo.toFixed(0)}
+                      </p>
                     </div>
-                    <ArrowRight size={20} className="text-zinc-800 group-hover:text-red-600 group-hover:translate-x-1 transition-all" />
+                    <ArrowRight size={20} className="text-zinc-800 group-hover:text-red-600 transition-all" />
                   </div>
                 </Link>
               );
             })}
           </div>
-
         </div>
-        
-        {/* FOOTER CLASSEMENT */}
-        <p className="text-center mt-8 text-[10px] text-gray-600 font-bold uppercase tracking-[0.2em]">
-          Mise à jour en temps réel via Supabase Engine
-        </p>
       </div>
     </div>
   );
