@@ -49,6 +49,12 @@ export default function Navbar() {
               label="Tournois" 
               active={pathname.startsWith("/tournois")} 
             />
+            <NavLink 
+              href="/videos" 
+              icon={<Swords size={16} />} 
+              label="Vidéos" 
+              active={pathname.startsWith("/videos")} 
+            />
           </div>
 
           {/* BOUTON BURGER (Mobile uniquement) */}
@@ -59,7 +65,7 @@ export default function Navbar() {
             </div>
             <button 
               onClick={() => setIsOpen(!isOpen)}
-              className="text-white p-2 hover:text-red-500 transition-colors"
+              className="text-purple-500 p-2 hover:text-red-500 transition-colors"
             >
               {isOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
@@ -95,6 +101,12 @@ export default function Navbar() {
             href="/tournois" 
             label="Tournois" 
             active={pathname.startsWith("/tournois")} 
+            onClick={closeMenu}
+          />
+          <MobileNavLink 
+            href="/videos" 
+            label="Vidéos" 
+            active={pathname.startsWith("/videos")} 
             onClick={closeMenu}
           />
         </div>
