@@ -39,8 +39,8 @@ const Top16Tooltip = ({ active, payload }: any) => {
                   {player.nom}
                 </span>
               </div>
-              <span className="text-[10px] font-mono font-black text-white italic">{Math.round(player.elo)} / </span><span className="text-[10px] font-mono font-black italic text-purple-500">{Math.round(player.modern)}
-              </span>
+              <span className="text-[10px] font-mono font-black text-white italic">{Math.round(player.elo)}</span>
+              <span className="text-[10px] font-mono font-black italic text-purple-500"> / {Math.round(player.modern)}</span>
             </div>
           ))}
         </div>
