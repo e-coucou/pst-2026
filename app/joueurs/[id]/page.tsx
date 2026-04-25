@@ -82,7 +82,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 		        <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-2 border-white/10 bg-black">
 		          {player.photo_url ? (
 		            <img 
-		              src={signedPhotoUrl} // URL signée récupérée via ton fetch
+		              src={signedPhotoUrl || undefined} // URL signée récupérée via ton fetch
 		              alt={player.nom}
 		              className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
 		            />
