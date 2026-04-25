@@ -1,84 +1,142 @@
-'use client'; // On ajoute ça tout en haut pour autoriser le code interactif
+'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Trophy, Users, Video } from 'lucide-react';
-import { supabase } from '@/lib/supabase'; // Import de ton client
+import { Trophy, Users, Video, Swords, Zap, ChevronRight } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 
 export default function Home() {
-	const [count, setCount] = useState<number | null>(null);
+  const [count, setCount] = useState<number | null>(null);
 
-	  useEffect(() => {
-	    // Petite fonction pour compter les joueurs
-	    const fetchJoueurs = async () => {
-	      const { count, error } = await supabase
-	        .from('profiles')
-	        .select('*', { count: 'exact', head: true });
-	      
-	      if (!error) setCount(count);
-	    };
+  useEffect(() => {
+    const fetchJoueurs = async () => {
+      // 2. On initialise le client Supabase à l'intérieur du useEffect
+      const supabase = createClient();
+      
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      
+      if (!error) setCount(count);
+    };
 
-	    fetchJoueurs();
-	  }, []);
+    fetchJoueurs();
+  }, []);
+
+
   return (
-	<div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-      {/* HEADER / NAVIGATION */}
-      <nav className="flex items-center justify-between p-6 bg-white shadow-sm sticky top-0 z-50">
-        <h1 className="text-xl font-bold tracking-tight text-blue-700">Pétanque PST <span className="text-orange-500">2.0</span></h1>
-        <div className="flex items-center gap-4">
-          {/* On affiche le compteur ici pour le test ! */}
-          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">
-            {count !== null ? `${count} joueurs inscrits` : 'Connexion...'}
-          </span>
-          <button className="px-4 py-2 text-sm font-bold bg-blue-700 text-white rounded-full">Connexion</button>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-black text-white font-sans overflow-x-hidden">
+      
       {/* HERO SECTION */}
-      <header className="px-6 py-12 md:py-24 max-w-5xl mx-auto text-center">
-        <span className="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full uppercase tracking-wider">Saison 2026</span>
-        <h2 className="mt-6 text-4xl md:text-6xl font-extrabold leading-tight">
-          Le classement officiel de la <span className="text-blue-700">Pétanque Saint-Tropez</span>
+      <header className="relative px-6 py-20 md:py-32 max-w-7xl mx-auto text-center">
+        {/* Effet de lumière rouge en arrière-plan */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-full bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
+
+        {/* Badge Saison */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-zinc-900 border border-red-600/30 text-white rounded-full mb-8">
+          <Zap size={14} className="text-red-600 fill-red-600 animate-pulse" />
+          <span className="text-[16px] font-black uppercase tracking-[0.3em]">Saison 2026</span>
+        </div>
+        
+        {/* NOUVEAU NOM : PARIS SAINT-TROPEZ */}
+        <h2 className="text-5xl md:text-8xl font-black leading-[0.8] uppercase italic tracking-tighter mb-8">
+          <span className="text-white">Paris</span>
+          <span className="mx-4 text-red-600 inline-block scale-150"> </span>
+          <span className="text-red-600">Saint-Tropez</span>
         </h2>
-        <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">
-          Suivez les scores en direct, consultez votre classement ELO et accédez aux contenus exclusifs du club.
+        
+        <p className="mt-6 text-gray-400 max-w-2xl mx-auto font-bold uppercase tracking-widest text-xs md:text-sm italic">
+          Le Classement Officiel ELO de la Résidence <br className="hidden md:block" /> 
+          Scores en direct • Archives Historiques • Contenus Privés
         </p>
-        <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/classement" className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-xl font-bold hover:scale-105 transition-transform">Voir le Classement <Trophy size={20} />
+
+        {/* LE COMPTEUR DE JOUEURS DYNAMIQUE */}
+        <div className="mt-8 inline-flex items-center gap-3 bg-zinc-900/50 border border-white/5 px-6 py-2 rounded-2xl">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-ping" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">
+             {count !== null ? `${count} athlètes inscrits` : 'Chargement du club...'}
+          </span>
+        </div>
+
+        {/* GRILLE DE NAVIGATION (Avec tes effets de zoom boostés) */}
+        <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          
+          {/* BOUTON CLASSEMENT */}
+          <Link href="/classement" className="group relative bg-zinc-900/50 border border-white/10 p-8 rounded-3xl hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Trophy size={80} className="text-white" />
+            </div>
+            <div className="bg-zinc-800 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
+              <Trophy size={28} className="text-white" />
+            </div>
+            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-2">Classement</h3>
+            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Performance ELO</p>
           </Link>
-          <button className="flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition-colors text-slate-700">
-            Dernières Vidéos <Video size={20} />
+
+          {/* BOUTON TOURNOIS */}
+          <Link href="/tournois" className="group relative bg-zinc-900/50 border border-white/10 p-8 rounded-3xl hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
+             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Swords size={80} className="text-white" />
+            </div>
+            <div className="bg-zinc-800 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl border border-transparent group-hover:border-white/20">
+              <Swords size={28} className="text-white" />
+            </div>
+            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-2">Tournois</h3>
+            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Archives & Scores</p>
+          </Link>
+
+          {/* BOUTON VIDEOS */}
+          <button className="group relative bg-zinc-900/50 border border-white/10 p-8 rounded-3xl hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
+             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Video size={80} className="text-white" />
+            </div>
+            <div className="bg-zinc-800 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
+              <Video size={28} className="text-white" />
+            </div>
+            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-2">Vidéos</h3>
+            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Zone Membres</p>
           </button>
+
         </div>
       </header>
 
-      {/* GRILLE DE FONCTIONNALITÉS (Adaptative iPhone/Desktop) */}
-      <section className="px-6 py-12 bg-white">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center mb-4">
-              <Users size={24} />
+      {/* SECTION FEATURES (Style sombre & Rouge) */}
+      <section className="px-6 py-24 bg-zinc-950 border-t border-white/5">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+          
+          <div className="group">
+            <div className="w-14 h-14 bg-red-600/10 text-red-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-red-600 group-hover:text-white transition-all duration-500">
+              <Users size={28} />
             </div>
-            <h3 className="text-xl font-bold mb-2">Accès Joueurs</h3>
-            <p className="text-slate-600">Connectez-vous pour voir vos statistiques détaillées et votre historique.</p>
+            <h3 className="text-2xl font-black uppercase italic mb-3 tracking-tighter">Accès Athlètes</h3>
+            <p className="text-gray-500 font-medium leading-relaxed">Espace sécurisé pour consulter vos statistiques avancées et l'évolution de votre courbe ELO.</p>
           </div>
           
-          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center mb-4">
-              <Trophy size={24} />
+          <div className="group">
+            <div className="w-14 h-14 bg-red-600/10 text-red-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-red-600 group-hover:text-white transition-all duration-500">
+              <Zap size={28} />
             </div>
-            <h3 className="text-xl font-bold mb-2">Système ELO</h3>
-            <p className="text-slate-600">Un calcul précis inspiré de l'IRB pour classer équitablement chaque talent.</p>
+            <h3 className="text-2xl font-black uppercase italic mb-3 tracking-tighter">Algorithme PST</h3>
+            <p className="text-gray-500 font-medium leading-relaxed">Calcul inspiré des standards internationaux pour garantir un classement équitable basé sur le mérite.</p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-green-100 text-green-700 rounded-lg flex items-center justify-center mb-4">
-              <Video size={24} />
+          <div className="group">
+            <div className="w-14 h-14 bg-red-600/10 text-red-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-red-600 group-hover:text-white transition-all duration-500">
+              <Video size={28} />
             </div>
-            <h3 className="text-xl font-bold mb-2">Contenu Protégé</h3>
-            <p className="text-slate-600">Vidéos et photos des tournois accessibles uniquement aux membres.</p>
+            <h3 className="text-2xl font-black uppercase italic mb-3 tracking-tighter">Live & Replay</h3>
+            <p className="text-gray-500 font-medium leading-relaxed">Revivez les plus beaux points des tournois grâce à notre médiathèque réservée aux licenciés.</p>
           </div>
+
         </div>
       </section>
+
+      {/* FOOTER SIMPLE */}
+      <footer className="py-12 border-t border-white/5 text-center">
+        <p className="text-[10px] font-black text-gray-700 uppercase tracking-[0.5em]">
+          Design & Code par eCoucou Digital Engine • 2026
+        </p>
+      </footer>
     </div>
   );
 }

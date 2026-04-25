@@ -51,7 +51,7 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
 
         return (
           <div key={i} className={`group border transition-all duration-200 ${
-            isExpanded ? 'bg-gray-900/50 border-blue-500/50 shadow-lg' : 'bg-gray-900 border-gray-800 hover:border-gray-700'
+            isExpanded ? 'bg-gray-900/50 border-red-600/50 shadow-lg' : 'bg-gray-900 border-gray-800 hover:border-gray-700'
           } rounded-xl overflow-hidden`}>
             
             {/* LIGNE PRINCIPALE */}
@@ -80,7 +80,7 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
 			  {/* Résultats & Rangs (Réduis la largeur col-span sur mobile) */}
 			  <div className="col-span-3 md:col-span-3 text-center">
 			    <span className="text-[9px] text-gray-500 font-black uppercase block">{s.finale_jouee}</span>
-			    <span className="text-[10px] md:text-xs font-bold text-blue-400 whitespace-nowrap">
+			    <span className="text-[10px] md:text-xs font-bold text-red-600 whitespace-nowrap">
 			      {s.palmares === '-' ? `#${s.classement}` : s.palmares}
 			    </span>
 			  </div>
@@ -107,34 +107,24 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
 					  
 					  {/* BLOC GAUCHE : TYPE & SCORE (Toujours alignés horizontalement) */}
 					  <div className="flex items-center justify-between w-full md:col-span-3">
-{/*}					    <div className="flex items-center gap-2">
-					      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
-					        m.type === 'Finale' ? 'bg-yellow-500 text-black' : 'bg-gray-800 text-gray-400'
-					      }`}>
-					        {m.type?.toUpperCase() || 'POULE'}
-					      </span>
-					      <span className="text-[10px] font-bold text-gray-500">{m.poule}</span>
-					    </div>
-*/}
 
+						<div className="col-span-3 md:col-span-2 flex flex-col justify-center gap-1">
+						  {/* Ligne 1 : Le Badge (Type) */}
+						  <div className="flex">
+						    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded leading-none ${
+						      m.type === 'Finale' ? 'bg-yellow-500 text-black' : 'bg-gray-800 text-gray-400'
+						    }`}>
+						      {m.type?.toUpperCase() || 'POULE'}
+						    </span>
+						  </div>
 
-<div className="col-span-3 md:col-span-2 flex flex-col justify-center gap-1">
-  {/* Ligne 1 : Le Badge (Type) */}
-  <div className="flex">
-    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded leading-none ${
-      m.type === 'Finale' ? 'bg-yellow-500 text-black' : 'bg-gray-800 text-gray-400'
-    }`}>
-      {m.type?.toUpperCase() || 'POULE'}
-    </span>
-  </div>
-
-  {/* Ligne 2 : Le Nom de la poule (si il existe) */}
-  {m.poule && (
-    <span className="text-[10px] font-bold text-gray-500 italic leading-tight truncate">
-      {m.poule}
-    </span>
-  )}
-</div>
+						  {/* Ligne 2 : Le Nom de la poule (si il existe) */}
+						  {m.poule && (
+						    <span className="text-[10px] font-bold text-gray-500 italic leading-tight truncate">
+						      {m.poule}
+						    </span>
+						  )}
+						</div>
 
 					    {/* RÉSULTAT & SCORE */}    
 					    <div className="flex items-center gap-2 md:ml-auto">
@@ -161,7 +151,7 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
 					  <div className="hidden md:flex col-span-3 gap-6 justify-center">
 					    <div className="text-center">
 					      <p className="text-[8px] text-gray-600 font-black uppercase">ELO</p>
-					      <p className="text-sm font-mono font-bold text-blue-400">{m.elo_value.toFixed(1)}</p>
+					      <p className="text-sm font-mono font-bold text-red-600">{m.elo_value.toFixed(1)}</p>
 					    </div>
 					    <div className="text-center">
 					      <p className="text-[8px] text-gray-600 font-black uppercase">Moderne</p>

@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label, ReferenceArea } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts'
 
 export default function EloChart({ history }: { history: any[] }) {
   const [method, setMethod] = useState<'pst' | 'modern'>('pst')
 
-// 1. Préparation des données
+  // 1. Préparation des données
   const data = useMemo(() => {
     return history?.map((h, index) => ({
-      index, // On utilise l'index numérique pour le placement précis sur l'axe X
+      index, 
       name: `M${index + 1}`,
       pst: parseFloat(h.elo_value.toFixed(1)),
       modern: parseFloat(h.elo_modern_value.toFixed(1)),
@@ -18,7 +18,7 @@ export default function EloChart({ history }: { history: any[] }) {
     })) || []
   }, [history])
 
-// 2. Calcul des marqueurs d'années (le premier match de chaque nouvelle année)
+  // 2. Marqueurs d'années
   const yearMarkers = useMemo(() => {
     const markers: { index: number; year: number }[] = []
     const seenYears = new Set()
@@ -32,7 +32,7 @@ export default function EloChart({ history }: { history: any[] }) {
     return markers;
   }, [data])
   
-// 3. Calcul des positions des Label
+  // 3. Zones pour les Labels de saisons
   const seasonLabels = useMemo(() => {
     const zones: { year: number; start: number; end: number }[] = [];
     const years = [...new Set(data.map(d => d.year))];
@@ -52,76 +52,110 @@ export default function EloChart({ history }: { history: any[] }) {
   }, [data]);
 
   return (
-	<div className="w-full h-full min-h-[300px] min-w-0 flex flex-col gap-4">
-      <div className="flex gap-2">
+    <div className="w-full h-full min-h-[300px] min-w-0 flex flex-col gap-6">
+      {/* BOUTONS DE SELECTION STYLE ST-TROPEZ */}
+      <div className="flex gap-3">
         <button 
           onClick={() => setMethod('pst')}
-          className={`px-4 py-1 rounded-full text-sm font-medium transition ${method === 'pst' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+          className={`px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+            method === 'pst' 
+            ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]' 
+            : 'bg-zinc-900 text-zinc-500 border border-white/5 hover:bg-zinc-800'
+          }`}
         >
-          ELO
+          ELO CLASSIQUE
         </button>
         <button 
           onClick={() => setMethod('modern')}
-          className={`px-4 py-1 rounded-full text-sm font-medium transition ${method === 'modern' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+          className={`px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+            method === 'modern' 
+            ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
+            : 'bg-zinc-900 text-zinc-500 border border-white/5 hover:bg-zinc-800'
+          }`}
         >
-          Moderne
+          MODERN ELO
         </button>
       </div>
-	<div className="flex-1">
-      <ResponsiveContainer width="100%" height="100%">
 
-		<LineChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: -10 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />  
-          {/* On utilise l'index pour l'axe X pour que les ReferenceLine tombent pile sur les points */}
-          <XAxis dataKey="index" hide />
-          <YAxis domain={['auto', 'auto']} stroke="#9CA3AF" fontSize={12} tickFormatter={(val) => Math.round(val).toString()}/>
+      <div className="flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 30, right: 10, bottom: 10, left: -20 }}>
+            {/* Grille discrète */}
+            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} /> 
+            
+            <XAxis dataKey="index" hide />
+            
+            <YAxis 
+              domain={['auto', 'auto']} 
+              stroke="#4b5563" 
+              fontSize={10} 
+              fontWeight="bold"
+              tickFormatter={(val) => Math.round(val).toString()}
+              axisLine={false}
+              tickLine={false}
+            />
 
-		  <Tooltip 
-              contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
-              itemStyle={{ color: '#F3F4F6' }}
-              labelFormatter={(index) => `Match #${data[index]?.gameId || index} (${data[index]?.year})`}
-          />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: '#09090b', 
+                border: '1px solid rgba(255,255,255,0.1)', 
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                textTransform: 'uppercase'
+              }}
+              itemStyle={{ color: method === 'pst' ? '#ef4444' : '#a855f7' }}
+              labelStyle={{ color: '#71717a', marginBottom: '4px', fontSize: '10px' }}
+              labelFormatter={(index) => `Match #${data[index]?.gameId || index} — ${data[index]?.year}`}
+              cursor={{ stroke: '#3f3f46', strokeWidth: 1 }}
+            />
 
-		  {/* 3. LIGNES DE RÉFÉRENCE POUR LES SAISONS */}
-          {yearMarkers.map((m) => (
+            {/* Marqueurs de Saisons */}
+            {yearMarkers.map((m) => (
               <ReferenceLine 
-				key={`line-${m.year}`}
+                key={`line-${m.year}`}
                 x={m.index} 
-                stroke="#4B5563" 
+                stroke="#3f3f46" 
                 strokeDasharray="5 5"
               />
             ))}
 
-		{/* Labels positionnés au centre de chaque zone d'année */}
-		{seasonLabels.map((s) => (
-		  <ReferenceLine
-		    key={`label-${s.year}`}
-		    x={(s.start + s.end) / 2} // Position centrale mathématique
-		    stroke="none"             // On ne dessine pas de ligne
-		  >
-		    <Label
-		      value={s.year.toString()}
-		      position="top"
-		      offset={10}             // Ajuste cette valeur pour monter/descendre le texte
-		      fill="#9CA3AF"
-		      fontSize={12}
-		      fontWeight="bold"
-		    />
-		  </ReferenceLine>
-		))}
+            {/* Labels d'Années */}
+            {seasonLabels.map((s) => (
+              <ReferenceLine
+                key={`label-${s.year}`}
+                x={(s.start + s.end) / 2}
+                stroke="none"
+              >
+                <Label
+                  value={`SAISON ${s.year}`}
+                  position="top"
+                  offset={20}
+                  fill="#52525b"
+                  fontSize={10}
+                  fontWeight="900"
+                  style={{ letterSpacing: '0.2em' }}
+                />
+              </ReferenceLine>
+            ))}
 
-          <Line 
-            type="monotone" 
-            dataKey={method} 
-            stroke={method === 'pst' ? '#3B82F6' : '#A855F7'} 
-            strokeWidth={3}
-            dot={{ r: 4 }}
-            activeDot={{ r: 8 }}
-            animationDuration={1000}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+            <Line 
+              type="monotone" 
+              dataKey={method} 
+              stroke={method === 'pst' ? '#dc2626' : '#a855f7'} 
+              strokeWidth={4}
+              dot={{ r: 0 }} // On cache les points par défaut pour un look plus "pro"
+              activeDot={{ 
+                r: 6, 
+                stroke: '#000', 
+                strokeWidth: 2,
+                fill: method === 'pst' ? '#dc2626' : '#a855f7'
+              }}
+              animationDuration={1500}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
-  </div>
   )
 }
