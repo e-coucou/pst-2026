@@ -97,7 +97,6 @@ export default async function Leaderboard() {
                       {player.nom}
                     </span>
                   </div>
-@
                   {/* ELO */}
                   <div className="flex items-center gap-6">
                     <div className="text-right">

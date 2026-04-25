@@ -128,7 +128,7 @@ export default function EloChart({ history }: { history: any[] }) {
                 stroke="none"
               >
                 <Label
-                  value={`SAISON ${s.year}`}
+                  value={`${s.year}`}
                   position="top"
                   offset={20}
                   fill="#52525b"

@@ -98,7 +98,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 		        <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-600 text-white text-[9px] font-black rounded-full mb-2 tracking-widest uppercase">
 		          <Zap size={10} className="fill-white" /> {player.level}
 		        </div>
-		        <h1 className="text-6xl md:text-8xl font-black uppercase italic tracking-tighter leading-[0.8] mb-2">
+		        <h1 className="text-6xl md:text-7xl font-black uppercase italic tracking-tighter leading-[0.8] mb-2">
 		          {player.nom}
 		        </h1>
 		        <p className="text-zinc-500 font-bold text-sm uppercase tracking-[0.3em]">
@@ -112,7 +112,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
           <div className="flex gap-4 w-full md:w-auto">
             <div className="group flex-1 bg-red-700 border border-red-600/30 p-6 rounded-3xl text-center min-w-[140px] hover:border-red-600 transition-all">
               <p className="text-[10px] text-red-200 font-black uppercase mb-2 tracking-widest">ELO Score</p>
-              <p className="text-4xl font-mono font-black italic">{(lastEntry?.elo_value || 100).toFixed(1)}</p>
+              <p className="text-3xl font-mono font-black italic">{(lastEntry?.elo_value || 100).toFixed(1)}</p>
             </div>
             <div className="group flex-1 bg-purple-700 border border-purple-600/30 p-6 rounded-3xl text-center min-w-[140px] hover:border-purple-600 transition-all">
               <p className="text-[10px] text-purple-200 font-black uppercase mb-2 tracking-widest">Modern</p>
