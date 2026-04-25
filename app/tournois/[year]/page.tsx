@@ -35,15 +35,17 @@ export default async function TournamentDetailPage({
 
 // Fonction pour calculer le classement d'une poule
 const calculerClassement = (matchs: any[]) => {
-  const stats: Record<string, { nom: string, v: number, d: number, plus: number, moins: number, diffuse: number }> = {};
+  const stats: Record<string, { nom: string, tireur: string, pointeur: string, v: number, d: number, plus: number, moins: number, diffuse: number }> = {};
 
   matchs.forEach(m => {
-    [ {t: m.team_1, s: m.score_1, oppS: m.score_2}, 
-      {t: m.team_2, s: m.score_2, oppS: m.score_1} ].forEach(({t, s, oppS}) => {
+    [ {t: m.team_1, s: m.score_1, oppS: m.score_2, ti:m.team_1.tireur.nom, po:m.team_1.pointeur.nom}, 
+      {t: m.team_2, s: m.score_2, oppS: m.score_1, ti:m.team_2.tireur.nom, po:m.team_2.pointeur.nom} ].forEach(({t, s, oppS, ti, po}) => {
       if (!t) return;
-      if (!stats[t.nom]) stats[t.nom] = { nom: t.nom, v: 0, d: 0, plus: 0, moins: 0, diffuse: 0 };
+      if (!stats[t.nom]) stats[t.nom] = { nom: t.nom, tireur:'', pointeur:'', v: 0, d: 0, plus: 0, moins: 0, diffuse: 0 };
       
       const isWinner = s > oppS;
+      stats[t.nom].tireur = ti;
+      stats[t.nom].pointeur = po;
       stats[t.nom].v += isWinner ? 1 : 0;
       stats[t.nom].d += isWinner ? 0 : 1;
       stats[t.nom].plus += s || 0;
@@ -57,7 +59,6 @@ const calculerClassement = (matchs: any[]) => {
 
 const classementGassin = calculerClassement(gassin);
 const classementRamatuelle = calculerClassement(ramatuelle);
-
 
 {/* Affichage ... */}
   return (
@@ -189,6 +190,7 @@ const classementRamatuelle = calculerClassement(ramatuelle);
 		        <table className="w-full text-left border-collapse">
 		          <thead>
 		            <tr className="text-[10px] text-gray-500 uppercase font-black border-b border-white/5">
+		              <th className="px-4 py-3">Clt</th>
 		              <th className="px-4 py-3">Équipe</th>
 		              <th className="px-2 py-3 text-center">V</th>
 		              <th className="px-2 py-3 text-center">D</th>
@@ -204,6 +206,13 @@ const classementRamatuelle = calculerClassement(ramatuelle);
 		                    <span className={`text-xs font-black ${idx < 2 ? 'text-red-600' : 'text-gray-600'}`}>{idx + 1}</span>
 		                    <span className="text-sm font-bold uppercase italic tracking-tight">{team.nom}</span>
 		                  </div>
+		                </td>
+		                <td>
+        <div className={`flex flex-col text-xs md:text-base font-bold`}>
+          <span className="text-red-500 uppercase">{team.tireur}</span>
+          <span className="text-white uppercase leading-none">{team.pointeur}</span>
+        </div>
+ 
 		                </td>
 		                <td className="px-2 py-3 text-center font-mono text-xs">{team.v}</td>
 		                <td className="px-2 py-3 text-center font-mono text-xs text-gray-500">{team.d}</td>
@@ -289,8 +298,8 @@ function MatchRow({ match, size = 'md' }: { match: any, size?: 'xs' | 'sm' | 'md
     <div className="flex justify-between items-center gap-2 md:gap-4">
       {/* TEAM 1 */}
       <div className="flex-1 text-center">
-        <p className={`${isLarge ? 'text-sm md:text-2xl' : 'text-xs md:text-sm'} font-black uppercase italic leading-none mb-1`}>{match.team_1?.nom}</p>
-        <div className={`flex flex-col ${isLarge ? 'text-[9px] md:text-base' : 'text-[8px] md:text-[11px]'} font-bold`}>
+        <p className={`${isLarge ? 'text-sm md:text-3xl' : 'text-xs md:text-sm'} font-black uppercase italic leading-none mb-1`}>{match.team_1?.nom}</p>
+        <div className={`flex flex-col ${isLarge ? 'text-[20px] md:text-2xl' : 'text-[8px] md:text-[11px]'} font-bold`}>
           <span className="text-red-500 uppercase">{match.team_1?.tireur?.nom}</span>
           <span className="text-white uppercase leading-none">{match.team_1?.pointeur?.nom}</span>
         </div>
@@ -299,14 +308,14 @@ function MatchRow({ match, size = 'md' }: { match: any, size?: 'xs' | 'sm' | 'md
       {/* SCORE COMPACT */}
       <div className={`flex items-center justify-center font-mono font-black italic bg-black rounded-lg border border-red-600/20 ${isLarge 
                 ? 'text-xl px-3 py-1 md:text-4xl md:px-6 md:py-2' 
-                : 'text-lg px-2 py-0.5 md:text-xl md:px-3 md:py-1'}`}>
+                : 'text-lg px-8 py-0.5 md:text-xl md:px-3 md:py-1'}`}>
         {match.score_1}<span className="text-red-600 mx-1">-</span>{match.score_2}
       </div>
 
       {/* TEAM 2 */}
       <div className="flex-1 text-center">
-        <p className={`${isLarge ? 'text-sm md:text-2xl' : 'text-xs md:text-sm'} font-black uppercase italic leading-none mb-1`}>{match.team_2?.nom}</p>
-        <div className={`flex flex-col ${isLarge ? 'text-[9px] md:text-base' : 'text-[8px] md:text-[11px]'} font-bold`}>
+        <p className={`${isLarge ? 'text-sm md:text-3xl' : 'text-xs md:text-sm'} font-black uppercase italic leading-none mb-1`}>{match.team_2?.nom}</p>
+        <div className={`flex flex-col ${isLarge ? 'text-[20px] md:text-2xl' : 'text-[8px] md:text-[11px]'} font-bold`}>
           <span className="text-red-500 uppercase">{match.team_2?.tireur?.nom}</span>
           <span className="text-white uppercase leading-none">{match.team_2?.pointeur?.nom}</span>
         </div>
