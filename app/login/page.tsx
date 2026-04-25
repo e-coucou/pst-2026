@@ -1,19 +1,19 @@
 'use client';
 
-import { useState, Suspense } from 'react'; // Ajout de Suspense ici
+import { useState, Suspense } from 'react'; // 1. Importe Suspense
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LockKeyhole, Zap } from 'lucide-react';
 import Link from 'next/link';
 
-// 1. On crée un composant interne pour le formulaire
+// 2. Déplace TOUT ton formulaire et sa logique ici
 function LoginForm() {
   const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const supabase = createClient();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // C'est lui qui cause l'erreur de build
   const message = searchParams.get('message');
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -82,11 +82,11 @@ function LoginForm() {
   );
 }
 
-// 2. Le composant principal enveloppe le formulaire dans un Suspense
+// 3. Le composant principal exporté ne fait qu'envelopper LoginForm dans un Suspense
 export default function LoginPage() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6 text-white font-sans">
-      <Suspense fallback={<div className="text-white uppercase font-black animate-pulse">Chargement...</div>}>
+      <Suspense fallback={<div className="text-white animate-pulse">Chargement...</div>}>
         <LoginForm />
       </Suspense>
     </div>
