@@ -286,25 +286,27 @@ function MatchRow({ match, size = 'md' }: { match: any, size?: 'xs' | 'sm' | 'md
   const isSmall = size === 'xs' || size === 'sm';
 
   return (
-    <div className="flex justify-between items-center gap-4">
+    <div className="flex justify-between items-center gap-2 md:gap-4">
       {/* TEAM 1 */}
       <div className="flex-1 text-center">
-        <p className={`${isLarge ? 'text-2xl' : 'text-sm'} font-black uppercase italic leading-none mb-1`}>{match.team_1?.nom}</p>
-        <div className={`flex flex-col ${isLarge ? 'text-base' : 'text-[11px]'} font-bold`}>
+        <p className={`${isLarge ? 'text-sm md:text-2xl' : 'text-xs md:text-sm'} font-black uppercase italic leading-none mb-1`}>{match.team_1?.nom}</p>
+        <div className={`flex flex-col ${isLarge ? 'text-[9px] md:text-base' : 'text-[8px] md:text-[11px]'} font-bold`}>
           <span className="text-red-500 uppercase">{match.team_1?.tireur?.nom}</span>
           <span className="text-white uppercase leading-none">{match.team_1?.pointeur?.nom}</span>
         </div>
       </div>
 
       {/* SCORE COMPACT */}
-      <div className={`flex items-center justify-center font-mono font-black italic bg-black rounded-lg border border-red-600/20 ${isLarge ? 'text-4xl px-6 py-2' : 'text-xl px-3 py-1'}`}>
+      <div className={`flex items-center justify-center font-mono font-black italic bg-black rounded-lg border border-red-600/20 ${isLarge 
+                ? 'text-xl px-3 py-1 md:text-4xl md:px-6 md:py-2' 
+                : 'text-lg px-2 py-0.5 md:text-xl md:px-3 md:py-1'}`}>
         {match.score_1}<span className="text-red-600 mx-1">-</span>{match.score_2}
       </div>
 
       {/* TEAM 2 */}
       <div className="flex-1 text-center">
-        <p className={`${isLarge ? 'text-2xl' : 'text-sm'} font-black uppercase italic leading-none mb-1`}>{match.team_2?.nom}</p>
-        <div className={`flex flex-col ${isLarge ? 'text-base' : 'text-[11px]'} font-bold`}>
+        <p className={`${isLarge ? 'text-sm md:text-2xl' : 'text-xs md:text-sm'} font-black uppercase italic leading-none mb-1`}>{match.team_2?.nom}</p>
+        <div className={`flex flex-col ${isLarge ? 'text-[9px] md:text-base' : 'text-[8px] md:text-[11px]'} font-bold`}>
           <span className="text-red-500 uppercase">{match.team_2?.tireur?.nom}</span>
           <span className="text-white uppercase leading-none">{match.team_2?.pointeur?.nom}</span>
         </div>
