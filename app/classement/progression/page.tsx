@@ -10,10 +10,13 @@ export default async function ProgressionPage() {
   const supabase = await createClient();
 
   // On lance les deux requêtes en parallèle pour la performance
-  const [timelineRes, profilesRes] = await Promise.all([
+  const [timelineRes, profilesRes, seasons] = await Promise.all([
     supabase.rpc('get_full_timeline'),
-    supabase.from('profiles').select('nom')
+    supabase.from('profiles').select('nom'),
+    supabase.from('games').select('year') //.distinct() // Note: le support du .distinct() dépend de ta version de librairie.
   ]);
+
+  const nbYears = seasons.data ? new Set(seasons.data.map(g => g.year)).size : 0;
 
   // Debug : Vérification du nombre de matchs récupérés (dans ta console terminal)
   if (timelineRes.data) {
@@ -35,10 +38,10 @@ export default async function ProgressionPage() {
         {/* Header */}
         <header className="space-y-2">
           <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter">
-            PST <span className="text-red-600">Evolution</span>
+            ELO <span className="text-red-600">Evolution</span>
           </h1>
           <p className="text-zinc-500 font-bold text-[10px] uppercase tracking-[0.5em] pl-1">
-            Progression historique — 6 Saisons — 120 Matchs
+            Progression historique — {nbYears} Saisons — {timelineRes.data.length} Matchs
           </p>
         </header>
 
@@ -67,7 +70,7 @@ export default async function ProgressionPage() {
           </div>
           
           <div className="text-[8px] text-zinc-700 font-bold uppercase tracking-tighter">
-            © 2026 PST Database Engine
+            © 2026 PST Database Engine by eCoucou
           </div>
         </footer>
       </div>
