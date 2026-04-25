@@ -1,10 +1,20 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react' // Ajout de useEffect
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label } from 'recharts'
 
 export default function EloChart({ history }: { history: any[] }) {
   const [method, setMethod] = useState<'pst' | 'modern'>('pst')
+  const [isMounted, setIsMounted] = useState(false) // État pour le montage
+
+  // Correction du bug width(-1) : On attend le montage client
+	useEffect(() => {
+	  // On attend la fin de la pile d'exécution (micro-task)
+	  const timer = setTimeout(() => {
+	    setIsMounted(true);
+	  }, 50); // 50ms suffisent pour stabiliser le layout
+	  return () => clearTimeout(timer);
+	}, []);
 
   // 1. Préparation des données
   const data = useMemo(() => {
@@ -51,6 +61,11 @@ export default function EloChart({ history }: { history: any[] }) {
     return zones;
   }, [data]);
 
+  // Si on n'est pas encore sur le client, on affiche un placeholder de la même taille
+  if (!isMounted) {
+    return <div className="w-full h-full min-h-[350px] bg-zinc-900/10 animate-pulse rounded-[2rem]" />;
+  }
+
   return (
     <div className="w-full h-full min-h-[300px] min-w-0 flex flex-col gap-6">
       {/* BOUTONS DE SELECTION STYLE ST-TROPEZ */}
@@ -78,9 +93,8 @@ export default function EloChart({ history }: { history: any[] }) {
       </div>
 
       <div className="flex-1">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={1}>
           <LineChart data={data} margin={{ top: 30, right: 10, bottom: 10, left: -20 }}>
-            {/* Grille discrète */}
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} /> 
             
             <XAxis dataKey="index" hide />
@@ -110,7 +124,6 @@ export default function EloChart({ history }: { history: any[] }) {
               cursor={{ stroke: '#3f3f46', strokeWidth: 1 }}
             />
 
-            {/* Marqueurs de Saisons */}
             {yearMarkers.map((m) => (
               <ReferenceLine 
                 key={`line-${m.year}`}
@@ -120,7 +133,6 @@ export default function EloChart({ history }: { history: any[] }) {
               />
             ))}
 
-            {/* Labels d'Années */}
             {seasonLabels.map((s) => (
               <ReferenceLine
                 key={`label-${s.year}`}
@@ -144,7 +156,7 @@ export default function EloChart({ history }: { history: any[] }) {
               dataKey={method} 
               stroke={method === 'pst' ? '#dc2626' : '#a855f7'} 
               strokeWidth={4}
-              dot={{ r: 0 }} // On cache les points par défaut pour un look plus "pro"
+              dot={{ r: 0 }}
               activeDot={{ 
                 r: 6, 
                 stroke: '#000', 

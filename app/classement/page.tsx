@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
-import { Trophy, ArrowRight, ChevronLeft, Target, Zap, User } from 'lucide-react';
+import { Trophy, ArrowRight, ChevronLeft, Target, Zap, User, Activity, TrendingUp } from 'lucide-react';
+
 
 export default async function Leaderboard() {
   const supabase = await createClient();
@@ -63,7 +64,24 @@ export default async function Leaderboard() {
   return (
     <div className="min-h-screen bg-black text-white pb-20">
       {/* ... (Le header reste le même) ... */}
-      
+{/* SECTION ACCÈS ANALYTICS */}
+<div className="max-w-2xl mx-auto mb-6 px-4 flex justify-end">
+  <Link 
+    href="/classement/progression" 
+    className="group flex items-center gap-3 px-5 py-2 bg-zinc-900/40 hover:bg-red-600/10 border border-white/5 rounded-2xl transition-all"
+  >
+    <div className="relative">
+      <Activity size={14} className="text-red-600 relative z-10" />
+      <div className="absolute inset-0 bg-red-600 blur-md opacity-20 group-hover:opacity-100 transition-opacity" />
+    </div>
+    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 group-hover:text-white transition-colors">
+      Live Analytics
+    </span>
+    <ArrowRight size={12} className="text-zinc-700 group-hover:text-red-600 group-hover:translate-x-1 transition-all" />
+  </Link>
+</div>
+
+	{/* Le tableau de classement */}
       <div className="max-w-2xl mx-auto -mt-8 mb-10 px-4 relative z-10">
         <div className="bg-zinc-900/50 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
           <div className="divide-y divide-white/5">

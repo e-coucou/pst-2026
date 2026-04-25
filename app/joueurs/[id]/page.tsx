@@ -128,7 +128,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
           <Target size={18} className="text-red-600" />
           <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500">Courbe évolution du score ELO/Modern</h2>
         </div>
-        <div className="h-[350px] w-full min-h-[300px]">
+        <div className="h-[350px] w-full relative">
           <EloChart history={eloHistory} />
         </div>
       </div>
