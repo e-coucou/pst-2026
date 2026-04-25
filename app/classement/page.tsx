@@ -86,22 +86,17 @@ export default async function Leaderboard() {
                         {player.nom}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                        <Target size={10} className="text-red-600" /> Profil Joueur
-                      </span>
-                    </div>
                   </div>
 
                   {/* ELO SCORE BOX */}
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="text-[9px] text-gray-600 font-black uppercase leading-none mb-1 tracking-widest">Points ELO</p>
+                      <p className="text-[9px] text-gray-600 font-black uppercase leading-none mb-1 tracking-widest">ELO</p>
                       <div className="flex items-baseline gap-1">
                         <p className="text-3xl font-mono font-black italic text-white leading-none">
                           {player.elo.toFixed(0)}
                         </p>
-                        <span className="text-red-600 font-black text-xs">PTS</span>
+                        <span className="text-red-600 font-black text-xs"> pts</span>
                       </div>
                     </div>
                     <ArrowRight size={20} className="text-zinc-800 group-hover:text-red-600 group-hover:translate-x-1 transition-all" />

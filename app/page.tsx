@@ -1,26 +1,51 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Trophy, Users, Video, Swords, Zap, ChevronRight, Info, BarChart3, ShieldCheck } from 'lucide-react';
+import { Trophy, Users, Video, Swords, Zap, ChevronRight, Info, BarChart3, ShieldCheck, UserCircle } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 
 export default function Home() {
   const [count, setCount] = useState<number | null>(null);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const fetchJoueurs = async () => {
       const supabase = createClient();
+      
+      // Récupération du compteur de joueurs
       const { count, error } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
       if (!error) setCount(count);
+
+      // Vérification de la session utilisateur pour l'affichage du bouton
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
     };
     fetchJoueurs();
   }, []);
 
   return (
     <div className="min-h-screen bg-black text-white font-sans overflow-x-hidden">
+      
+      {/* BARRE DE CONNEXION HAUTE */}
+      <nav className="absolute top-0 right-0 p-6 z-50 flex gap-4">
+        {!user ? (
+          <>
+            <Link href="/login" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
+              <UserCircle size={14} /> Connexion
+            </Link>
+            <Link href="/signup" className="text-[10px] font-black uppercase tracking-widest bg-red-600/10 text-red-600 px-4 py-2 rounded-full border border-red-600/20 hover:bg-red-600 hover:text-white transition-all">
+              S'inscrire
+            </Link>
+          </>
+        ) : (
+          <Link href="/classement" className="text-[10px] font-black uppercase tracking-widest text-green-500 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Espace Membre Actif
+          </Link>
+        )}
+      </nav>
       
       {/* HERO SECTION */}
       <header className="relative px-6 py-20 md:py-32 max-w-7xl mx-auto text-center">

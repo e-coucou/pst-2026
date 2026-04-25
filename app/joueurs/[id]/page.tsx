@@ -3,23 +3,51 @@ import EloChart from '@/components/EloChart';
 import StatsCard from '@/components/StatsCard';
 import SeasonHistory from '@/components/SeasonHistory';
 import Link from 'next/link';
-import { ChevronLeft, Zap, Target, Award } from 'lucide-react';
+import { ChevronLeft, Zap, Target, Award, Swords, Video, Users } from 'lucide-react';
 
 export default async function PlayerProfile({ params }: { params: Promise<{ id: string }> }) {
+
+  // 1. On attend les params (Obligatoire en Next 15/16)
   const { id } = await params;
-  const supabase = await createClient();
   const playerId = parseInt(id, 10);
 
-  // 1. Récupération des données
-  const { data: player } = await supabase.from('profiles').select('*').eq('id', playerId).single();
-  if (!player) return <div className="p-20 text-white font-black uppercase text-center">Joueur introuvable</div>;
+  // 2. ON INITIALISE LE CLIENT ICI (Pas à l'extérieur)
+  const supabase = await createClient();
 
-  const { data: historyAll } = await supabase.from('history_all').select('*').eq('player_id', playerId).order('game_id', { ascending: true });
-  const { data: history } = await supabase.from('elo_history').select('*').eq('player_id', playerId).order('game_id', { ascending: true });
-  const { data: ranking } = await supabase.rpc('get_player_elo', { p_id: playerId });
-  const { data: seasonStats } = await supabase.rpc('get_player_stats', { p_id: playerId });
+  // 1. Récupération des données en parallèle pour la performance
+  const [
+    { data: player }, // On récupère le profil (pour le nom et la photo)
+    { data: historyAll },
+    { data: history },
+    { data: ranking },
+    { data: seasonStats }
+  ] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', playerId).single(),
+    supabase.from('history_all').select('*').eq('player_id', playerId).order('game_id', { ascending: true }),
+    supabase.from('elo_history').select('*').eq('player_id', playerId).order('game_id', { ascending: true }),
+    supabase.rpc('get_player_elo', { p_id: playerId }),
+    supabase.rpc('get_player_stats', { p_id: playerId })
+  ]);
 
-  // 2. Fusion des stats
+  // PROTECTION : Si le joueur n'existe pas
+  if (!player) {
+    return <div className="p-20 text-white uppercase font-black tracking-widest text-center">Athlète non identifié</div>;
+  }
+
+  // 2. Gestion de la PHOTO PRIVÉE (URL Signée)
+
+  let signedPhotoUrl = null;
+  if (player.photo) {
+    const filePath = player.photo;
+    const { data: urlData } = await supabase.storage
+      .from('joueurs_photos')
+      .createSignedUrl(filePath, 3600); // URL valable 1h
+    signedPhotoUrl = urlData?.signedUrl;
+  }
+  // debug pour toi dans le terminal :
+  console.log("URL Signée finale :", signedPhotoUrl);
+
+  // 3. Fusion des stats
   const mergedStats = seasonStats?.map((ms: any) => {
     const eloInfo = ranking?.find((er: any) => er.annee === ms.annee);
     return {
@@ -32,7 +60,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
   const eloHistory = history || [];
   const lastEntry = eloHistory[eloHistory.length - 1];
 
-  // 3. Calculs des totaux
+  // 4.  Calculs des totaux
   const totalWins = seasonStats?.reduce((acc: number, curr: any) => acc + curr.victoires, 0) || 0;
   const totalLost = seasonStats?.reduce((acc: number, curr: any) => acc + curr.defaites, 0) || 0;
   const totalMatches = eloHistory.length;
@@ -40,25 +68,49 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-12 space-y-10 bg-black text-white min-h-screen">
-      
-      {/* HEADER PROFIL : LOOK "ATHLÈTE PRO" */}
-      <div className="relative bg-zinc-900/90 rounded-[2.5rem] p-8 md:p-12 border border-white/5 overflow-hidden">
-        {/* Halo décoratif */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 blur-[80px] rounded-full -mr-20 -mt-20" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-600 text-white text-[9px] font-black rounded-full mb-4 tracking-widest">
-              <Zap size={10} className="fill-white" /> PROFIL OFFICIEL
-            </div>
-            <h1 className="text-6xl md:text-8xl font-black uppercase italic tracking-tighter leading-none mb-4">
-              {player.nom}
-            </h1>
-            <p className="text-zinc-500 font-bold text-sm uppercase tracking-[0.3em]">
-              Ranking PST : <span className="text-red-500">#{lastEntry?.rank_at_time || "--"}</span>
-            </p>
-          </div>
 
+
+		{/* HEADER PROFIL : LOOK "ATHLÈTE PRO" */}
+		<div className="relative bg-zinc-900/90 rounded-[2.5rem] p-8 md:p-12 border border-white/5 overflow-hidden">
+		  {/* Halo décoratif */}
+		  <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 blur-[80px] rounded-full -mr-20 -mt-20" />
+		  
+		  <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
+		    
+		    {/* SECTION GAUCHE : PHOTO & BADGE */}
+		    <div className="flex flex-col md:flex-row items-center gap-8">
+		      {/* Container Photo avec effet de bordure néon */}
+		      <div className="relative group">
+		        <div className="absolute -inset-1 bg-gradient-to-tr from-red-600 to-zinc-800 rounded-full blur opacity-40 group-hover:opacity-70 transition-opacity"></div>
+		        <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-2 border-white/10 bg-black">
+		          {player.photo_url ? (
+		            <img 
+		              src={player.photo_url} // URL signée récupérée via ton fetch
+		              alt={player.nom}
+		              className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
+		            />
+		          ) : (
+		            <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+		              <Users size={48} className="text-zinc-700" />
+		            </div>
+		          )}
+		        </div>
+		      </div>
+
+		      <div className="space-y-4">
+		        <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-600 text-white text-[9px] font-black rounded-full mb-2 tracking-widest uppercase">
+		          <Zap size={10} className="fill-white" /> {player.level}
+		        </div>
+		        <h1 className="text-6xl md:text-8xl font-black uppercase italic tracking-tighter leading-[0.8] mb-2">
+		          {player.nom}
+		        </h1>
+		        <p className="text-zinc-500 font-bold text-sm uppercase tracking-[0.3em]">
+		          Ranking PST : <span className="text-red-500">#{lastEntry?.rank_at_time || "--"}</span>
+		        </p>
+		      </div>
+		    </div>
+
+ 
           {/* ELO CARDS DUAL */}
           <div className="flex gap-4 w-full md:w-auto">
             <div className="group flex-1 bg-red-700 border border-red-600/30 p-6 rounded-3xl text-center min-w-[140px] hover:border-red-600 transition-all">
@@ -79,7 +131,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
           <Target size={18} className="text-red-600" />
           <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500">Courbe évolution du score ELO/Modern</h2>
         </div>
-        <div className="h-[350px] w-full">
+        <div className="h-[350px] w-full min-h-[300px]">
           <EloChart history={eloHistory} />
         </div>
       </div>
