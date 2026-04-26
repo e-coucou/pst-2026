@@ -25,10 +25,12 @@ export default function LivePoulesPage() {
   const fetchData = async () => {
     setLoading(true);
     const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
-    if (!tournoi || tournoi.status !== 'POULES') {
-	  setStatus(tournoi?.status);
-      router.push('/admin/live'); 
-      return;
+	if (tournoi) {
+      setStatus(tournoi.status); // On met à jour le status ici
+      if (tournoi?.status !== 'POULES') {
+        router.push('/live/demi'); 
+        return;
+      }
     }
 
     const { data: profilesData } = await supabase.from('profiles').select('id, nom');
@@ -164,7 +166,7 @@ export default function LivePoulesPage() {
       await supabase.from('live_tournament').update({ status: 'DEMI' }).eq('id', 1);
   
       // 5. Redirection
-      router.push('/admin/live/demi');
+      router.push('/live/demi');
     } catch (err) {
       alert("Erreur lors de la génération : " + (err as any).message);
       setLoading(false);
@@ -360,7 +362,7 @@ export default function LivePoulesPage() {
             Live <span className="text-red-600 group-hover:text-white">Poules</span>
           </h1>
           <button 
-            onClick={() => router.push('/admin/live')} 
+            onClick={() => router.push('/live/admin')} 
             className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-3 py-2 rounded-full"
           >
             <ArrowLeft size={14} /> <span className="hidden md:inline">Retour</span>
