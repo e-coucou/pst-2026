@@ -1,0 +1,242 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
+import { ArrowLeft, Save, Trophy, Loader2, CheckCircle, Edit2 } from 'lucide-react';
+
+export default function LivePoulesPage() {
+  const supabase = createClient();
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(true);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [matches, setMatches] = useState<any[]>([]);
+  const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
+  
+  const [localScores, setLocalScores] = useState<Record<number, { s1: number | '', s2: number | '' }>>({});
+  const [savingMatch, setSavingMatch] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    
+    // 1. Vérification du tournoi
+    const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
+    if (!tournoi || tournoi.status !== 'POULES') {
+      router.push('/admin/live'); 
+      return;
+    }
+
+    // 2. RÉCUPÉRATION DES JOUEURS (CORRIGÉ : colonne 'nom')
+    const { data: profilesData } = await supabase.from('profiles').select('id, nom');
+    const pMap: Record<number, string> = {};
+    if (profilesData) {
+      profilesData.forEach(p => pMap[p.id] = p.nom);
+    }
+    setPlayersMap(pMap);
+
+    // 3. Récupérer les équipes
+    const { data: teamsData } = await supabase.from('live_teams').select('*').neq('id', 'Z');
+    if (teamsData) setTeams(teamsData);
+
+    // 4. Récupérer les matchs
+    const { data: matchesData } = await supabase
+      .from('live_matches')
+      .select('*')
+      .eq('type', 'Poule')
+      .order('id', { ascending: true });
+      
+    if (matchesData) {
+      setMatches(matchesData);
+      const scores: Record<number, { s1: number | '', s2: number | '' }> = {};
+      matchesData.forEach(m => {
+        scores[m.id] = {
+          s1: m.score_team1 !== null ? m.score_team1 : '',
+          s2: m.score_team2 !== null ? m.score_team2 : ''
+        };
+      });
+      setLocalScores(scores);
+    }
+
+    setLoading(false);
+  };
+
+  const handleScoreChange = (matchId: number, team: 1 | 2, value: string) => {
+    const numValue = value === '' ? '' : parseInt(value, 10);
+    setLocalScores(prev => ({
+      ...prev,
+      [matchId]: { ...prev[matchId], [team === 1 ? 's1' : 's2']: numValue }
+    }));
+  };
+
+  const saveMatchResult = async (matchId: number) => {
+    const scores = localScores[matchId];
+    if (scores.s1 === '' || scores.s2 === '') return;
+
+    setSavingMatch(matchId);
+    try {
+      const { error } = await supabase
+        .from('live_matches')
+        .update({
+          score_team1: scores.s1,
+          score_team2: scores.s2,
+          status: 'TERMINE'
+        })
+        .eq('id', matchId);
+
+      if (error) throw error;
+
+      setMatches(prev => prev.map(m => 
+        m.id === matchId ? { ...m, score_team1: scores.s1, score_team2: scores.s2, status: 'TERMINE' } : m
+      ));
+    } finally {
+      setSavingMatch(null);
+    }
+  };
+
+  // FONCTION POUR MODIFIER UN SCORE DÉJÀ VALIDÉ
+  const unlockMatch = async (matchId: number) => {
+    setSavingMatch(matchId);
+    const { error } = await supabase
+      .from('live_matches')
+      .update({ status: 'EN_COURS' })
+      .eq('id', matchId);
+
+    if (!error) {
+      setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'EN_COURS' } : m));
+    }
+    setSavingMatch(null);
+  };
+
+  const calculateStandings = (pouleName: string) => {
+    const pouleTeams = teams.filter(t => t.poule === pouleName);
+    const pouleMatches = matches.filter(m => m.poule === pouleName && m.status === 'TERMINE');
+
+    const standings = pouleTeams.map(t => ({
+      id: t.id,
+      // On affiche Nom + ID pour le debug
+      pName: playersMap[t.pointeur_id] ? `${playersMap[t.pointeur_id]} (${t.pointeur_id})` : `ID:${t.pointeur_id}`,
+      tName: playersMap[t.tireur_id] ? `${playersMap[t.tireur_id]} (${t.tireur_id})` : `ID:${t.tireur_id}`,
+      j: 0, pts: 0, diff: 0, pPlus: 0
+    }));
+
+    pouleMatches.forEach(m => {
+      const t1 = standings.find(s => s.id === m.team1_id);
+      const t2 = standings.find(s => s.id === m.team2_id);
+      if (t1 && t2) {
+        t1.j++; t2.j++;
+        t1.pPlus += m.score_team1; t1.diff += (m.score_team1 - m.score_team2);
+        t2.pPlus += m.score_team2; t2.diff += (m.score_team2 - m.score_team1);
+
+        if (m.score_team1 > m.score_team2) t1.pts += 3;
+        else if (m.score_team2 > m.score_team1) t2.pts += 3;
+        else { t1.pts += 1; t2.pts += 1; }
+      }
+    });
+
+    return standings.sort((a, b) => (b.pts - a.pts) || (b.diff - a.diff) || (b.pPlus - a.pPlus));
+  };
+
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black animate-pulse italic">CHARGEMENT...</div>;
+
+  const renderPouleSection = (pouleName: string, accentColor: 'orange' | 'purple') => {
+    const pouleMatches = matches.filter(m => m.poule === pouleName);
+    const standings = calculateStandings(pouleName);
+    const textColor = accentColor === 'orange' ? 'text-orange-500' : 'text-purple-500';
+
+    return (
+      <div className={`p-6 md:p-8 rounded-[2.5rem] border border-white/5 bg-white/5 mb-12`}>
+        <h2 className={`text-2xl font-black uppercase italic ${textColor} flex items-center gap-3 mb-8`}>
+          <Trophy size={24} /> Poule {pouleName}
+        </h2>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+          {/* MATCHS */}
+          <div className="space-y-4">
+            {pouleMatches.map(m => {
+              const isTermine = m.status === 'TERMINE';
+              const s = localScores[m.id] || { s1: '', s2: '' };
+              const t1 = teams.find(t => t.id === m.team1_id);
+              const t2 = teams.find(t => t.id === m.team2_id);
+              const isG = pouleName === 'Gassin'
+
+              return (
+                <div key={m.id} className={`p-4 rounded-2xl border group ${isTermine ? ( isG ? 'bg-orange-600/40 border-orange-600' : 'bg-purple-600/40 border-purple-500') : 'bg-black border-white/10'} flex items-center justify-between gap-4`}>
+                  <div className="flex-1 text-right">
+                    <div className="text-[12px] text-zinc-500 font-black">EQ {m.team1_id}</div>
+                    <div className="text-[14px] font-bold uppercase truncate">{playersMap[t1?.pointeur_id] || t1?.pointeur_id} & {playersMap[t1?.tireur_id] || t1?.tireur_id}</div>
+                  </div>
+
+                  <div className="flex items-center gap-2 bg-zinc-900 p-2 rounded-xl">
+                    <input type="number" value={s.s1} onChange={(e) => handleScoreChange(m.id, 1, e.target.value)} disabled={isTermine} className="w-10 h-10 bg-black text-center font-black rounded-lg disabled:text-green-500" />
+                    <span className="text-zinc-600">-</span>
+                    <input type="number" value={s.s2} onChange={(e) => handleScoreChange(m.id, 2, e.target.value)} disabled={isTermine} className="w-10 h-10 bg-black text-center font-black rounded-lg disabled:text-green-500" />
+                  </div>
+
+                  <div className="flex-1 text-left">
+                    <div className="text-[12px] text-zinc-500 font-black">EQ {m.team2_id}</div>
+                    <div className="text-[14px] font-bold uppercase truncate">{playersMap[t2?.pointeur_id] || t2?.pointeur_id} & {playersMap[t2?.tireur_id] || t2?.tireur_id}</div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {isTermine ? (
+                      <button onClick={() => unlockMatch(m.id)} className="text-red-500 group-hover:text-white transition-colors"><Edit2 size={24} /></button>
+                    ) : (
+                      <button onClick={() => saveMatchResult(m.id)} disabled={savingMatch === m.id} className={`group-hover:bg-red-600 p-2 rounded-lg text-white ${isG ? 'bg-orange-500' : 'bg-purple-500'}`}>
+                        {savingMatch === m.id ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* CLASSEMENT */}
+          <div className="bg-black border border-white/10 rounded-3xl overflow-hidden">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-[12px] uppercase text-zinc-500 border-b border-white/10">
+                  <th className="p-4">Rk</th>
+                  <th className="p-4">Équipe</th>
+                  <th className="p-4 text-center">J</th>
+                  <th className="p-4 text-center text-red-500">PTS</th>
+                  <th className="p-4 text-center">Diff</th>
+                </tr>
+              </thead>
+              <tbody className="text-[14px] font-bold">
+                {standings.map((s, idx) => (
+                  <tr key={s.id} className={`border-b border-white/5 last:border-0 ${idx < 2 ? 'bg-green-500/5' : ''}`}>
+                    <td className="p-4 text-zinc-500">{idx + 1}</td>
+                    <td className="p-4 uppercase text-zinc-300">#{s.id} {s.pName.split(' ')[0]} / {s.tName.split(' ')[0]}</td>
+                    <td className="p-4 text-center text-zinc-500">{s.j}</td>
+                    <td className="p-4 text-center text-white bg-white/5">{s.pts}</td>
+                    <td className={`p-4 text-center ${s.diff > 0 ? 'text-green-500' : s.diff < 0 ? 'text-red-500' : ''}`}>{s.diff > 0 ? `+${s.diff}` : s.diff}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white p-6 md:p-12">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-12 flex justify-between items-end border-b border-white/10 pb-8">
+          <h1 className="text-5xl font-black italic uppercase">Live <span className="text-red-600">Poules</span></h1>
+          <button onClick={() => router.push('/admin/live')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white"><ArrowLeft size={16} /> Retour</button>
+        </header>
+
+        {renderPouleSection('Gassin', 'orange')}
+        {renderPouleSection('Ramatuelle', 'purple')}
+      </div>
+    </div>
+  );
+}

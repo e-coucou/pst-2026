@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // <-- AJOUT POUR LE ROUTING
 import { createClient } from '@/utils/supabase/client';
 import { ArrowRight, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 
 export default function LiveAdminWizard() {
   const supabase = createClient();
+  const router = useRouter(); // <-- INITIALISATION DU ROUTER
   
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,15 @@ export default function LiveAdminWizard() {
       const { data: adminStatus } = await supabase.rpc('is_admin');
       setIsAdmin(adminStatus || true); // Sécurité dev
 
+      // --- AJOUT : VÉRIFICATION DU STATUT DU TOURNOI ---
+      // Si le tournoi est déjà en cours, on bloque l'accès au draft et on envoie sur la page Poules
+      const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
+      if (tournoi && tournoi.status === 'POULES') {
+        router.push('/live/poules');
+        return; // On arrête l'exécution ici
+      }
+      // -------------------------------------------------
+
       await fetchPlayersWithElo();
       
       // Tentative de récupération d'une sélection déjà existante en base
@@ -43,7 +54,7 @@ export default function LiveAdminWizard() {
       setLoading(false);
     }
     init();
-  }, []);
+  }, [router]); // Ajout de router dans les dépendances
 
   const fetchPlayersWithElo = async () => {
     const { data: profiles } = await supabase.from('profiles').select('id, nom');
@@ -63,7 +74,12 @@ export default function LiveAdminWizard() {
     setLoading(true);
     try {
       // 1. On vide la table de sélection actuelle
-      await supabase.from('live_selected').delete().neq('role', 'Z');
+      const { error: deleteError } = await supabase
+        .from('live_selected')
+        .delete()
+        .filter('player_id', 'neq', 25345524); 
+
+      if (deleteError) throw deleteError;      
 
       // 2. On prépare l'insert
       const toInsert = [
@@ -137,6 +153,11 @@ export default function LiveAdminWizard() {
       await supabase.from('live_tournament').update({ status: 'POULES' }).eq('id', 1);
 
       alert("🔥 C'est parti ! Le tournoi est en ligne.");
+      
+      // --- AJOUT : REDIRECTION VERS LA NOUVELLE PAGE ---
+      router.push('/live/poules');
+      // -------------------------------------------------
+      
     } catch (err: any) {
       alert(err.message);
     } finally {
