@@ -47,15 +47,17 @@ export default function Home() {
         )}
       </nav>
       
-      {/* HERO SECTION */}
+      {/*' HERO SECTION */}
       <header className="relative px-6 py-20 md:py-32 max-w-7xl mx-auto text-center">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-full bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
 
         {/* Badge Saison */}
+        <Link href="/live/admin">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-zinc-900 border border-red-600/30 text-white rounded-full mb-8 hover:bg-zinc-800">
           <Zap size={14} className="text-red-600 fill-red-600 animate-pulse" />
           <span className="text-[16px] font-black uppercase tracking-[0.3em]">Saison 2026</span>
         </div>
+        </Link>
         
         <h2 className="group relative text-5xl md:text-8xl font-black leading-[0.8] uppercase italic tracking-tighter mb-8">
           <span className="text-white group-hover:text-red-600">Paris</span>
