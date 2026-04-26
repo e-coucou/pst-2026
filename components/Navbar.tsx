@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Trophy, Swords, Home, BarChart3, Menu, X } from 'lucide-react';
+import { Trophy, Swords, Home, BarChart3, Menu, X, Video } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname() || "";
@@ -50,7 +50,7 @@ export default function Navbar() {
             />
             <NavLink 
               href="/videos" 
-              icon={<Swords size={16} />} 
+              icon={<Video size={16} />} 
               label="Vidéos" 
               active={pathname.startsWith("/videos")} 
             />
