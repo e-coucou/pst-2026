@@ -26,10 +26,15 @@ export default function LivePoulesPage() {
     setLoading(true);
     const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
 	if (tournoi) {
-      setStatus(tournoi.status); // On met à jour le status ici
-      if (tournoi?.status !== 'POULES') {
-        router.push('/live/demi'); 
-        return;
+      setStatus(tournoi?.status); // On met à jour le status ici
+      switch (tournoi?.status) {
+        case 'POULES': router.push('/live/poules'); break;
+        case 'DEMI': router.push('/live/demi'); break;
+        case 'FINALE': router.push('/live/finale'); break;
+        case 'TERMINE': router.push('/live/podium'); break;
+        default:
+          // On reste ici si c'est JOUEURS ou EQUIPES
+          setLoading(false); 
       }
     }
 

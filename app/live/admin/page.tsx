@@ -34,10 +34,18 @@ export default function LiveAdminWizard() {
       // --- AJOUT : VÉRIFICATION DU STATUT DU TOURNOI ---
       // Si le tournoi est déjà en cours, on bloque l'accès au draft et on envoie sur la page Poules
       const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
-      if (tournoi && tournoi.status === 'POULES') {
-        router.push('/live/poules');
-        return; // On arrête l'exécution ici
-      }
+	  if (tournoi) {
+//	      setStatus(tournoi?.status); // On met à jour le status ici
+	      switch (tournoi?.status) {
+	        case 'POULES': router.push('/live/poules'); break;
+	        case 'DEMI': router.push('/live/demi'); break;
+	        case 'FINALE': router.push('/live/finale'); break;
+	        case 'TERMINE': router.push('/live/podium'); break;
+	        default:
+	          // On reste ici si c'est JOUEURS ou EQUIPES
+	          setLoading(false); 
+	      }
+	    }      
       // -------------------------------------------------
 
       await fetchPlayersWithElo();
