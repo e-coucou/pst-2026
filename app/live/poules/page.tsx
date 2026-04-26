@@ -138,6 +138,7 @@ export default function LivePoulesPage() {
     const pouleMatches = matches.filter(m => m.poule === pouleName);
     const standings = calculateStandings(pouleName);
     const textColor = accentColor === 'orange' ? 'text-orange-500' : 'text-purple-500';
+    const isG = pouleName === 'Gassin';
 
     return (
       <div className={`p-4 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] border border-white/5 bg-white/5 mb-8 md:mb-12`}>
@@ -153,7 +154,6 @@ export default function LivePoulesPage() {
               const s = localScores[m.id] || { s1: '', s2: '' };
               const t1 = teams.find(t => t.id === m.team1_id);
               const t2 = teams.find(t => t.id === m.team2_id);
-              const isG = pouleName === 'Gassin';
 
               return (
                 <div key={m.id} className={`p-3 md:p-4 rounded-xl md:rounded-2xl border ${isTermine ? ( isG ? 'bg-orange-600/20 border-orange-600/50' : 'bg-purple-600/20 border-purple-500/50') : 'bg-black border-white/10'} flex items-center justify-between gap-2 md:gap-4`}>
@@ -233,12 +233,12 @@ export default function LivePoulesPage() {
                     <th className="p-3 md:p-4 text-center">Diff</th>
                     </tr>
                 </thead>
-                <tbody className="text-[12px] md:text-[14px] font-bold">
+                <tbody className="text-[12px] md:text-[14px] text-white font-bold">
                     {standings.map((s, idx) => (
-                    <tr key={s.id} className={`border-b border-white/5 last:border-0 ${idx < 2 ? 'bg-green-500/5' : ''}`}>
+                    <tr key={s.id} className={`border-2b border-white/5 last:border-0 ${idx < 2 ? ( isG ? 'bg-orange-500/10' : 'bg-purple-500/10') : ''}`}>
                         <td className="p-3 md:p-4 text-zinc-500">{idx + 1}.<span className="text-white">{s.id}</span></td>
                         <td className="p-3 md:p-4 uppercase text-zinc-300 truncate max-w-[100px] md:max-w-none">
-                            <span className="text-[10px] md:text-[14px] text-white block md:inline md:mr-1">{s.pName.split(' ')[0]} / </span>
+                            <span className="text-[12px] md:text-[14px] text-white block md:inline md:mr-1">{s.pName.split(' ')[0]} / </span>
                             {s.tName.split(' ')[0]}
                         </td>
                         <td className="p-3 md:p-4 text-center text-zinc-500 hidden md:table-cell">{s.j}</td>
