@@ -13,6 +13,7 @@ export default function LivePoulesPage() {
   const [teams, setTeams] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
+  const [status, setStatus] = useState<string>('POULES');
   
   const [localScores, setLocalScores] = useState<Record<number, { s1: number | '', s2: number | '' }>>({});
   const [savingMatch, setSavingMatch] = useState<number | null>(null);
@@ -25,6 +26,7 @@ export default function LivePoulesPage() {
     setLoading(true);
     const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
     if (!tournoi || tournoi.status !== 'POULES') {
+	  setStatus(tournoi?.status);
       router.push('/admin/live'); 
       return;
     }
@@ -132,7 +134,100 @@ export default function LivePoulesPage() {
     return standings.sort((a, b) => (b.pts - a.pts) || (b.diff - a.diff) || (b.pPlus - a.pPlus));
   };
 
+
+  const generateDemis = async () => {
+    if (!confirm("Générer les demi-finales ? Cette action verrouille les poules.")) return;
+    setLoading(true);
+  
+    try {
+      // 1. On récupère les classements finaux
+      const standingsGassin = calculateStandings('Gassin');
+      const standingsRamatuelle = calculateStandings('Ramatuelle');
+  
+      // 2. Construction des matchs selon ta logique
+      // Principal : G1 vs R2 et R1 vs G2
+      // Honneur : G3 vs R4 et R3 vs G4
+      const demiMatchs = [
+        // PRINCIPAL
+        { poule: 'Principal', team1_id: standingsGassin[0].id, team2_id: standingsRamatuelle[1].id, type: 'Demi', status: 'EN_COURS' },
+        { poule: 'Principal', team1_id: standingsRamatuelle[0].id, team2_id: standingsGassin[1].id, type: 'Demi', status: 'EN_COURS' },
+        // HONNEUR
+        { poule: 'Honneur', team1_id: standingsGassin[2].id, team2_id: standingsRamatuelle[3].id, type: 'Demi', status: 'EN_COURS' },
+        { poule: 'Honneur', team1_id: standingsRamatuelle[2].id, team2_id: standingsGassin[3].id, type: 'Demi', status: 'EN_COURS' },
+      ];
+  
+      // 3. Insertion en base
+      const { error: insertError } = await supabase.from('live_matches').insert(demiMatchs);
+      if (insertError) throw insertError;
+  
+      // 4. Update du statut du tournoi
+      await supabase.from('live_tournament').update({ status: 'DEMI' }).eq('id', 1);
+  
+      // 5. Redirection
+      router.push('/admin/live/demi');
+    } catch (err) {
+      alert("Erreur lors de la génération : " + (err as any).message);
+      setLoading(false);
+    }
+  };
+
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black animate-pulse italic">CHARGEMENT...</div>;
+
+
+// Calcul de la condition en dehors du rendu pour plus de clarté
+	const allFinished = matches.length > 0 && matches.every(m => 
+    	m.status?.trim().toUpperCase() === 'TERMINE'
+  	);
+
+
+    {/* SECTION STEPPER */}
+	const renderStepper = (currentStatus: string) => {
+	  const steps = [
+	    { id: 'JOUEURS', label: 'Joueurs' },
+	    { id: 'EQUIPES', label: 'Equipes' },
+	    { id: 'POULES', label: 'Poules' },
+	    { id: 'DEMI', label: 'Demi-Finales' },
+	    { id: 'FINALE', label: 'Finales' },
+	    { id: 'TERMINE', label: 'Podium' }
+	  ];
+
+	  return (
+	    <div className="flex items-center justify-between mb-12 w-full max-w-3xl mx-auto px-4">
+	      {steps.map((step, idx) => {
+	        const statusOrder = steps.map(s => s.id);
+	        const currentIdx = statusOrder.indexOf(currentStatus);
+	        const isPast = currentIdx > idx;
+	        const isCurrent = step.id === currentStatus;
+	        
+	        return (
+	          <div key={step.id} className="flex items-center flex-1 last:flex-none">
+	            <div className="relative flex flex-col items-center">
+	              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black transition-all duration-500 ${
+	                isCurrent ? 'bg-orange-600 text-white ring-4 ring-orange-600/20 scale-110' : 
+	                isPast ? 'bg-purple-500 text-white' : 'bg-zinc-800 text-zinc-500'
+	              }`}>
+	                {isPast ? '✓' : idx + 1}
+	              </div>
+	              <span className={`absolute -bottom-7 text-[10px] font-black uppercase italic whitespace-nowrap tracking-tighter ${
+	                isCurrent ? 'text-white' : 'text-zinc-600'
+	              }`}>
+	                {step.label}
+	              </span>
+	            </div>
+
+	            {idx !== steps.length - 1 && (
+	              <div className="flex-1 h-[2px] mx-4 bg-zinc-800">
+	                <div 
+	                  className={`h-full bg-purple-600 transition-all duration-1000 ${isPast ? 'w-full' : 'w-0'}`}
+	                />
+	              </div>
+	            )}
+	          </div>
+	        );
+	      })}
+	    </div>
+	  );
+	};
 
   const renderPouleSection = (pouleName: string, accentColor: 'orange' | 'purple') => {
     const pouleMatches = matches.filter(m => m.poule === pouleName);
@@ -261,7 +356,9 @@ export default function LivePoulesPage() {
     <div className="min-h-screen bg-black text-white p-4 md:p-12">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 md:mb-12 flex justify-between items-center border-b border-white/10 pb-6 md:pb-8 group">
-          <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter group-hover:text-red-600">Live <span className="text-red-600 group-hover:text-white">Poules</span></h1>
+          <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter group-hover:text-red-600">
+            Live <span className="text-red-600 group-hover:text-white">Poules</span>
+          </h1>
           <button 
             onClick={() => router.push('/admin/live')} 
             className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-3 py-2 rounded-full"
@@ -270,9 +367,28 @@ export default function LivePoulesPage() {
           </button>
         </header>
 
+		{renderStepper(status)}
+
+        {/* SECTION BOUTON POUR LANCER LES DEMIS */}
+        {allFinished && (
+          <div className="mb-12 p-8 rounded-[2.5rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(220,38,38,0.3)] animate-bounce-subtle">
+            <div className="text-center md:text-left">
+              <h3 className="text-2xl font-black uppercase italic text-white leading-none mb-2">Terminé !</h3>
+              <p className="text-red-100 font-bold text-sm">Le classement est définitif. Prêt pour les demi-finales ?</p>
+            </div>
+            <button 
+              onClick={generateDemis}
+              className="w-full md:w-auto bg-black text-white px-10 py-4 rounded-2xl font-black uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all active:scale-95"
+            >
+              <Trophy size={20} />
+              Générer Demi-Finales
+            </button>
+          </div>
+        )}
         {renderPouleSection('Gassin', 'orange')}
         {renderPouleSection('Ramatuelle', 'purple')}
       </div>
     </div>
   );
+
 }
