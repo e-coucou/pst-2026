@@ -149,11 +149,11 @@ export default function LivePoulesPage() {
       // Honneur : G3 vs R4 et R3 vs G4
       const demiMatchs = [
         // PRINCIPAL
-        { poule: 'Principal', team1_id: standingsGassin[0].id, team2_id: standingsRamatuelle[1].id, type: 'Demi', status: 'EN_COURS' },
-        { poule: 'Principal', team1_id: standingsRamatuelle[0].id, team2_id: standingsGassin[1].id, type: 'Demi', status: 'EN_COURS' },
+        { poule: '', tableau: 'Principal', team1_id: standingsGassin[0].id, team2_id: standingsRamatuelle[1].id, type: 'Demi', status: 'EN_COURS' },
+        { poule: '', tableau: 'Principal', team1_id: standingsRamatuelle[0].id, team2_id: standingsGassin[1].id, type: 'Demi', status: 'EN_COURS' },
         // HONNEUR
-        { poule: 'Honneur', team1_id: standingsGassin[2].id, team2_id: standingsRamatuelle[3].id, type: 'Demi', status: 'EN_COURS' },
-        { poule: 'Honneur', team1_id: standingsRamatuelle[2].id, team2_id: standingsGassin[3].id, type: 'Demi', status: 'EN_COURS' },
+        { poule: '', tableau: 'Honneur', team1_id: standingsGassin[2].id, team2_id: standingsRamatuelle[3].id, type: 'Demi', status: 'EN_COURS' },
+        { poule: '', tableau: 'Honneur', team1_id: standingsRamatuelle[2].id, team2_id: standingsGassin[3].id, type: 'Demi', status: 'EN_COURS' },
       ];
   
       // 3. Insertion en base
