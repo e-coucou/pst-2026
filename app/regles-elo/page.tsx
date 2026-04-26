@@ -3,9 +3,10 @@ import { Calculator, Zap, Info } from 'lucide-react';
 export default function EloRulesPage() {
   return (
     <div className="max-w-4xl mx-auto p-6 md:p-20 text-white min-h-screen">
-      <div className="space-y-4 mb-12">
+      <div className="space-y-4 mb-12 group">
         <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter leading-none">
-          L'Algorithme <span className="text-red-600">ELO</span>
+          <span className="text-white group-hover:text-red-600">L'Algorithme </span>
+          <span className="text-red-600 group-hover:text-white">ELO</span>
         </h1>
         <p className="text-zinc-500 font-bold tracking-widest uppercase text-sm">Système de Rating International</p>
       </div>
@@ -27,45 +28,47 @@ export default function EloRulesPage() {
         <div className="space-y-6 text-zinc-400">
           <p>Chaque joueur débute avec un capital de <span className="text-white font-bold font-mono">100.0 pts</span>.</p>
           
-<div className="bg-zinc-900 p-8 rounded-3xl border border-white/5 space-y-4">
-  <h3 className="text-white font-black uppercase text-sm tracking-widest">La Formule de Base</h3>
-  <p className="text-sm italic mb-4 text-zinc-500">Soit <b>D</b> la différence de points ELO entre l'Équipe 1 (mieux classée) et l'Équipe 2 :</p>
-  
-  {/* FORMULE STYLE "CODE MATH" */}
-  <div className="bg-black/50 p-6 rounded-xl text-center font-mono text-red-500 border border-white/5">
-    <span className="text-2xl md:text-3xl font-bold">
-      D = min(ELO<sub>1</sub> - ELO<sub>2</sub>, 5)
-    </span>
-  </div>
+		<div className="bg-zinc-900 p-8 rounded-3xl border border-white/5 space-y-4">
+		  <h3 className="text-white font-black uppercase text-sm tracking-widest">La Formule de Base</h3>
+		  <p className="text-sm italic mb-4 text-zinc-500">Soit <b>D</b> la différence de points ELO entre l'Équipe 1 (mieux classée) et l'Équipe 2 :</p>
+		  
+		  {/* FORMULE STYLE "CODE MATH" */}
+		  <div className="bg-black/50 p-6 rounded-xl text-center font-mono text-red-500 border border-white/5">
+		    <span className="text-2xl md:text-3xl font-bold">
+		      D = min(ELO<sub>1</sub> - ELO<sub>2</sub>, 5)
+		    </span>
+		  </div>
 
-  <p className="text-sm italic mt-4 text-zinc-500">Points échangés lors de la rencontre :</p>
-  
-  <div className="space-y-3 pt-2">
-    <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border-l-2 border-green-500">
-      <span className="text-[10px] font-black uppercase text-green-500 w-24">Victoire E1</span>
-      <code className="text-white font-bold text-lg">1 - (D/10)</code>
-    </div>
-    
-    <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border-l-2 border-red-500">
-      <span className="text-[10px] font-black uppercase text-red-500 w-24">Défaite E1</span>
-      <code className="text-white font-bold text-lg">-(1 + (D/10))</code>
-    </div>
-    
-    <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border-l-2 border-zinc-500">
-      <span className="text-[10px] font-black uppercase text-zinc-500 w-24">Match Nul</span>
-      <code className="text-white font-bold text-lg">-D / 10</code>
-    </div>
-  </div>
-</div>
+		  <p className="text-sm italic mt-4 text-zinc-500">Points échangés lors de la rencontre :</p>
+		  
+		  <div className="space-y-3 pt-2">
+		    <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border-l-2 border-green-500">
+		      <span className="text-[10px] font-black uppercase text-green-500 w-24">Victoire E1</span>
+		      <code className="text-white font-bold text-lg">1 - (D/10)</code>
+		    </div>
+		    
+		    <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border-l-2 border-red-500">
+		      <span className="text-[10px] font-black uppercase text-red-500 w-24">Défaite E1</span>
+		      <code className="text-white font-bold text-lg">-(1 + (D/10))</code>
+		    </div>
+		    
+		    <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border-l-2 border-zinc-500">
+		      <span className="text-[10px] font-black uppercase text-zinc-500 w-24">Match Nul</span>
+		      <code className="text-white font-bold text-lg">-D / 10</code>
+		    </div>
+		  </div>
+		</div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5">
               <h4 className="text-red-600 font-black uppercase text-[10px] mb-2 tracking-widest text-center">Bonus Score</h4>
-              <p className="text-sm">Si l'écart est $\ge 7$ pts (ex: 13-6) : <span className="text-white font-bold">x1.1</span></p>
+              <p className="text-sm">Cet échange de points peut être augmenté de 10% si l'écart du score est d'au moins 7 pts (ex: 13-6) : <span className="text-white font-bold"> dans ce cas l'écart est x 1.1</span></p>
             </div>
             <div className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5">
               <h4 className="text-red-600 font-black uppercase text-[10px] mb-2 tracking-widest text-center">Bonus Prestige</h4>
-              <p className="text-sm">Finalistes : <span className="text-white font-bold">x1.25</span> | Finales : <span className="text-white font-bold">x1.1</span></p>
+              <p className="text-sm">Lors des phases Finales et aussi lors de la Finale des Bonus sont appliqués.</p>
+              <p className="text-sm"> - Finalistes : <span className="text-white font-bold"> x 1.25</span></p>
+              <p className="text-sm"> - Finales : <span className="text-white font-bold"> x 1.1</span></p>
             </div>
           </div>
         </div>

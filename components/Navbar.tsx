@@ -22,10 +22,9 @@ export default function Navbar() {
             <div className="bg-red-600 p-1.5 rounded-lg shadow-[0_0_15px_rgba(220,38,38,0.4)]">
               <Trophy size={20} className="text-white" />
             </div>
-            <Link href="/" className="group" onClick={closeMenu}>
-              <span className="text-white font-black italic uppercase tracking-tighter text-lg leading-none block">
-                Paris <span className="text-red-600 group-hover:text-white transition-colors">Saint-Tropez</span>
-              </span>
+            <Link href="/" className="group font-black italic uppercase tracking-tighter text-lg leading-none block" onClick={closeMenu}>
+              <span className="text-white group-hover:text-red-600 transition-colors">Paris </span>
+              <span className="text-red-600 group-hover:text-white transition-colors">Saint-Tropez</span>
             </Link>
           </div>
 
@@ -73,9 +72,9 @@ export default function Navbar() {
 
           {/* SAISON (Desktop uniquement) */}
           <div className="hidden md:flex items-center gap-4">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Live</span>
-              <span className="text-xs font-bold italic text-white uppercase">Saison 2026</span>
+            <div className="flex flex-col items-end group">
+              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest group-hover:text-white">Live</span>
+              <span className="text-xs font-bold italic text-white uppercase group-hover:text-red-600">Saison 2026</span>
             </div>
           </div>
 

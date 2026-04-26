@@ -52,15 +52,15 @@ export default function Home() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-full bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
 
         {/* Badge Saison */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-zinc-900 border border-red-600/30 text-white rounded-full mb-8">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-zinc-900 border border-red-600/30 text-white rounded-full mb-8 hover:bg-zinc-800">
           <Zap size={14} className="text-red-600 fill-red-600 animate-pulse" />
           <span className="text-[16px] font-black uppercase tracking-[0.3em]">Saison 2026</span>
         </div>
         
-        <h2 className="text-5xl md:text-8xl font-black leading-[0.8] uppercase italic tracking-tighter mb-8">
-          <span className="text-white">Paris</span>
+        <h2 className="group relative text-5xl md:text-8xl font-black leading-[0.8] uppercase italic tracking-tighter mb-8">
+          <span className="text-white group-hover:text-red-600">Paris</span>
           <span className="mx-4 text-red-600 inline-block scale-150"> </span>
-          <span className="text-red-600">Saint-Tropez</span>
+          <span className="text-red-600 group-hover:text-white">Saint-Tropez</span>
         </h2>
         
         <p className="mt-6 text-gray-400 max-w-2xl mx-auto font-bold uppercase tracking-widest text-xs md:text-sm italic">
@@ -69,8 +69,8 @@ export default function Home() {
         </p>
 
         {/* COMPTEUR */}
-        <div className="mt-8 inline-flex items-center gap-3 bg-zinc-900/50 border border-white/5 px-6 py-2 rounded-2xl">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-ping" />
+        <div className="mt-8 inline-flex items-center gap-3 bg-zinc-800/50 border border-white/50 hover:bg-zinc-800 px-6 py-2 rounded-2xl">
+          <div className="w-2 h-2 bg-purple-500 rounded-full animate-ping" />
           <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">
              {count !== null ? `${count} athlètes inscrits` : 'Chargement du club...'}
           </span>
@@ -78,37 +78,37 @@ export default function Home() {
 
         {/* GRILLE DE NAVIGATION PRINCIPALE */}
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto px-4">
-          <Link href="/classement" className="group relative bg-zinc-900/50 border border-white/10 p-8 rounded-3xl hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
-            <div className="bg-zinc-800 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
+          <Link href="/classement" className="group relative bg-zinc-800/50 border border-white/10 p-8 rounded-3xl hover:bg-red-900 hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
+            <div className="bg-zinc-700 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
               <Trophy size={28} className="text-white" />
             </div>
-            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-2">Classement</h3>
-            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Performance ELO</p>
+            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white opacity-90 mb-2">Classement</h3>
+            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Performance ELO</p>
           </Link>
 
-          <Link href="/tournois" className="group relative bg-zinc-900/50 border border-white/10 p-8 rounded-3xl hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
-            <div className="bg-zinc-800 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
+          <Link href="/tournois" className="group relative bg-zinc-800/50 border border-white/10 p-8 rounded-3xl hover:bg-red-900  hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
+            <div className="bg-zinc-700 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
               <Swords size={28} className="text-white" />
             </div>
             <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-2">Tournois</h3>
-            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Archives & Scores</p>
+            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Archives & Scores</p>
           </Link>
 
-          <Link href="/videos" className="group relative bg-zinc-900/50 border border-white/10 p-8 rounded-3xl hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
-            <div className="bg-zinc-800 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
+          <Link href="/videos" className="group relative bg-zinc-800/50 border border-white/10 p-8 rounded-3xl hover:bg-red-900  hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
+            <div className="bg-zinc-700 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
               <Video size={28} className="text-white" />
             </div>
             <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-2">Vidéos</h3>
-            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Zone Membres</p>
+            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Zone Membres</p>
           </Link>
         </div>
       </header>
 
       {/* SECTION MARKETING / INFO */}
-      <section className="max-w-7xl mx-auto px-6 py-20 border-t border-white/5">
+      <section className="max-w-5xl mx-auto px-6 py-20 border-t border-white/5">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Link href="/concept" className="group bg-zinc-900/30 border border-white/5 p-8 rounded-[2.5rem] hover:border-red-600/50 transition-all">
-            <div className="bg-red-600/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-red-600">
+          <Link href="/concept" className="group bg-zinc-800/40 border border-white/5 p-8 rounded-[2.5rem] hover:border-red-600 hover:bg-red-600/30 transition-all">
+            <div className="bg-red-600/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-red-600 group-hover:scale-[1.6] group-hover:bg-red-500/30 transition-all duration-500 ">
               <Info size={24} />
             </div>
             <h3 className="text-xl font-black uppercase italic text-white mb-2">Le Concept</h3>
@@ -118,8 +118,8 @@ export default function Home() {
             </div>
           </Link>
 
-          <Link href="/regles-elo" className="group bg-zinc-900/30 border border-white/5 p-8 rounded-[2.5rem] hover:border-purple-600/50 transition-all">
-            <div className="bg-purple-600/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-purple-600">
+          <Link href="/regles-elo" className="group bg-zinc-800/40 border border-white/5 p-8 rounded-[2.5rem] hover:border-purple-600/50 hover:bg-purple-600/30 transition-all">
+            <div className="bg-purple-600/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-purple-600 group-hover:scale-[1.6] group-hover:bg-purple-600/30 transition-all duration-500 ">
               <BarChart3 size={24} />
             </div>
             <h3 className="text-xl font-black uppercase italic text-white mb-2">L'Algorithme</h3>
@@ -129,8 +129,8 @@ export default function Home() {
             </div>
           </Link>
 
-          <Link href="/about" className="group bg-zinc-900/30 border border-white/5 p-8 rounded-[2.5rem] hover:border-zinc-500 transition-all">
-            <div className="bg-zinc-800 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-zinc-400">
+          <Link href="/about" className="group bg-zinc-800/40 border border-white/5 p-8 rounded-[2.5rem] hover:border-zinc-500 hover:bg-zinc-500/30 transition-all">
+            <div className="bg-zinc-800 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-zinc-400 group-hover:scale-[1.6] group-hover:bg-zinc-600 transition-all duration-500 ">
               <ShieldCheck size={24} />
             </div>
             <h3 className="text-xl font-black uppercase italic text-white mb-2">L'Esprit</h3>
@@ -144,7 +144,7 @@ export default function Home() {
 
       <footer className="py-12 border-t border-white/5 text-center">
         <p className="text-[10px] font-black text-gray-700 uppercase tracking-[0.5em]">
-          Design & Code par eCoucou Digital Engine • 2026
+          Design & Code by eCoucou Digital Engine • 2026
         </p>
       </footer>
     </div>
