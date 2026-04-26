@@ -226,7 +226,7 @@ export default function LivePoulesPage() {
                 <table className="w-full text-left min-w-[300px]">
                 <thead>
                     <tr className="text-[10px] md:text-[12px] uppercase text-zinc-500 border-b border-white/10">
-                    <th className="p-3 md:p-4">Rk</th>
+                    <th className="p-3 md:p-4 hidden md:table-cell">Rk</th>
                     <th className="p-3 md:p-4">Équipe</th>
                     <th className="p-3 md:p-4 text-center hidden md:table-cell">J</th>
                     <th className="p-3 md:p-4 text-center text-red-500">PTS</th>
@@ -236,10 +236,10 @@ export default function LivePoulesPage() {
                 <tbody className="text-[12px] md:text-[14px] font-bold">
                     {standings.map((s, idx) => (
                     <tr key={s.id} className={`border-b border-white/5 last:border-0 ${idx < 2 ? 'bg-green-500/5' : ''}`}>
-                        <td className="p-3 md:p-4 text-zinc-500">{idx + 1}</td>
+                        <td className="p-3 md:p-4 text-zinc-500">{idx + 1}.<span className="text-white">{s.id}</span></td>
                         <td className="p-3 md:p-4 uppercase text-zinc-300 truncate max-w-[100px] md:max-w-none">
-                            <span className="text-[9px] md:text-xs text-zinc-600 block md:inline md:mr-1">#{s.id}</span>
-                            {s.pName.split(' ')[0]} / {s.tName.split(' ')[0]}
+                            <span className="text-[10px] md:text-[14px] text-white block md:inline md:mr-1">{s.pName.split(' ')[0]} / </span>
+                            {s.tName.split(' ')[0]}
                         </td>
                         <td className="p-3 md:p-4 text-center text-zinc-500 hidden md:table-cell">{s.j}</td>
                         <td className="p-3 md:p-4 text-center text-white bg-white/5">{s.pts}</td>
