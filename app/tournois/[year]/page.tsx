@@ -175,67 +175,65 @@ const finalTop8 = rankedTeams
         </section>
       )}
       {/* --- LE CLASSEMENT --*/}
+		<section className="mb-20">
+		  <div className="flex items-center gap-3 mb-8">
+		    <div className="bg-zinc-800 p-2 rounded-lg">
+		      <Trophy className="text-red-600" size={20} />
+		    </div>
+		    <h2 className="text-2xl font-black uppercase italic tracking-tight text-white">
+		      Classement <span className="text-red-600">Final</span>
+		    </h2>
+		    <div className="flex-1 h-px bg-gradient-to-r from-zinc-800 to-transparent ml-4" />
+		  </div>
 
-<section className="mb-20">
-  <div className="flex items-center gap-3 mb-8">
-    <div className="bg-zinc-800 p-2 rounded-lg">
-      <Trophy className="text-red-600" size={20} />
-    </div>
-    <h2 className="text-2xl font-black uppercase italic tracking-tight text-white">
-      Classement <span className="text-red-600">Final</span>
-    </h2>
-    <div className="flex-1 h-px bg-gradient-to-r from-zinc-800 to-transparent ml-4" />
-  </div>
+		  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+		    {finalTop8.map((item, idx) => (
+		      <div 
+		        key={idx} 
+		        className={`flex flex-col p-4 rounded-2xl border transition-all duration-300 ${
+		          item.rank === 2 
+		            ? 'bg-zinc-100/5 border-zinc-400/30 ring-1 ring-zinc-400/20' 
+		            : 'bg-zinc-900/40 border-white/5 hover:border-zinc-700'
+		        }`}
+		      >
+		        <div className="flex justify-between items-start mb-3">
+		          <div className={`text-xl font-black italic ${item.rank === 2 ? 'text-zinc-300' : 'text-zinc-600'}`}>
+		            #{item.rank}
+		          </div>
+		          <span className="text-[8px] font-black bg-black/50 px-2 py-1 rounded text-zinc-500 uppercase tracking-widest">
+		            {item.type}
+		          </span>
+		        </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-    {finalTop8.map((item, idx) => (
-      <div 
-        key={idx} 
-        className={`flex flex-col p-4 rounded-2xl border transition-all duration-300 ${
-          item.rank === 2 
-            ? 'bg-zinc-100/5 border-zinc-400/30 ring-1 ring-zinc-400/20' 
-            : 'bg-zinc-900/40 border-white/5 hover:border-zinc-700'
-        }`}
-      >
-        <div className="flex justify-between items-start mb-3">
-          <div className={`text-xl font-black italic ${item.rank === 2 ? 'text-zinc-300' : 'text-zinc-600'}`}>
-            #{item.rank}
-          </div>
-          <span className="text-[8px] font-black bg-black/50 px-2 py-1 rounded text-zinc-500 uppercase tracking-widest">
-            {item.type}
-          </span>
-        </div>
+		        <div className="flex justify-between space-y-1">
+		          <span className="text-purple-600 font-black uppercase text-xs truncate items-start">
+		            {item.team?.pointeur?.nom}
+		          </span>
+		          <span className="text-orange-600 font-bold uppercase text-xs leading-none truncate items-end">
+		            {item.team?.tireur?.nom}
+		          </span>
+		        </div>
 
-        <div className="flex justify-between space-y-1">
-          <span className="text-purple-600 font-black uppercase text-xs truncate items-start">
-            {item.team?.pointeur?.nom}
-          </span>
-          <span className="text-orange-600 font-bold uppercase text-xs leading-none truncate items-end">
-            {item.team?.tireur?.nom}
-          </span>
-        </div>
+		        {/* Photo miniature si c'est le dauphin (#2) */}
+		        { item.team?.pointeur?.photo_url && (
+		          <div className="flex justify-between mt-3 w-full h-20 rounded-lg overflow-hidden grayscale opacity-50 border border-white/5">
+		            <img 
+		              src={signedUrls[item.team.pointeur.photo_url]} 
+		              className="w-full h-full object-cover"
+		              alt="Finaliste"
+		            />
+		            <img 
+		              src={signedUrls[item.team.tireur.photo_url]} 
+		              className="w-full h-full object-cover items-end"
+		              alt="Finaliste"
+		            />
 
-        {/* Photo miniature si c'est le dauphin (#2) */}
-        { item.team?.pointeur?.photo_url && (
-          <div className="flex justify-between mt-3 w-full h-20 rounded-lg overflow-hidden grayscale opacity-50 border border-white/5">
-            <img 
-              src={signedUrls[item.team.pointeur.photo_url]} 
-              className="w-full h-full object-cover"
-              alt="Finaliste"
-            />
-            <img 
-              src={signedUrls[item.team.tireur.photo_url]} 
-              className="w-full h-full object-cover items-end"
-              alt="Finaliste"
-            />
-
-          </div>
-        )}
-      </div>
-    ))}
-  </div>
-</section>
-
+		          </div>
+		        )}
+		      </div>
+		    ))}
+		  </div>
+		</section>
 
       {/* --- FINALES --- */}
       <section className="mb-20">
@@ -255,7 +253,6 @@ const finalTop8 = rankedTeams
 		    <div key={m.id} className="relative group">
 		      {/* Effet Halo Rouge */}
 		      <div className="absolute -inset-0.5 bg-red-600/10 rounded-2xl blur-sm opacity-40 group-hover:opacity-80 transition-opacity"></div>
-		      
 		      <div className="relative bg-zinc-900/60 border-2 border-red-900/20 rounded-2xl overflow-hidden hover:border-red-900/40 transition-colors">
 		        <div className="bg-red-950/20 px-4 py-2 border-b border-red-900/20 flex justify-center items-center">
 		          <span className="text-[9px] font-black text-red-500 uppercase tracking-[0.2em]">
@@ -264,7 +261,7 @@ const finalTop8 = rankedTeams
 		        </div>
 
 		        <div className="p-5">
-		           <MatchRow match={m} size="sm" />
+		           <MatchRow match={m} size="md" />
 		        </div>
 		        
 		        <div className="px-4 py-1.5 bg-black/40 text-center">
@@ -437,16 +434,16 @@ function MatchRow({ match, size = 'md' }: { match: any, size?: 'xs' | 'sm' | 'md
   return (
     <div className="flex justify-between items-center gap-4">
       <div className="flex-1 text-center">
-        <div className={`flex flex-col ${isLarge ? 'text-2xl' : 'text-[11px]'} font-bold`}>
+        <div className={`flex flex-col ${isLarge ? 'md:text-2xl text-xl' : 'text-[11px]'} font-bold`}>
           <span className="text-red-500 uppercase">{match.team_1?.tireur?.nom}</span>
           <span className="text-white uppercase leading-none">{match.team_1?.pointeur?.nom}</span>
         </div>
       </div>
-      <div className={`font-mono font-black italic bg-black border border-red-600/20 rounded px-3 py-1 ${isLarge ? 'text-4xl' : 'text-sm'}`}>
+      <div className={`font-mono font-black italic bg-black border border-red-600/20 rounded px-3 py-1 ${isLarge ? 'md:text-4xl text-2xl' : 'text-sm'}`}>
         {match.score_1}-{match.score_2}
       </div>
       <div className="flex-1 text-center">
-        <div className={`flex flex-col ${isLarge ? 'text-2xl' : 'text-[11px]'} font-bold`}>
+        <div className={`flex flex-col ${isLarge ? 'md:text-2xl text-xl' : 'text-[11px]'} font-bold`}>
           <span className="text-red-500 uppercase">{match.team_2?.tireur?.nom}</span>
           <span className="text-white uppercase leading-none">{match.team_2?.pointeur?.nom}</span>
         </div>
