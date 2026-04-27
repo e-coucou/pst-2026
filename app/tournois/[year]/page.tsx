@@ -434,16 +434,16 @@ function MatchRow({ match, size = 'md' }: { match: any, size?: 'xs' | 'sm' | 'md
   return (
     <div className="flex justify-between items-center gap-4">
       <div className="flex-1 text-center">
-        <div className={`flex flex-col ${isLarge ? 'md:text-2xl text-xl' : 'text-[11px]'} font-bold`}>
+        <div className={`flex flex-col ${isLarge ? 'md:text-2xl text-md' : 'text-[11px]'} font-bold items-end`}>
           <span className="text-red-500 uppercase">{match.team_1?.tireur?.nom}</span>
           <span className="text-white uppercase leading-none">{match.team_1?.pointeur?.nom}</span>
         </div>
       </div>
-      <div className={`font-mono font-black italic bg-black border border-red-600/20 rounded px-3 py-1 ${isLarge ? 'md:text-4xl text-2xl' : 'text-sm'}`}>
+      <div className={`font-mono font-black italic bg-black border border-red-600/20 rounded px-3 py-1 ${isLarge ? 'md:text-4xl text-xl' : 'text-sm'}`}>
         {match.score_1}-{match.score_2}
       </div>
       <div className="flex-1 text-center">
-        <div className={`flex flex-col ${isLarge ? 'md:text-2xl text-xl' : 'text-[11px]'} font-bold`}>
+        <div className={`flex flex-col ${isLarge ? 'md:text-2xl text-md' : 'text-[11px]'} font-bold items-start`}>
           <span className="text-red-500 uppercase">{match.team_2?.tireur?.nom}</span>
           <span className="text-white uppercase leading-none">{match.team_2?.pointeur?.nom}</span>
         </div>
