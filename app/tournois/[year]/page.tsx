@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import { Trophy, Target, Swords, Users, ChevronLeft, Star, Medal, Zap } from 'lucide-react';
+import { Trophy, Target, Swords, Users, ChevronLeft, Star, Medal, Zap, User } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function TournamentDetailPage({ 
@@ -215,21 +215,26 @@ const finalTop8 = rankedTeams
 		        </div>
 
 		        {/* Photo miniature si c'est le dauphin (#2) */}
-		        { item.team?.pointeur?.photo_url && (
-		          <div className="flex justify-between mt-3 w-full h-20 rounded-lg overflow-hidden grayscale opacity-50 border border-white/5">
-		            <img 
-		              src={signedUrls[item.team.pointeur.photo_url]} 
-		              className="w-full h-full object-cover"
-		              alt="Finaliste"
-		            />
-		            <img 
-		              src={signedUrls[item.team.tireur.photo_url]} 
-		              className="w-full h-full object-cover items-end"
-		              alt="Finaliste"
-		            />
-
-		          </div>
-		        )}
+		        <div className="flex gap-2 mt-3">
+                    {item.team?.pointeur?.photo_url ? (
+			          <div className="flex flex-1 justify-between h-20 rounded-lg overflow-hidden grayscale opacity-50 border border-white/5">
+                        <img src={signedUrls[item.team.pointeur.photo_url] } alt={item.team.pointeur.nom} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="flex flex-1 h-20 rounded-lg overflow-hidden grayscale opacity-50 border border-white/5">
+                        <User size={20} className="text-zinc-600" />
+                      </div>
+                    )}
+                    {item.team?.tireur?.photo_url ? (
+			          <div className="flex flex-1 justify-between h-20 rounded-lg overflow-hidden grayscale opacity-50 border border-white/5">
+                        <img src={signedUrls[item.team.tireur.photo_url] } alt={item.team.tireur.nom} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="flex flex-1 h-20 rounded-lg overflow-hidden grayscale opacity-50 border border-white/5">
+                        <User size={20} className="text-zinc-600" />
+                      </div>
+                    )}
+                  </div>
 		      </div>
 		    ))}
 		  </div>
@@ -381,7 +386,7 @@ const finalTop8 = rankedTeams
         </h3>
         <div className=" flex justify-between items-center">
           <span className="text-[9px] font-bold bg-orange-700 px-2 py-0.5 rounded text-white uppercase">
-            Match de 20 minutes
+            Match de 20'
           </span>
         </div>
      </div>
@@ -404,7 +409,7 @@ const finalTop8 = rankedTeams
         </h3>
         <div className=" flex justify-between items-center">
           <span className="text-[9px] font-bold bg-purple-700 px-2 py-0.5 rounded text-white uppercase">
-            Match de 20 minutes
+            Match de 20'
           </span>
         </div>
       </div>

@@ -12,9 +12,10 @@ export default function LiveDemiPage() {
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
+  const [demiMatches, setDemiMatches] = useState<any[]>([]);
   const [pouleMatches, setPouleMatches] = useState<any[]>([]);
   const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
-  const [status, setStatus] = useState<string>('DEMI');
+  const [status, setStatus] = useState<string>('FINALE');
   
   const [localScores, setLocalScores] = useState<Record<number, { s1: number | '', s2: number | '' }>>({});
   const [savingMatch, setSavingMatch] = useState<number | null>(null);
@@ -28,8 +29,8 @@ export default function LiveDemiPage() {
     const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
     if (tournoi) {
       setStatus(tournoi.status);
-      if (tournoi.status === 'POULES') {
-        router.push('/live/poules');
+      if (tournoi.status === 'DEMI') {
+        router.push('/live/demi');
         return;
       }
     }
@@ -44,11 +45,12 @@ export default function LiveDemiPage() {
 
     const { data: allMatches } = await supabase.from('live_matches').select('*').order('id', { ascending: true });
     if (allMatches) {
-      setMatches(allMatches.filter(m => m.type === 'Demi'));
+      setMatches(allMatches.filter(m => m.type.toLowerCase().includes('inale')));
+      setDemiMatches(allMatches.filter(m => m.type === 'Demi'));
       setPouleMatches(allMatches.filter(m => m.type === 'Poule'));
       
       const scores: Record<number, { s1: number | '', s2: number | '' }> = {};
-      allMatches.filter(m => m.type === 'Demi').forEach(m => {
+      allMatches.filter(m => m.type.toLowerCase().includes('inale')).forEach(m => {
         scores[m.id] = {
           s1: m.score_team1 !== null ? m.score_team1 : '',
           s2: m.score_team2 !== null ? m.score_team2 : ''
@@ -159,7 +161,7 @@ export default function LiveDemiPage() {
     return (
       <div className="p-6 md:p-8 rounded-[2rem] border border-white/5 bg-zinc-900/20 mb-8">
         <h2 className="text-xl font-black uppercase italic text-white flex items-center gap-3 mb-6">
-          <Trophy size={20} className="text-red-600" /> Tableau {tableauName}
+          <Trophy size={20} className="text-red-600" /> Les Finales ...
         </h2>
         <div className="space-y-4">
           {tableauMatches.map(m => {
@@ -235,75 +237,12 @@ export default function LiveDemiPage() {
 
   const allFinished = matches.length === 4 && matches.every(m => m.status === 'TERMINE');
 
-
-  const generateFinals = async () => {
-    setLoading(true);
-  
-    // 1. On récupère les résultats frais des demis
-    const principalDemis = matches.filter(m => m.tableau === 'Principal');
-    const honneurDemis = matches.filter(m => m.tableau === 'Honneur');
-  
-    const getWinner = (m: any) => (m.score_team1 > m.score_team2 ? m.team1_id : m.team2_id);
-    const getLoser = (m: any) => (m.score_team1 > m.score_team2 ? m.team2_id : m.team1_id);
-  
-    // 2. Préparation des 4 matches de finales
-    const finalMatches = [
-      // FINALE (Principal)
-      {
-        type: 'Finale',
-        poule: '',
-        tableau: 'Principal',
-        team1_id: getWinner(principalDemis[0]),
-        team2_id: getWinner(principalDemis[1]),
-        status: 'EN_COURS'
-      },
-      // PETITE FINALE (Principal)
-      {
-        poule: '',
-        type: 'Petite Finale',
-        tableau: 'Principal',
-        team1_id: getLoser(principalDemis[0]),
-        team2_id: getLoser(principalDemis[1]),
-        status: 'EN_COURS'
-      },
-      // TOUTE PETITE FINALE (Honneur)
-      {
-        poule: '',
-        type: 'Toute petite Finale',
-        tableau: 'Principal',
-        team1_id: getWinner(honneurDemis[0]),
-        team2_id: getWinner(honneurDemis[1]),
-        status: 'EN_COURS'
-      },
-      // FINALE D'HONNEUR (Honneur)
-      {
-        poule: '',
-        type: "Finale d'Honneur",
-        tableau: 'Principal',
-        team1_id: getLoser(honneurDemis[0]),
-        team2_id: getLoser(honneurDemis[1]),
-        status: 'EN_COURS'
-      }
-    ];
-  
-    // 3. Insertion dans Supabase et mise à jour du statut du tournoi
-    const { error: matchError } = await supabase.from('live_matches').insert(finalMatches);
-    const { error: statusError } = await supabase.from('live_tournament').update({ status: 'FINALE' }).eq('id', 1);
-  
-    if (!matchError && !statusError) {
-      router.push('/live/finales'); // Redirection vers la nouvelle page
-    } else {
-      console.error("Erreur génération finales:", matchError, statusError);
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-12">
       <div className="max-w-5xl mx-auto">
         <header className="mb-8 md:mb-12 flex justify-between items-center border-b border-white/10 pb-6 md:pb-8 group">
           <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter group-hover:text-red-600">
-            Live <span className="text-red-600 group-hover:text-white">Demis</span>
+            Live <span className="text-red-600 group-hover:text-white">Finales</span>
           </h1>
  
 
@@ -320,20 +259,19 @@ export default function LiveDemiPage() {
           {renderStandingsMini('Ramatuelle')}
         </div>
 
-{allFinished && (
-  <div className="mb-12 p-6 rounded-[2rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_0_40px_rgba(220,38,38,0.3)]">
-    <div className="text-center md:text-left">
-      <h3 className="text-xl font-black uppercase italic text-white leading-none mb-1">Qualifiés connus !</h3>
-      <p className="text-red-100 font-bold text-xs uppercase">Prêt pour le choc final ?</p>
-    </div>
-    <button 
-      onClick={generateFinals} // <-- Ajout de l'appel ici
-      className="w-full md:w-auto bg-black text-white px-8 py-3 rounded-xl font-black uppercase text-sm tracking-tighter hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2"
-    >
-      {loading ? <Loader2 size={18} className="animate-spin" /> : "Générer les Finales"}
-    </button>
-  </div>
-)}
+		{allFinished && (
+		  <div className="mb-12 p-6 rounded-[2rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_0_40px_rgba(220,38,38,0.3)]">
+		    <div className="text-center md:text-left">
+		      <h3 className="text-xl font-black uppercase italic text-white leading-none mb-1">Tournois Terminé !</h3>
+		      <p className="text-red-100 font-bold text-xs uppercase">en route vers le Classement</p>
+		    </div>
+		    <button 
+		      className="w-full md:w-auto bg-black text-white px-8 py-3 rounded-xl font-black uppercase text-sm tracking-tighter hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2"
+		    >
+		      {loading ? <Loader2 size={18} className="animate-spin" /> : "Générer le Classement"}
+		    </button>
+		  </div>
+		)}
 
         {renderTableauSection('Principal')}
         {renderTableauSection("Honneur")}
