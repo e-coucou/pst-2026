@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { ArrowLeft, Save, Trophy, Loader2, Edit2, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, Save, Trophy, Loader2, Edit2, Swords, CheckCircle2 } from 'lucide-react';
 
 export default function LiveDemiPage() {
   const supabase = createClient();
@@ -19,6 +19,7 @@ export default function LiveDemiPage() {
   
   const [localScores, setLocalScores] = useState<Record<number, { s1: number | '', s2: number | '' }>>({});
   const [savingMatch, setSavingMatch] = useState<number | null>(null);
+  const [completing, setCompleting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -61,7 +62,23 @@ export default function LiveDemiPage() {
     setLoading(false);
   };
 
-  // Logique de classement recyclée pour le rappel
+  // Logique de fin de tournoi
+  const completeTournament = async () => {
+    setCompleting(true);
+    // 1. On passe le statut en TERMINE
+    const { error } = await supabase
+      .from('live_tournament')
+      .update({ status: 'TERMINE' })
+      .eq('id', 1);
+
+    if (!error) {
+      // 2. On redirige vers la page du podium / palmarès
+      router.push('/live/podium');
+    } else {
+      setCompleting(false);
+    }
+  };
+
   const calculateStandings = (pouleName: string) => {
     const pouleTeams = teams.filter(t => t.poule === pouleName);
     const pMatches = pouleMatches.filter(m => m.poule === pouleName && m.status === 'TERMINE');
@@ -156,12 +173,48 @@ export default function LiveDemiPage() {
     );
   };
 
-  const renderTableauSection = (tableauName: 'Principal' | "Honneur") => {
+  const renderDemiSummary = () => {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+        {['Principal', 'Honneur'].map(tableau => (
+          <div key={tableau} className="bg-zinc-900/30 border border-white/5 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-3 text-[10px] font-black uppercase italic text-zinc-500">
+              <Swords size={12} /> Demis {tableau}
+            </div>
+            <div className="space-y-2">
+              {demiMatches.filter(m => m.tableau === tableau).map(m => {
+                const t1 = teams.find(t => t.id === m.team1_id);
+                const t2 = teams.find(t => t.id === m.team2_id);
+                const win1 = m.score_team1 > m.score_team2;
+                return (
+                  <div key={m.id} className="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-white/5 text-[11px]">
+                    <span className={`flex-1 truncate uppercase ${win1 ? 'text-white font-bold' : 'text-zinc-500'}`}>
+                      {playersMap[t1?.pointeur_id]?.split(' ')[0]} / {playersMap[t1?.tireur_id]?.split(' ')[0]}
+                    </span>
+                    <div className="flex items-center gap-2 px-3 font-black italic">
+                      <span className={win1 ? 'text-red-500' : 'text-zinc-600'}>{m.score_team1}</span>
+                      <span className="text-zinc-800">-</span>
+                      <span className={!win1 ? 'text-red-500' : 'text-zinc-600'}>{m.score_team2}</span>
+                    </div>
+                    <span className={`flex-1 truncate text-right uppercase ${!win1 ? 'text-white font-bold' : 'text-zinc-500'}`}>
+                      {playersMap[t2?.pointeur_id]?.split(' ')[0]} / {playersMap[t2?.tireur_id]?.split(' ')[0]}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderTableauSection = (tableauName: 'Principal') => {
     const tableauMatches = matches.filter(m => m.tableau === tableauName);
     return (
       <div className="p-6 md:p-8 rounded-[2rem] border border-white/5 bg-zinc-900/20 mb-8">
         <h2 className="text-xl font-black uppercase italic text-white flex items-center gap-3 mb-6">
-          <Trophy size={20} className="text-red-600" /> Les Finales ...
+          <Trophy size={20} className="text-red-600" /> Finale...
         </h2>
         <div className="space-y-4">
           {tableauMatches.map(m => {
@@ -171,7 +224,6 @@ export default function LiveDemiPage() {
             const t2 = teams.find(t => t.id === m.team2_id);
             return (
               <div key={m.id} className={`p-4 rounded-xl border ${isTermine ? 'bg-red-600/5 border-red-600/20' : 'bg-black border-white/10'} flex items-center justify-between gap-4`}>
-                  {/* Team 1 */}
                   <div className="flex-1 text-right min-w-0">
                     <div className="text-[10px] text-zinc-500 font-black">#{m.team1_id}</div>
                     <div className="text-[11px] md:text-[14px] font-bold uppercase truncate leading-tight">
@@ -180,27 +232,11 @@ export default function LiveDemiPage() {
                         {playersMap[t1?.tireur_id] || t1?.tireur_id}
                     </div>
                   </div>
-                  {/* Inputs */}
                   <div className="flex items-center gap-1 md:gap-2 bg-zinc-900 p-1 md:p-2 rounded-lg md:rounded-xl">
-                    <input 
-                      type="number" 
-                      inputMode="numeric"
-                      value={s.s1} 
-                      onChange={(e) => handleScoreChange(m.id, 1, e.target.value)} 
-                      disabled={isTermine} 
-                      className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" 
-                    />
+                    <input type="number" inputMode="numeric" value={s.s1} onChange={(e) => handleScoreChange(m.id, 1, e.target.value)} disabled={isTermine} className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" />
                     <span className="text-zinc-600 font-bold">-</span>
-                    <input 
-                      type="number" 
-                      inputMode="numeric"
-                      value={s.s2} 
-                      onChange={(e) => handleScoreChange(m.id, 2, e.target.value)} 
-                      disabled={isTermine} 
-                      className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" 
-                    />
+                    <input type="number" inputMode="numeric" value={s.s2} onChange={(e) => handleScoreChange(m.id, 2, e.target.value)} disabled={isTermine} className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" />
                   </div>
-                  {/* Team 2 */}
                   <div className="flex-1 text-left min-w-0">
                     <div className="text-[10px] text-zinc-500 font-black">#{m.team2_id}</div>
                     <div className="text-[11px] md:text-[14px] font-bold uppercase truncate leading-tight">
@@ -209,18 +245,13 @@ export default function LiveDemiPage() {
                         {playersMap[t2?.tireur_id] || t2?.tireur_id}
                     </div>
                   </div>
-                  {/* Actions */}
                   <div className="flex shrink-0">
                     {isTermine ? (
                       <button onClick={() => unlockMatch(m.id)} className="text-red-500 p-1 hover:text-white transition-colors">
                         <Edit2 size={20} className="md:w-6 md:h-6" />
                       </button>
                     ) : (
-                      <button 
-                        onClick={() => saveMatchResult(m.id)} 
-                        disabled={savingMatch === m.id} 
-                        className={'p-2 rounded-lg text-white transition-all bg-purple-500 active:bg-purple-700'}
-                      >
+                      <button onClick={() => saveMatchResult(m.id)} disabled={savingMatch === m.id} className={'p-2 rounded-lg text-white transition-all bg-purple-500 active:bg-purple-700'}>
                         {savingMatch === m.id ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                       </button>
                     )}
@@ -233,9 +264,9 @@ export default function LiveDemiPage() {
     );
   };
 
-  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black animate-pulse italic uppercase">Chargement Demis...</div>;
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black animate-pulse italic uppercase">Chargement...</div>;
 
-  const allFinished = matches.length === 4 && matches.every(m => m.status === 'TERMINE');
+  const allFinished = matches.length >= 2 && matches.every(m => m.status === 'TERMINE');
 
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-12">
@@ -244,7 +275,6 @@ export default function LiveDemiPage() {
           <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter group-hover:text-red-600">
             Live <span className="text-red-600 group-hover:text-white">Finales</span>
           </h1>
- 
 
           <button onClick={() => router.push('/live/poules')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
             <ArrowLeft size={14} /> Retour Poules
@@ -253,28 +283,30 @@ export default function LiveDemiPage() {
 
         {renderStepper(status)}
 
-        {/* SECTION RAPPEL DES CLASSEMENTS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {renderStandingsMini('Gassin')}
           {renderStandingsMini('Ramatuelle')}
         </div>
 
-		{allFinished && (
-		  <div className="mb-12 p-6 rounded-[2rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_0_40px_rgba(220,38,38,0.3)]">
-		    <div className="text-center md:text-left">
-		      <h3 className="text-xl font-black uppercase italic text-white leading-none mb-1">Tournois Terminé !</h3>
-		      <p className="text-red-100 font-bold text-xs uppercase">en route vers le Classement</p>
-		    </div>
-		    <button 
-		      className="w-full md:w-auto bg-black text-white px-8 py-3 rounded-xl font-black uppercase text-sm tracking-tighter hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2"
-		    >
-		      {loading ? <Loader2 size={18} className="animate-spin" /> : "Générer le Classement"}
-		    </button>
-		  </div>
-		)}
+        {renderDemiSummary()}
+
+        {allFinished && (
+           <div className="mb-12 p-6 rounded-[2rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_0_40px_rgba(220,38,38,0.3)] animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="text-center md:text-left">
+              <h3 className="text-xl font-black uppercase italic text-white leading-none mb-1">Tournoi Terminé !</h3>
+              <p className="text-red-100 font-bold text-xs uppercase">Les champions sont connus</p>
+            </div>
+            <button 
+              onClick={completeTournament}
+              disabled={completing}
+              className="w-full md:w-auto bg-black text-white px-8 py-3 rounded-xl font-black uppercase text-sm tracking-tighter hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+            >
+               {completing ? <Loader2 size={18} className="animate-spin" /> : "Consulter le Palmarès"}
+            </button>
+          </div>
+        )}
 
         {renderTableauSection('Principal')}
-        {renderTableauSection("Honneur")}
       </div>
     </div>
   );
