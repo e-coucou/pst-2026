@@ -29,8 +29,8 @@ export default function LiveAdminWizard() {
       if (!user) { setLoading(false); return; }
 
       const { data: adminStatus } = await supabase.rpc('is_admin');
-      setIsAdmin(adminStatus || true); // Sécurité dev
-
+      setIsAdmin(adminStatus ); // Sécurité dev à mettre si pb || true
+ 
       // --- AJOUT : VÉRIFICATION DU STATUT DU TOURNOI ---
       // Si le tournoi est déjà en cours, on bloque l'accès au draft et on envoie sur la page Poules
       const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
@@ -47,6 +47,12 @@ export default function LiveAdminWizard() {
 	      }
 	    }      
       // -------------------------------------------------
+
+ 	  // VERIFICATION STRICTE
+	  if (!adminStatus) {
+	    router.push('/'); // Redirige les non-admins vers le classement
+	    return; 
+	  }
 
       await fetchPlayersWithElo();
       

@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import { UserPlus, LockKeyhole, ArrowRight } from 'lucide-react';
+import { UserPlus, ArrowRight } from 'lucide-react';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({ nickname: '', password: '', invitation: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
   const supabase = createClient();
   const router = useRouter();
 
@@ -18,34 +19,32 @@ export default function SignupPage() {
     setError('');
 
     try {
-      // 1. Vérifier le code d'invitation dans la table config
-		const { data: isValid, error } = await supabase.rpc('verify_invitation_code', { 
-		  attempted_code: formData.invitation 
-		});
+      // 1. Nettoyage strict des variables avant tout appel
+      const nicknameValue = formData.nickname.trim();
+      const invitationValue = formData.invitation.trim();
 
-		if (!isValid) throw new Error("Code incorrect !");
+      if (!nicknameValue) throw new Error("Le pseudo ne peut pas être vide !");
 
-      // 2. Créer l'Auth (Shadow Email)
-      const email = `${formData.nickname.toLowerCase().trim()}@pst.net`;
-      const { data: authData, error: authErr } = await supabase.auth.signUp({
-        email,
+      // 2. Vérifier le code d'invitation
+      const { data: isValid, error: rpcError } = await supabase.rpc('verify_invitation_code', { 
+        attempted_code: invitationValue 
+      });
+
+      if (rpcError || !isValid) throw new Error("Code d'invitation incorrect !");
+
+      // 3. Créer l'Auth avec l'email formaté et l'objet data officiel
+      const { error: authErr } = await supabase.auth.signUp({
+        email: `${nicknameValue.toLowerCase()}@pst.net`,
         password: formData.password,
+        options: {
+          data: {
+            nickname: nicknameValue,
+            invitation_code: invitationValue
+          }
+        }
       });
 
       if (authErr) throw authErr;
-
-      // 3. Créer l'entrée dans site_users
-      if (authData.user) {
-        const { error: profileErr } = await supabase
-          .from('site_users')
-          .insert({
-            id: authData.user.id,
-            nickname: formData.nickname,
-            invitation_code_used: formData.invitation
-          });
-        
-        if (profileErr) throw profileErr;
-      }
 
       router.push('/login?message=Compte créé avec succès !');
     } catch (err: any) {
@@ -104,7 +103,7 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black uppercase py-5 rounded-[1.5rem] transition-all shadow-xl shadow-red-600/20 active:scale-95 flex items-center justify-center gap-3 tracking-widest"
           >
-            {loading ? "Vérification..." : "Valider l'inscription"} <ArrowRight size={18} />
+            {loading ? "Création..." : "Valider l'inscription"} <ArrowRight size={18} />
           </button>
         </form>
       </div>

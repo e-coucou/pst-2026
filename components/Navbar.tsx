@@ -1,27 +1,105 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Trophy, Swords, Home, BarChart3, Menu, X, Video } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { 
+  Trophy, Swords, Home, BarChart3, Menu, X, Video, 
+  User, Crown, Zap, Loader2 
+} from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 export default function Navbar() {
   const pathname = usePathname() || "";
+  const router = useRouter();
+  const supabase = createClient();
+  
   const [isOpen, setIsOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Fonction pour fermer le menu quand on clique sur un lien
+  // Écoute de la session et récupération du rôle
+  useEffect(() => {
+    async function checkUser() {
+      // 1. On vérifie d'abord si une session existe
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setUserRole(null);
+        setLoading(false);
+        return;
+      }
+
+      // 2. On appelle le RPC pour avoir le rôle exact sans se soucier des RLS
+      // Note: Assure-toi d'avoir créé la fonction 'get_my_role' en SQL
+      const { data: role, error } = await supabase.rpc('get_my_role');
+
+      if (!error && role) {
+        setUserRole(role);
+      } else {
+        // En cas d'erreur ou si pas de ligne, on met membre par défaut
+        setUserRole('membre');
+      }
+      setLoading(false);
+    }
+
+    checkUser();
+
+    // Listener pour les changements d'état (login/logout)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        setUserRole(null);
+        router.refresh();
+      } else if (event === 'SIGNED_IN') {
+        checkUser();
+      }
+    });
+
+    return () => authListener.subscription.unsubscribe();
+  }, [supabase, router]);
+
   const closeMenu = () => setIsOpen(false);
+
+  const handleAuthAction = async () => {
+    if (!userRole) {
+      router.push('/login');
+    } else {
+      if (confirm("Voulez-vous vous déconnecter ?")) {
+        await supabase.auth.signOut();
+        router.push('/');
+        router.refresh();
+      }
+    }
+  };
+
+  // Définition de l'icône selon le rôle
+  const getRoleIcon = () => {
+    if (loading) return <Loader2 size={20} className="text-white animate-spin" />;
+    
+    switch (userRole) {
+      case 'super': return <Zap size={20} className="text-white" fill="currentColor" />; // Dieu / Puissance
+      case 'admin': return <Crown size={20} className="text-white" />; // Roi
+      case 'membre': return <Trophy size={20} className="text-white bg-red-600" />; // Tête
+      default: return <User size={20} className="text-white" />; // Guest
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-[100] w-full border-b border-white/5 bg-black/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
-          {/* LOGO */}
+          {/* LOGO & AUTH ICON DYNAMIQUE */}
           <div className="flex items-center gap-3">
-            <div className="bg-red-600 p-1.5 rounded-lg shadow-[0_0_15px_rgba(220,38,38,0.4)]">
-              <Trophy size={20} className="text-white" />
-            </div>
+            <button 
+              onClick={handleAuthAction}
+              className={`p-1.5 rounded-lg transition-all duration-500 shadow-lg ${
+                !userRole ? 'bg-red-600 shadow-red-600/20' : 'bg-red-600 border border-white/10'
+              } hover:scale-110 active:scale-95`}
+              title={userRole ? `Connecté en tant que ${userRole}` : "Se connecter"}
+            >
+              {getRoleIcon()}
+            </button>
             <Link href="/" className="group font-black italic uppercase tracking-tighter text-lg leading-none block" onClick={closeMenu}>
               <span className="text-white group-hover:text-red-600 transition-colors">Paris </span>
               <span className="text-red-600 group-hover:text-white transition-colors">Saint-Tropez</span>
@@ -30,30 +108,10 @@ export default function Navbar() {
 
           {/* NAVIGATION DESKTOP */}
           <div className="hidden md:flex items-center gap-8">
-            <NavLink 
-              href="/" 
-              icon={<Home size={16} />} 
-              label="Accueil" 
-              active={pathname === "/"} 
-            />
-            <NavLink 
-              href="/classement" 
-              icon={<BarChart3 size={16} />} 
-              label="Classement" 
-              active={pathname.startsWith("/classement") || pathname.startsWith("/joueurs")} 
-            />
-            <NavLink 
-              href="/tournois" 
-              icon={<Swords size={16} />} 
-              label="Tournois" 
-              active={pathname.startsWith("/tournois")} 
-            />
-            <NavLink 
-              href="/videos" 
-              icon={<Video size={16} />} 
-              label="Vidéos" 
-              active={pathname.startsWith("/videos")} 
-            />
+            <NavLink href="/" icon={<Home size={16} />} label="Accueil" active={pathname === "/"} />
+            <NavLink href="/classement" icon={<BarChart3 size={16} />} label="Classement" active={pathname.startsWith("/classement") || pathname.startsWith("/joueurs")} />
+            <NavLink href="/tournois" icon={<Swords size={16} />} label="Tournois" active={pathname.startsWith("/tournois")} />
+            <NavLink href="/videos" icon={<Video size={16} />} label="Vidéos" active={pathname.startsWith("/videos")} />
           </div>
 
           {/* BOUTON BURGER (Mobile uniquement) */}
@@ -64,20 +122,22 @@ export default function Navbar() {
             </div>
             <button 
               onClick={() => setIsOpen(!isOpen)}
-              className="text-purple-500 p-2 hover:text-red-500 transition-colors"
+              className="text-white p-2 hover:text-red-500 transition-colors"
             >
               {isOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
           </div>
 
-          {/* SAISON (Desktop uniquement) */}
+          {/* ACCÈS ADMIN (Desktop uniquement) - Visible seulement si Admin ou Super */}
           <div className="hidden md:flex items-center gap-4">
-            <div className="flex flex-col items-end group">
- 	          <Link href="/live/admin" className="flex flex-col items-end">
-               <span className=" text-[10px] font-black text-red-500 uppercase tracking-widest group-hover:text-white">Live</span>
-               <span className=" text-xs font-bold italic text-white uppercase group-hover:text-red-600">Saison 2026</span>
-              </Link>
-            </div>
+            {(userRole === 'admin' || userRole === 'super') && (
+              <div className="flex flex-col items-end group">
+                <Link href="/live/admin" className="flex flex-col items-end">
+                  <span className="text-[10px] font-black text-red-500 uppercase tracking-widest group-hover:text-white">Live</span>
+                  <span className="text-xs font-bold italic text-white uppercase group-hover:text-red-600">Saison 2026</span>
+                </Link>
+              </div>
+            )}
           </div>
 
         </div>
@@ -86,37 +146,26 @@ export default function Navbar() {
       {/* MENU MOBILE DÉROULANT */}
       {isOpen && (
         <div className="md:hidden bg-black/95 border-b border-white/10 px-6 py-8 flex flex-col gap-6 animate-in slide-in-from-top duration-300">
-          <MobileNavLink 
-            href="/" 
-            label="Accueil" 
-            active={pathname === "/"} 
-            onClick={closeMenu}
-          />
-          <MobileNavLink 
-            href="/classement" 
-            label="Classement" 
-            active={pathname.startsWith("/classement") || pathname.startsWith("/joueurs")} 
-            onClick={closeMenu}
-          />
-          <MobileNavLink 
-            href="/tournois" 
-            label="Tournois" 
-            active={pathname.startsWith("/tournois")} 
-            onClick={closeMenu}
-          />
-          <MobileNavLink 
-            href="/videos" 
-            label="Vidéos" 
-            active={pathname.startsWith("/videos")} 
-            onClick={closeMenu}
-          />
+          <MobileNavLink href="/" label="Accueil" active={pathname === "/"} onClick={closeMenu} />
+          <MobileNavLink href="/classement" label="Classement" active={pathname.startsWith("/classement")} onClick={closeMenu} />
+          <MobileNavLink href="/tournois" label="Tournois" active={pathname.startsWith("/tournois")} onClick={closeMenu} />
+          <MobileNavLink href="/videos" label="Vidéos" active={pathname.startsWith("/videos")} onClick={closeMenu} />
+          {userRole && (
+            <button 
+              onClick={() => { handleAuthAction(); closeMenu(); }}
+              className="text-left text-red-600 text-2xl font-black uppercase italic"
+            >
+              Déconnexion
+            </button>
+          )}
         </div>
       )}
     </nav>
   );
 }
 
-// Sous-composant pour les liens Desktop
+// --- SOUS-COMPOSANTS ---
+
 function NavLink({ href, icon, label, active }: { href: string, icon: React.ReactNode, label: string, active: boolean }) {
   return (
     <Link 
@@ -139,7 +188,6 @@ function NavLink({ href, icon, label, active }: { href: string, icon: React.Reac
   );
 }
 
-// Sous-composant pour les liens Mobiles
 function MobileNavLink({ href, label, active, onClick }: { href: string, label: string, active: boolean, onClick: () => void }) {
   return (
     <Link 

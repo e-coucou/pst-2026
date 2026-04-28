@@ -34,8 +34,9 @@ function LoginForm() {
     setLoading(true);
     setError('');
 
-    const cleanNickname = nickname.toLowerCase().trim();
-    const email = `${cleanNickname}@pst.net`;
+    // On s'assure d'avoir exactement le même formatage qu'à l'inscription
+    const cleanNickname = nickname.trim();
+    const email = `${cleanNickname.toLowerCase()}@pst.net`;
 
     const { error: authError } = await supabase.auth.signInWithPassword({ 
       email, 
@@ -49,7 +50,7 @@ function LoginForm() {
     } else {
       await logActivity('LOGIN_SUCCESS', 'Connexion réussie');
       router.push('/classement');
-      router.refresh();
+      router.refresh(); // Force Next.js à mettre à jour les Server Components
     }
   };
 
