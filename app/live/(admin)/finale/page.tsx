@@ -256,13 +256,6 @@ export default function LiveDemiPage() {
 
         <RenderStepper currentStatus = {status} />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {renderStandingsMini('Gassin')}
-          {renderStandingsMini('Ramatuelle')}
-        </div>
-
-        {renderDemiSummary()}
-
         {allFinished && (
            <div className="mb-12 p-6 rounded-[2rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_0_40px_rgba(220,38,38,0.3)] animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="text-center md:text-left">
@@ -280,6 +273,13 @@ export default function LiveDemiPage() {
         )}
 
         {renderTableauSection('Principal')}
+
+        {renderDemiSummary()}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {renderStandingsMini('Gassin')}
+          {renderStandingsMini('Ramatuelle')}
+        </div>
       </div>
     </div>
   );

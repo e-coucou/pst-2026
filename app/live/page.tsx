@@ -33,6 +33,38 @@ export default function PodiumPage() {
     fetchData();
   }, []);
 
+
+// --- REALTIME SUBSCRIPTION ---
+  useEffect(() => {
+    // On crée un canal de diffusion
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // On écoute tout : INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'live_matches',
+        },
+        () => fetchData() // Dès que ça bouge, on recharge tout
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'live_tournament',
+        },
+        () => fetchData() // Si le statut du tournoi change, on recharge
+      )
+      .subscribe();
+
+    // NETTOYAGE : Très important pour éviter les fuites de mémoire
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]); // On ne l'exécute qu'une fois au montage
+
   const fetchData = async () => {
     setLoading(true);
     try {

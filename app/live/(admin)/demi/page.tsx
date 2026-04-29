@@ -261,7 +261,7 @@ export default function LiveDemiPage() {
     const { error: statusError } = await supabase.from('live_tournament').update({ status: 'FINALE' }).eq('id', 1);
   
     if (!matchError && !statusError) {
-      router.push('/live/finales'); // Redirection vers la nouvelle page
+      router.push('/live/finale'); // Redirection vers la nouvelle page
     } else {
       console.error("Erreur génération finales:", matchError, statusError);
       setLoading(false);
@@ -287,29 +287,29 @@ export default function LiveDemiPage() {
 
         <RenderStepper currentStatus= {status} />
 
+		{allFinished && (
+		  <div className="mb-12 p-6 rounded-[2rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_0_40px_rgba(220,38,38,0.3)]">
+		    <div className="text-center md:text-left">
+		      <h3 className="text-xl font-black uppercase italic text-white leading-none mb-1">Qualifiés connus !</h3>
+		      <p className="text-red-100 font-bold text-xs uppercase">Prêt pour le choc final ?</p>
+		    </div>
+		    <button 
+		      onClick={generateFinals} // <-- Ajout de l'appel ici
+		      className="w-full md:w-auto bg-black text-white px-8 py-3 rounded-xl font-black uppercase text-sm tracking-tighter hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2"
+		    >
+		      {loading ? <Loader2 size={18} className="animate-spin" /> : "Générer les Finales"}
+		    </button>
+		  </div>
+		)}
+
+        {renderTableauSection('Principal')}
+        {renderTableauSection("Honneur")}
+
         {/* SECTION RAPPEL DES CLASSEMENTS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           {renderStandingsMini('Gassin')}
           {renderStandingsMini('Ramatuelle')}
         </div>
-
-{allFinished && (
-  <div className="mb-12 p-6 rounded-[2rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_0_40px_rgba(220,38,38,0.3)]">
-    <div className="text-center md:text-left">
-      <h3 className="text-xl font-black uppercase italic text-white leading-none mb-1">Qualifiés connus !</h3>
-      <p className="text-red-100 font-bold text-xs uppercase">Prêt pour le choc final ?</p>
-    </div>
-    <button 
-      onClick={generateFinals} // <-- Ajout de l'appel ici
-      className="w-full md:w-auto bg-black text-white px-8 py-3 rounded-xl font-black uppercase text-sm tracking-tighter hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2"
-    >
-      {loading ? <Loader2 size={18} className="animate-spin" /> : "Générer les Finales"}
-    </button>
-  </div>
-)}
-
-        {renderTableauSection('Principal')}
-        {renderTableauSection("Honneur")}
       </div>
     </div>
   );
