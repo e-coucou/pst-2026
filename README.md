@@ -1,36 +1,145 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎯 PST — Paris Saint-Tropez 2026
 
-## Getting Started
+> *Le classement officiel ELO de la Résidence. Archives historiques · Vidéos privées · Esprit club.*
 
-First, run the development server:
+Application web privée de gestion de tournois de **pétanque** entre amis, saison après saison. Doublettes, tableaux, finales, scores en direct — et un algorithme ELO maison pour départager les champions.
+
+---
+
+## ✨ Fonctionnalités
+
+| Section | Description |
+|---|---|
+| 🏆 **Classement ELO** | Ranking en temps réel de tous les joueurs inscrits |
+| ⚔️ **Tournois** | Archives des éditions passées, finales et résultats |
+| 📡 **Live** | Suivi des matchs en cours (tableau en temps réel) |
+| 🎬 **Vidéos** | Zone membres — replays et moments forts privés |
+| 📖 **Le Concept** | Organisation des poules et route vers la finale |
+| 📐 **L'Algorithme** | Explication du calcul ELO Classic vs Modern |
+
+---
+
+## ⚙️ Stack technique
+
+- **Framework** : [Next.js 16](https://nextjs.org/) (App Router) + React 19
+- **Backend / Auth / Storage** : [Supabase](https://supabase.com/) (PostgreSQL, Auth, Storage)
+- **Style** : Tailwind CSS v4
+- **Graphiques** : Recharts
+- **Icônes** : Lucide React
+- **Langage** : TypeScript
+
+---
+
+## 📐 L'algorithme ELO
+
+Deux méthodes de calcul coexistent, configurables via les paramètres admin :
+
+### PST Classic *(inspirée IRB Rugby)*
+Basée sur l'écart de points ELO entre les deux équipes, plafonnée par `max_ecart`. Le gain est modulé par :
+- le **type de match** (`poids_finale`, `poids_finaliste` pour les demi-finales)
+- le **bonus fessée** si l'écart de score dépasse `bonus_seuil`
+
+```ts
+gain = (1 - (D / seuil)) * multiplier   // en cas de victoire
+```
+
+### Modern ELO *(FIDE / Probabiliste)*
+Formule classique avec probabilité attendue et facteur K configurable :
+
+```ts
+expected = 1 / (1 + 10^((elo2 - elo1) / 400))
+gain = K * (résultat - expected)
+```
+
+---
+
+## 🚀 Lancer le projet en local
+
+### Prérequis
+- Node.js ≥ 20
+- Un projet Supabase configuré
+
+### Installation
+
+```bash
+git clone https://github.com/e-coucou/pst-2026.git
+cd pst-2026
+npm install
+```
+
+### Variables d'environnement
+
+Créer un fichier `.env.local` à la racine :
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+### Démarrage
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ouvrir [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🗄️ Structure du projet
 
-## Learn More
+```
+pst-2026/
+├── app/
+│   ├── page.tsx              # Page d'accueil
+│   ├── classement/           # Leaderboard ELO
+│   ├── tournois/             # Archives par année
+│   ├── live/                 # Suivi des matchs en direct
+│   ├── joueurs/              # Fiches joueurs
+│   ├── videos/               # Zone membres (vidéos)
+│   ├── concept/              # Règlement & format
+│   ├── regles-elo/           # Explication algorithme
+│   ├── login/ signup/        # Authentification
+│   └── api/                  # Routes API Next.js
+├── components/
+│   ├── EloChart.tsx          # Graphique évolution ELO
+│   ├── GlobalProgressionChart.tsx
+│   ├── SeasonHistory.tsx     # Historique par saison
+│   └── Navbar.tsx
+├── lib/
+│   ├── elo-engine.ts         # Moteur de calcul ELO
+│   └── supabase.ts
+├── scripts/
+│   └── recompute-elo.ts      # Recalcul ELO global
+└── utils/supabase/           # Clients Supabase (SSR + client)
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔧 Scripts utilitaires
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Recalculer l'ensemble des scores ELO depuis l'historique
+npx tsx scripts/recompute-elo.ts
+```
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔐 Accès & authentification
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+L'application est réservée aux membres inscrits. Certaines sections (vidéos, espace live admin) nécessitent des droits spécifiques gérés côté Supabase (RLS + rôles).
+
+---
+
+## 🚢 Déploiement
+
+Le plus simple est de déployer sur [Vercel](https://vercel.com) — la plateforme des créateurs de Next.js.
+
+```bash
+npm run build
+```
+
+---
+
+*Design & Code by eCoucou Digital Engine · 2026*
