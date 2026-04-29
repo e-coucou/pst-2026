@@ -1,241 +1,369 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { Radio, Trophy, Swords, Clock, Activity, Users } from 'lucide-react';
+import RenderStepper from '@/components/Stepper';
+import { Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List } from 'lucide-react';
 
-export default function PublicLivePage() {
+const statusSteps = [
+  { id: 'JOUEURS', label: 'Joueurs' },
+  { id: 'EQUIPES', label: 'Equipes' },
+  { id: 'POULES', label: 'Poules' },
+  { id: 'DEMI', label: 'Demis' },
+  { id: 'FINALE', label: 'Finales' },
+  { id: 'TERMINE', label: 'Podium' }
+];
+
+export default function PodiumPage() {
   const supabase = createClient();
+  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
+  const [demiMatches, setDemiMatches] = useState<any[]>([]);
+  const [pouleMatches, setPouleMatches] = useState<any[]>([]);
+  const [stepValues, setStepValues] = useState<any[]>([]);
   const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
+  const [status, setStatus] = useState<string>('TERMINE');
+  const [season, setSeason] = useState<any[]>([]);
 
-  // Charger les données initiales et s'abonner aux changements en temps réel
   useEffect(() => {
     fetchData();
-
-    // 🔴 MAGIC TRICK : On écoute les changements dans la base de données en direct !
-    const channel = supabase
-      .channel('public-live-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_matches' }, (payload) => {
-        console.log('Changement détecté dans les matches !', payload);
-        fetchData(); // On recharge les données si un score change
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_teams' }, (payload) => {
-        fetchData(); // On recharge si une équipe change de poule
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      // 1. Profils (pour les noms)
+
+      // --- AJOUT : VÉRIFICATION DU STATUT DU TOURNOI ---
+      const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
+	  if (tournoi) {
+	      setStatus(tournoi?.status);
+	  }
+
+      const { data: seasons } = await supabase.from('seasons').select('year, is_active');
+      if (seasons) {
+	      setSeason(seasons.filter(m => m.is_active === true)) }
+    
       const { data: profilesData } = await supabase.from('profiles').select('id, nom');
       const pMap: Record<number, string> = {};
       if (profilesData) profilesData.forEach(p => pMap[p.id] = p.nom);
       setPlayersMap(pMap);
 
-      // 2. Équipes
       const { data: teamsData } = await supabase.from('live_teams').select('*').neq('id', 'Z');
       if (teamsData) setTeams(teamsData);
 
-      // 3. Matches
-      const { data: matchesData } = await supabase.from('live_matches').select('*').order('id', { ascending: false });
-      if (matchesData) setMatches(matchesData);
+      const { data: allMatches } = await supabase.from('live_matches').select('*').order('id', { ascending: true });
+      if (allMatches) {
+		const statusPriority : Record<string,number> = {
+		    'EN_COURS': 1,
+		    'TERMINE': 2,
+		    'A_VENIR': 3 // Au cas où tu aurais ce statut
+		  };
 
-    } catch (e) {
-      console.error("Erreur de chargement", e);
-    } finally {
-      setLoading(false);
-    }
+		  // 2. Créer une fonction de tri réutilisable
+		  const sortByStatus = (a: any, b:any) => {
+		    const priorityA = statusPriority[a.status] || 99;
+		    const priorityB = statusPriority[b.status] || 99;
+		    return priorityA - priorityB;
+		  };
+      
+        setMatches(allMatches.filter(m => m.type.toLowerCase().includes('inale')).sort(sortByStatus));
+        setDemiMatches(allMatches.filter(m => m.type === 'Demi'));
+        setPouleMatches(allMatches.filter(m => m.type === 'Poule'));      
+      }
+
+      const { data: steps } = await supabase.from('steps').select('id, value');
+      if (steps) setStepValues(steps);
+	    } catch (e) {
+	      console.error(e);
+	    } finally {
+	      setLoading(false);
+	    }
   };
 
-  // --- CALCUL DES CLASSEMENTS DE POULES ---
+  const finalTop8 = useMemo(() => {
+    const results: any[] = [];
+    const stepsMap = stepValues.reduce((acc, s) => ({ ...acc, [s.id]: s.value }), {});
+
+    matches.forEach(m => {
+      const baseRank = stepsMap[m.type];
+      if (baseRank !== undefined) {
+        const isTeam1Winner = (m.score_team1 ?? 0) > (m.score_team2 ?? 0);
+        const t1 = teams.find(t => t.id === m.team1_id);
+        const t2 = teams.find(t => t.id === m.team2_id);
+
+        if (t1) results.push({ rank: isTeam1Winner ? baseRank : baseRank + 1, team: t1, type: m.type });
+        if (t2) results.push({ rank: isTeam1Winner ? baseRank + 1 : baseRank, team: t2, type: m.type });
+      }
+    });
+    return results.sort((a, b) => a.rank - b.rank);
+  }, [matches, stepValues, teams]);
+
   const calculateStandings = (pouleName: string) => {
     const pouleTeams = teams.filter(t => t.poule === pouleName);
-    const pouleMatches = matches.filter(m => m.poule === pouleName && m.status === 'TERMINE');
-    
+    const pMatches = pouleMatches.filter(m => m.poule === pouleName && m.status === 'TERMINE');
     const standings = pouleTeams.map(t => ({
       id: t.id,
       pName: playersMap[t.pointeur_id] || `ID:${t.pointeur_id}`,
       tName: playersMap[t.tireur_id] || `ID:${t.tireur_id}`,
-      pts: 0, 
-      diff: 0
+      pts: 0, diff: 0
     }));
-
-    pouleMatches.forEach(m => {
+    pMatches.forEach(m => {
       const t1 = standings.find(s => s.id === m.team1_id);
       const t2 = standings.find(s => s.id === m.team2_id);
       if (t1 && t2) {
-        t1.diff += ((m.score_team1 || 0) - (m.score_team2 || 0));
-        t2.diff += ((m.score_team2 || 0) - (m.score_team1 || 0));
-        if ((m.score_team1 || 0) > (m.score_team2 || 0)) t1.pts += 3;
-        else if ((m.score_team2 || 0) > (m.score_team1 || 0)) t2.pts += 3;
+        t1.diff += (m.score_team1 - m.score_team2);
+        t2.diff += (m.score_team2 - m.score_team1);
+        if (m.score_team1 > m.score_team2) t1.pts += 3;
+        else if (m.score_team2 > m.score_team1) t2.pts += 3;
         else { t1.pts += 1; t2.pts += 1; }
       }
     });
-
     return standings.sort((a, b) => b.pts - a.pts || b.diff - a.diff);
   };
 
   const renderStandingsMini = (pouleName: string) => {
     const standings = calculateStandings(pouleName);
     return (
-      <div className="bg-zinc-900/50 border border-white/5 rounded-2xl overflow-hidden shadow-lg">
-        <div className="bg-zinc-800/80 px-4 py-3 text-xs font-black uppercase italic text-white border-b border-white/5 flex items-center gap-2">
-          <Users size={14} className="text-red-500" />
-          Poule {pouleName}
-        </div>
-        <table className="w-full text-xs">
+      <div className="bg-zinc-900/50 border border-white/5 rounded-2xl overflow-hidden">
+        <div className="bg-zinc-800/50 px-4 py-2 text-[10px] font-black uppercase italic text-zinc-400 border-b border-white/5">Poule {pouleName}</div>
+        <table className="w-full text-[11px]">
           <tbody>
             {standings.map((s, idx) => (
-              <tr key={s.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                <td className="p-3 text-zinc-500 w-8 font-bold">{idx + 1}.</td>
-                <td className="p-3 uppercase font-bold text-zinc-200">
-                  {s.pName.split(' ')[0]} <span className="text-red-500">/</span> {s.tName.split(' ')[0]}
-                </td>
-                <td className="p-3 text-right">
-                  <span className="font-black text-white bg-zinc-800 px-2 py-1 rounded">{s.pts} pts</span>
-                </td>
+              <tr key={s.id} className="border-b border-white/5 last:border-0">
+                <td className="p-2 text-zinc-500 w-6">#{idx + 1}</td>
+                <td className="p-2 uppercase font-bold text-zinc-300">{s.pName.split(' ')[0]} / {s.tName.split(' ')[0]}</td>
+                <td className="p-2 text-right font-black text-red-500">{s.pts} pts</td>
               </tr>
             ))}
-            {standings.length === 0 && (
-              <tr>
-                <td colSpan={3} className="p-4 text-center text-zinc-600 italic uppercase font-bold text-[10px]">
-                  En attente des équipes
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
     );
   };
 
-  // Séparation des matches en cours et terminés
-  const ongoingMatches = matches.filter(m => m.status !== 'TERMINE');
-  const finishedMatches = matches.filter(m => m.status === 'TERMINE').slice(0, 10); // Les 10 derniers
+  if (loading) return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center text-red-600 font-black animate-pulse uppercase gap-4">
+      <Loader2 className="animate-spin" size={40} />
+      Génération du Palmarès...
+    </div>
+  );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-red-600 font-black animate-pulse uppercase gap-4">
-        <Activity className="animate-spin" size={40} />
-        Connexion au Live...
-      </div>
-    );
-  }
+
+  const currentStepIndex = statusSteps.findIndex(s => s.id === status);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20">
-      
-      {/* HEADER FIXE "EN DIRECT" */}
-      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10 p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+    <div className="min-h-screen bg-black text-white p-4 md:p-12 pb-32">
+      <div className="max-w-4xl mx-auto">
+        
+        <header className="mb-12 text-center">
+          <div className="flex justify-center mb-4">
+            <Trophy size={48} className="text-red-600" />
           </div>
-          <h1 className="font-black italic uppercase tracking-widest text-sm">PST <span className="text-red-600">2026</span></h1>
-        </div>
-        <div className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-1">
-          <Radio size={12} /> Live Tracker
-        </div>
-      </div>
+          <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-2">
+            Palmarès <span className="text-red-600">Final</span>
+          </h1>
+          <p className="text-zinc-500 font-bold uppercase text-3xl md:text-4xl tracking-widest">• été {season[0].year} •</p>
+        </header>
 
-      <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-12 mt-4">
+        <RenderStepper currentStatus = {status} />
 
-        {/* SECTION 1 : MATCHES EN COURS */}
-        <section>
-          <h2 className="text-sm font-black uppercase italic text-zinc-400 mb-4 flex items-center gap-2">
-            <Activity size={16} className="text-red-500" /> Matches en cours
-          </h2>
-          
-          {ongoingMatches.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ongoingMatches.map(m => {
-                const t1 = teams.find(t => t.id === m.team1_id);
-                const t2 = teams.find(t => t.id === m.team2_id);
-                return (
-                  <div key={m.id} className="bg-zinc-900/60 border border-red-900/30 p-4 rounded-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-red-600"></div>
-                    <div className="text-[9px] font-black text-red-500 uppercase tracking-widest mb-3 flex justify-between">
-                      <span>{m.type} {m.poule ? `- Poule ${m.poule}` : ''}</span>
-                      <span className="animate-pulse">En cours</span>
-                    </div>
-                    <div className="flex items-center justify-between font-bold uppercase text-[11px]">
-                      <span className="flex-1 text-right truncate">
-                        {playersMap[t1?.pointeur_id]?.split(' ')[0]} / {playersMap[t1?.tireur_id]?.split(' ')[0]}
-                      </span>
-                      <div className="mx-3 bg-black px-3 py-1 rounded-lg font-black text-lg border border-red-900/50 text-white">
-                        {m.score_team1 || 0} - {m.score_team2 || 0}
-                      </div>
-                      <span className="flex-1 text-left truncate">
-                        {playersMap[t2?.pointeur_id]?.split(' ')[0]} / {playersMap[t2?.tireur_id]?.split(' ')[0]}
-                      </span>
+        {/* 1. CLASSEMENT DES 8 ÉQUIPES */}
+		{currentStepIndex >= statusSteps.findIndex(s => s.id === 'TERMINE') && (
+        <section className="mb-20">
+          <div className="bg-zinc-900/50 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <div className="bg-zinc-800/50 p-6 border-b border-white/5 flex items-center gap-4">
+              <Medal className="text-red-600" size={24} />
+              <h2 className="text-xl font-black uppercase italic">Classement Final</h2>
+            </div>
+            <div className="p-4 md:p-8 space-y-2">
+              {finalTop8.map((r, idx) => (
+                <div key={idx} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${r.rank === 1 ? 'bg-red-600/20 border-red-600' : 'bg-black/40 border-white/5'}`}>
+                  <div className={`text-2xl font-black italic w-10 ${r.rank <= 3 ? 'text-red-600' : 'text-zinc-700'}`}>
+                    #{r.rank}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[9px] font-black uppercase text-zinc-500 mb-1">{r.type}</div>
+                    <div className="text-sm md:text-lg font-bold uppercase truncate">
+                      {playersMap[r.team?.pointeur_id]?.split(' ')[0]} <span className="text-red-600">&</span> {playersMap[r.team?.tireur_id]?.split(' ')[0]}
                     </div>
                   </div>
-                );
-              })}
+                  {r.rank === 1 && <Star size={20} fill="currentColor" className="text-red-600 animate-pulse" />}
+                </div>
+              ))}
             </div>
-          ) : (
-            <div className="bg-zinc-900/30 border border-white/5 p-6 rounded-2xl text-center text-zinc-600 text-xs font-bold uppercase italic">
-              Aucun match en cours
-            </div>
-          )}
+          </div>
         </section>
+        )}
 
-        {/* SECTION 2 : CLASSEMENTS EN DIRECT */}
-        <section>
-          <h2 className="text-sm font-black uppercase italic text-zinc-400 mb-4 flex items-center gap-2">
-            <Trophy size={16} className="text-red-500" /> Classement des Poules
-          </h2>
+        {/* 2. MATCHES DES FINALES */}
+        {currentStepIndex >= statusSteps.findIndex(s => s.id === 'FINALE') && (
+        <section className="mb-16">
+          <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+            <div className="h-[1px] flex-1 bg-zinc-800"></div> Scores des Finales <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {matches.map(m => {
+              const t1 = teams.find(t => t.id === m.team1_id);
+              const t2 = teams.find(t => t.id === m.team2_id);
+				return (
+				  <div key={m.id} className={`border border-white/5 p-5 rounded-2xl flex flex-col items-center gap-3 ${m.status =='EN_COURS' ? 'bg-purple-500/20' : 'bg-zinc-500/10'}`}>
+				    <span className="text-sm font-black text-red-600 uppercase tracking-widest">{m.type}</span>
+				    
+				    {/* Conteneur principal (La ligne) */}
+				    <div className="flex items-center justify-between w-full font-bold uppercase text-sm md:text-md">
+				      
+				      {/* ÉQUIPE 1 - Bloc de gauche */}
+				      {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
+				      <div className="flex flex-col flex-1 text-right truncate space-y-0">
+				        <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
+				        <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
+				      </div>
+
+				      {/* SCORE - Bloc central */}
+				      {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
+				      <div className="shrink-0 mx-4 bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
+				        {m.score_team1} - {m.score_team2}
+				      </div>
+
+				      {/* ÉQUIPE 2 - Bloc de droite */}
+				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
+				      <div className="flex flex-col flex-1 text-left truncate space-y-0">
+				        <span className="truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span>
+				        <span className="truncate">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
+				      </div>
+
+				    </div>
+				  </div>
+				);
+            })}
+          </div>
+        </section>
+        )}
+
+        {/* 3. MATCHES DES DEMIS */}
+        {currentStepIndex >= statusSteps.findIndex(s => s.id === 'DEMI') && (
+        <section className="mb-16">
+          <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+            <div className="h-[1px] flex-1 bg-zinc-800"></div> Scores des Demis <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {demiMatches.map(m => {
+              const t1 = teams.find(t => t.id === m.team1_id);
+              const t2 = teams.find(t => t.id === m.team2_id);
+
+				return (
+				  <div key={m.id} className="bg-zinc-900/30 border border-white/5 p-2 rounded-2xl flex flex-col items-center gap-3">
+				    <span className="text-sm font-black text-red-600 uppercase tracking-widest">Tableau {m.tableau}</span>
+				    
+				    {/* Conteneur principal (La ligne) */}
+				    <div className="flex items-center justify-between w-full font-bold uppercase text-sm md:text-md">
+				      
+				      {/* ÉQUIPE 1 - Bloc de gauche */}
+				      {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
+				      <div className="flex flex-col flex-1 text-right truncate space-y-0">
+				        <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
+				        <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
+				      </div>
+
+				      {/* SCORE - Bloc central */}
+				      {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
+				      <div className="shrink-0 mx-4 bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
+				        {m.score_team1} - {m.score_team2}
+				      </div>
+
+				      {/* ÉQUIPE 2 - Bloc de droite */}
+				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
+				      <div className="flex flex-col flex-1 text-left truncate space-y-0">
+				        <span className="truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span>
+				        <span className="truncate">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
+				      </div>
+
+				    </div>
+				  </div>
+				);
+
+            })}
+          </div>
+        </section>
+        )}
+
+        {/* 4. TABLEAUX DE POULES */}
+        {currentStepIndex >= statusSteps.findIndex(s => s.id === 'POULES') && (
+        <section className="mb-16">
+          <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+            <div className="h-[1px] flex-1 bg-zinc-800"></div> Classement de Poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {renderStandingsMini('Gassin')}
             {renderStandingsMini('Ramatuelle')}
           </div>
         </section>
+        )}
 
-        {/* SECTION 3 : DERNIERS RÉSULTATS */}
-        <section>
-          <h2 className="text-sm font-black uppercase italic text-zinc-400 mb-4 flex items-center gap-2">
-            <Clock size={16} className="text-red-500" /> Derniers Résultats
-          </h2>
-          <div className="space-y-2">
-            {finishedMatches.length > 0 ? finishedMatches.map(m => {
-              const t1 = teams.find(t => t.id === m.team1_id);
-              const t2 = teams.find(t => t.id === m.team2_id);
-              const isT1Winner = (m.score_team1 || 0) > (m.score_team2 || 0);
+        {/* 5. TOUS LES MATCHES DE POULES */}
+		{currentStepIndex >= statusSteps.findIndex(s => s.id === 'POULES') && (
+        <section className="mb-24">
+          <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+            <div className="h-[1px] flex-1 bg-zinc-800"></div> Détail des matches de poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {['Gassin', 'Ramatuelle'].map((poule) => (
+              <div key={poule} className="space-y-2">
+                <div className="text-md font-black uppercase text-zinc-600 mb-3 ml-1 tracking-[0.2em]">{poule}</div>
+                {pouleMatches.filter(m => m.poule === poule).map(m => {
+                  const t1 = teams.find(t => t.id === m.team1_id);
+                  const t2 = teams.find(t => t.id === m.team2_id);
+				 return (
+				   <div key={m.id} className="bg-zinc-900/30 border border-white/5 p-3 rounded-2xl flex flex-col items-center gap-1">
+				     
+				     {/* Conteneur principal (La ligne) */}
+				     <div className="flex items-center justify-between w-full font-bold uppercase text-sm md:text-md">
+				       
+				       {/* ÉQUIPE 1 - Bloc de gauche */}
+				       {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
+				       <div className="flex flex-col flex-1 text-right truncate">
+				         <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
+				         <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
+				       </div>
 
-              return (
-                <div key={m.id} className="flex items-center justify-between bg-zinc-900/20 p-3 rounded-xl border border-white/5 text-[10px] font-medium uppercase italic">
-                  <span className={`flex-1 text-right truncate ${isT1Winner ? 'text-white font-black' : 'text-zinc-500'}`}>
-                    {playersMap[t1?.pointeur_id]?.split(' ')[0]} / {playersMap[t1?.tireur_id]?.split(' ')[0]}
-                  </span>
-                  
-                  <div className="mx-4 font-black text-sm flex gap-2 items-center">
-                    <span className={isT1Winner ? 'text-red-500' : 'text-zinc-600'}>{m.score_team1}</span>
-                    <span className="text-zinc-700">-</span>
-                    <span className={!isT1Winner ? 'text-red-500' : 'text-zinc-600'}>{m.score_team2}</span>
-                  </div>
+				       {/* SCORE - Bloc central */}
+				       {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
+				       <div className="shrink-0 mx-4 bg-black px-4 py-1 rounded-xl font-black text-xl border border-white/5 text-white text-center">
+				         {m.score_team1} - {m.score_team2}
+				       </div>
 
-                  <span className={`flex-1 text-left truncate ${!isT1Winner ? 'text-white font-black' : 'text-zinc-500'}`}>
-                    {playersMap[t2?.pointeur_id]?.split(' ')[0]} / {playersMap[t2?.tireur_id]?.split(' ')[0]}
-                  </span>
-                </div>
-              );
-            }) : (
-              <div className="text-center text-zinc-600 text-xs font-bold uppercase italic p-4">
-                Aucun match terminé pour le moment
+				       {/* ÉQUIPE 2 - Bloc de droite */}
+				       {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
+				       <div className="flex flex-col flex-1 text-left truncate">
+				         <span className="truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span>
+				         <span className="truncate">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
+				       </div>
+
+				     </div>
+				   </div>
+				 );
+                })}
               </div>
-            )}
+            ))}
           </div>
         </section>
+        )}
+
+        {/* FOOTER 
+        <div className="fixed bottom-8 left-0 right-0 px-4 flex justify-center">
+          <button 
+            onClick={() => router.push('/')}
+            className="flex items-center gap-3 bg-white text-black px-8 py-4 rounded-2xl font-black uppercase italic text-sm shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:bg-red-600 hover:text-white transition-all active:scale-95"
+          >
+            <ArrowLeft size={18} /> Quitter le Live
+          </button>
+        </div>
+        */}
 
       </div>
     </div>

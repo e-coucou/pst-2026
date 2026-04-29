@@ -49,7 +49,7 @@ function LoginForm() {
       setLoading(false);
     } else {
       await logActivity('LOGIN_SUCCESS', 'Connexion réussie');
-      router.push('/classement');
+      router.push('/');
       router.refresh(); // Force Next.js à mettre à jour les Server Components
     }
   };

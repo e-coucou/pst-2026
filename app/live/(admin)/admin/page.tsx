@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation'; // <-- AJOUT POUR LE ROUTING
 import { createClient } from '@/utils/supabase/client';
+import RenderStepper from '@/components/Stepper'
 import { ArrowRight, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 
 export default function LiveAdminWizard() {
@@ -22,36 +23,16 @@ export default function LiveAdminWizard() {
   const [draftT, setDraftT] = useState<any[]>([]);
   
   const [step, setStep] = useState(1);
+  const [status, setStatus] = useState<string>('JOUEURS');
 
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      const { data: adminStatus } = await supabase.rpc('is_admin');
-      setIsAdmin(adminStatus ); // Sécurité dev à mettre si pb || true
- 
-      // --- AJOUT : VÉRIFICATION DU STATUT DU TOURNOI ---
-      // Si le tournoi est déjà en cours, on bloque l'accès au draft et on envoie sur la page Poules
-      const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
-	  if (tournoi) {
-//	      setStatus(tournoi?.status); // On met à jour le status ici
-	      switch (tournoi?.status) {
-	        case 'POULES': router.push('/live/poules'); break;
-	        case 'DEMI': router.push('/live/demi'); break;
-	        case 'FINALE': router.push('/live/finale'); break;
-	        case 'TERMINE': router.push('/live/podium'); break;
-	        default:
-	          // On reste ici si c'est JOUEURS ou EQUIPES
-	          setLoading(false); 
-	      }
-	    }      
-      // -------------------------------------------------
-
- 	  // VERIFICATION STRICTE
-	  if (!adminStatus) {
-	    router.push('/live'); // Redirige les non-admins vers le classement
-	    return; 
+	  const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
+	  if (tournoi?.status) {
+	    setStatus(tournoi.status);
 	  }
 
       await fetchPlayersWithElo();
@@ -182,20 +163,18 @@ export default function LiveAdminWizard() {
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black italic animate-pulse">CHARGEMENT...</div>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12">
+    <div className="min-h-screen bg-black text-white p-4 md:p-12">
       <div className="max-w-7xl mx-auto">
-        
-        {/* --- LE FILS CONDUCTEUR (REMIS) --- */}
-        <header className="mb-12 border-b border-white/5 pb-8">
-          <h1 className="text-6xl font-black uppercase italic tracking-tighter">
-            LIVE <span className="text-red-600">ENGINE</span>
+        <header className="mb-8 md:mb-12 flex justify-between items-center border-b border-white/10 pb-6 md:pb-8 group">
+          <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter group-hover:text-red-600">
+            Live <span className="text-red-600 group-hover:text-white">équipe</span>
           </h1>
-          <div className="flex items-center gap-4 mt-6">
-             <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${step === 1 ? 'bg-red-600 text-white' : 'bg-zinc-800 text-zinc-500'}`}>1. Sélection Joueurs</span>
-             <div className="h-px w-12 bg-zinc-800" />
-             <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${step === 2 ? 'bg-red-600 text-white' : 'bg-zinc-800 text-zinc-500'}`}>2. Constitution Duos</span>
-          </div>
+          <button onClick={() => router.push('/live/poules')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
+            <ArrowRight size={14} /> <span className="hidden md:inline">poules</span>
+		  </button>
         </header>
+
+		<RenderStepper currentStatus = {status} />
 
         {step === 1 ? (
           /* ÉTAPE 1 : SÉLECTION */

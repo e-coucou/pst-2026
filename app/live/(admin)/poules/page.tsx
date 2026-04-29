@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { ArrowLeft, Save, Trophy, Loader2, Edit2 } from 'lucide-react';
+import RenderStepper from '@/components/Stepper';
+import { ArrowLeft, ArrowRight, Save, Trophy, Loader2, Edit2 } from 'lucide-react';
 
 export default function LivePoulesPage() {
   const supabase = createClient();
@@ -24,18 +25,10 @@ export default function LivePoulesPage() {
 
   const fetchData = async () => {
     setLoading(true);
+
     const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
 	if (tournoi) {
-      setStatus(tournoi?.status); // On met à jour le status ici
-      switch (tournoi?.status) {
-        case 'POULES': router.push('/live/poules'); break;
-        case 'DEMI': router.push('/live/demi'); break;
-        case 'FINALE': router.push('/live/finale'); break;
-        case 'TERMINE': router.push('/live/podium'); break;
-        default:
-          // On reste ici si c'est JOUEURS ou EQUIPES
-          setLoading(false); 
-      }
+      setStatus(tournoi?.status); 
     }
 
     const { data: profilesData } = await supabase.from('profiles').select('id, nom');
@@ -186,56 +179,6 @@ export default function LivePoulesPage() {
     	m.status?.trim().toUpperCase() === 'TERMINE'
   	);
 
-
-    {/* SECTION STEPPER */}
-	const renderStepper = (currentStatus: string) => {
-	  const steps = [
-	    { id: 'JOUEURS', label: 'Joueurs' },
-	    { id: 'EQUIPES', label: 'Equipes' },
-	    { id: 'POULES', label: 'Poules' },
-	    { id: 'DEMI', label: 'Demi-Finales' },
-	    { id: 'FINALE', label: 'Finales' },
-	    { id: 'TERMINE', label: 'Podium' }
-	  ];
-
-	  return (
-	    <div className="flex items-center justify-between mb-12 w-full max-w-3xl mx-auto px-4">
-	      {steps.map((step, idx) => {
-	        const statusOrder = steps.map(s => s.id);
-	        const currentIdx = statusOrder.indexOf(currentStatus);
-	        const isPast = currentIdx > idx;
-	        const isCurrent = step.id === currentStatus;
-	        
-	        return (
-	          <div key={step.id} className="flex items-center flex-1 last:flex-none">
-	            <div className="relative flex flex-col items-center">
-	              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black transition-all duration-500 ${
-	                isCurrent ? 'bg-orange-600 text-white ring-4 ring-orange-600/20 scale-110' : 
-	                isPast ? 'bg-purple-500 text-white' : 'bg-zinc-800 text-zinc-500'
-	              }`}>
-	                {isPast ? '✓' : idx + 1}
-	              </div>
-	              <span className={`absolute -bottom-7 text-[10px] font-black uppercase italic whitespace-nowrap tracking-tighter ${
-	                isCurrent ? 'text-white' : 'text-zinc-600'
-	              }`}>
-	                {step.label}
-	              </span>
-	            </div>
-
-	            {idx !== steps.length - 1 && (
-	              <div className="flex-1 h-[2px] mx-4 bg-zinc-800">
-	                <div 
-	                  className={`h-full bg-purple-600 transition-all duration-1000 ${isPast ? 'w-full' : 'w-0'}`}
-	                />
-	              </div>
-	            )}
-	          </div>
-	        );
-	      })}
-	    </div>
-	  );
-	};
-
   const renderPouleSection = (pouleName: string, accentColor: 'orange' | 'purple') => {
     const pouleMatches = matches.filter(m => m.poule === pouleName);
     const standings = calculateStandings(pouleName);
@@ -366,15 +309,17 @@ export default function LivePoulesPage() {
           <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter group-hover:text-red-600">
             Live <span className="text-red-600 group-hover:text-white">Poules</span>
           </h1>
-          <button 
-            onClick={() => router.push('/live/admin')} 
-            className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-3 py-2 rounded-full"
-          >
-            <ArrowLeft size={14} /> <span className="hidden md:inline">Retour</span>
-          </button>
+          <div className="flex flex-cols">
+            <button onClick={() => router.push('/live/admin')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
+              <ArrowLeft size={14} /> <span className="hidden md:inline">équipes</span>
+            </button>
+            <button onClick={() => router.push('/live/demi')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
+              <ArrowRight size={14} /> <span className="hidden md:inline">demi</span>
+			</button>
+          </div>
         </header>
 
-		{renderStepper(status)}
+		<RenderStepper currentStatus = {status} />
 
         {/* SECTION BOUTON POUR LANCER LES DEMIS */}
         {allFinished && (

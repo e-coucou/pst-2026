@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import RenderStepper from '@/components/Stepper';
 import { Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List } from 'lucide-react';
 
 export default function PodiumPage() {
@@ -28,20 +29,10 @@ export default function PodiumPage() {
     try {
 
       // --- AJOUT : VÉRIFICATION DU STATUT DU TOURNOI ---
-      // Si le tournoi est déjà en cours, on bloque l'accès au draft et on envoie sur la page Poules
       const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
 	  if (tournoi) {
-//	      setStatus(tournoi?.status); // On met à jour le status ici
-	      switch (tournoi?.status) {
-	        case 'POULES': router.push('/live/poules'); break;
-	        case 'DEMI': router.push('/live/demi'); break;
-	        case 'FINALE': router.push('/live/finale'); break;
-	        case 'TERMINE': router.push('/live/podium'); break;
-	        default:
-	          // On reste ici si c'est JOUEURS ou EQUIPES
-	          setLoading(false); 
-	      }
-	    }
+	      setStatus(tournoi?.status);
+	  }
 
       const { data: seasons } = await supabase.from('seasons').select('year, is_active');
       if (seasons) {
@@ -112,36 +103,6 @@ export default function PodiumPage() {
     return standings.sort((a, b) => b.pts - a.pts || b.diff - a.diff);
   };
 
-
-  
-    const renderStepper = (currentStatus: string) => {
-      const steps = [
-        { id: 'JOUEURS', label: 'Joueurs' }, { id: 'EQUIPES', label: 'Equipes' },
-        { id: 'POULES', label: 'Poules' }, { id: 'DEMI', label: 'Demi-Finales' },
-        { id: 'FINALE', label: 'Finales' }, { id: 'TERMINE', label: 'Podium' }
-      ];
-      return (
-        <div className="flex items-center justify-between mb-12 w-full max-w-3xl mx-auto px-4">
-          {steps.map((step, idx) => {
-            const currentIdx = steps.map(s => s.id).indexOf(currentStatus);
-            const isPast = currentIdx > idx;
-            const isCurrent = step.id === currentStatus;
-            return (
-              <div key={step.id} className="flex items-center flex-1 last:flex-none">
-                <div className="relative flex flex-col items-center">
-                  <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-black transition-all ${isCurrent ? 'bg-red-600 text-white ring-4 ring-red-600/20' : isPast ? 'bg-zinc-500 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
-                    {isPast ? '✓' : idx + 1}
-                  </div>
-                  <span className={`absolute -bottom-7 text-[9px] font-black uppercase italic whitespace-nowrap ${isCurrent ? 'text-white' : 'text-zinc-600'}`}>{step.label}</span>
-                </div>
-                {idx !== steps.length - 1 && <div className="flex-1 h-[2px] mx-4 bg-zinc-800"><div className={`h-full bg-red-600 transition-all duration-1000 ${isPast ? 'w-full' : 'w-0'}`} /></div>}
-              </div>
-            );
-          })}
-        </div>
-      );
-    };
-
   const renderStandingsMini = (pouleName: string) => {
     const standings = calculateStandings(pouleName);
     return (
@@ -151,7 +112,7 @@ export default function PodiumPage() {
           <tbody>
             {standings.map((s, idx) => (
               <tr key={s.id} className="border-b border-white/5 last:border-0">
-                <td className="p-2 text-zinc-500 w-6">{idx + 1}.</td>
+                <td className="p-2 text-zinc-500 w-6">#{idx + 1}</td>
                 <td className="p-2 uppercase font-bold text-zinc-300">{s.pName.split(' ')[0]} / {s.tName.split(' ')[0]}</td>
                 <td className="p-2 text-right font-black text-red-500">{s.pts} pts</td>
               </tr>
@@ -183,20 +144,20 @@ export default function PodiumPage() {
           <p className="text-zinc-500 font-bold uppercase text-3xl md:text-4xl tracking-widest">• été {season[0].year} •</p>
         </header>
 
-        {renderStepper(status)}
+        <RenderStepper currentStatus = {status} />
 
         {/* 1. CLASSEMENT DES 8 ÉQUIPES */}
         <section className="mb-20">
           <div className="bg-zinc-900/50 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
             <div className="bg-zinc-800/50 p-6 border-b border-white/5 flex items-center gap-4">
               <Medal className="text-red-600" size={24} />
-              <h2 className="text-xl font-black uppercase italic">Classement Officiel</h2>
+              <h2 className="text-xl font-black uppercase italic">Classement Final</h2>
             </div>
             <div className="p-4 md:p-8 space-y-2">
               {finalTop8.map((r, idx) => (
                 <div key={idx} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${r.rank === 1 ? 'bg-red-600/20 border-red-600' : 'bg-black/40 border-white/5'}`}>
                   <div className={`text-2xl font-black italic w-10 ${r.rank <= 3 ? 'text-red-600' : 'text-zinc-700'}`}>
-                    {r.rank}°
+                    #{r.rank}
                   </div>
                   <div className="flex-1">
                     <div className="text-[9px] font-black uppercase text-zinc-500 mb-1">{r.type}</div>
@@ -216,7 +177,7 @@ export default function PodiumPage() {
           <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Scores des Finales <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {matches.map(m => {
               const t1 = teams.find(t => t.id === m.team1_id);
               const t2 = teams.find(t => t.id === m.team2_id);
@@ -229,7 +190,7 @@ export default function PodiumPage() {
 				      
 				      {/* ÉQUIPE 1 - Bloc de gauche */}
 				      {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
-				      <div className="flex flex-col flex-1 text-right truncate space-y-1">
+				      <div className="flex flex-col flex-1 text-right truncate space-y-0">
 				        <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
 				        <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
 				      </div>
@@ -242,7 +203,7 @@ export default function PodiumPage() {
 
 				      {/* ÉQUIPE 2 - Bloc de droite */}
 				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
-				      <div className="flex flex-col flex-1 text-left truncate space-y-1">
+				      <div className="flex flex-col flex-1 text-left truncate space-y-0">
 				        <span className="truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span>
 				        <span className="truncate">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
 				      </div>
@@ -260,7 +221,7 @@ export default function PodiumPage() {
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Scores des Demis <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-60">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {demiMatches.map(m => {
               const t1 = teams.find(t => t.id === m.team1_id);
               const t2 = teams.find(t => t.id === m.team2_id);
@@ -302,8 +263,8 @@ export default function PodiumPage() {
 
         {/* 4. TABLEAUX DE POULES */}
         <section className="mb-16">
-          <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
-            <div className="h-[1px] flex-1 bg-zinc-800"></div> Phase de Poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+            <div className="h-[1px] flex-1 bg-zinc-800"></div> Classement de Poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {renderStandingsMini('Gassin')}
