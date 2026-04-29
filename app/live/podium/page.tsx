@@ -44,7 +44,8 @@ export default function PodiumPage() {
 	    }
 
       const { data: seasons } = await supabase.from('seasons').select('year, is_active');
-      setSeason(seasons.filter(m => m.is_active === true))
+      if (seasons) {
+	      setSeason(seasons.filter(m => m.is_active === true)) }
     
       const { data: profilesData } = await supabase.from('profiles').select('id, nom');
       const pMap: Record<number, string> = {};
