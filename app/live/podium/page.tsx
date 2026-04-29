@@ -16,6 +16,8 @@ export default function PodiumPage() {
   const [pouleMatches, setPouleMatches] = useState<any[]>([]);
   const [stepValues, setStepValues] = useState<any[]>([]);
   const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
+  const [status, setStatus] = useState<string>('TERMINE');
+  const [season, setSeason] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -24,6 +26,26 @@ export default function PodiumPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
+
+      // --- AJOUT : VÉRIFICATION DU STATUT DU TOURNOI ---
+      // Si le tournoi est déjà en cours, on bloque l'accès au draft et on envoie sur la page Poules
+      const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
+	  if (tournoi) {
+//	      setStatus(tournoi?.status); // On met à jour le status ici
+	      switch (tournoi?.status) {
+	        case 'POULES': router.push('/live/poules'); break;
+	        case 'DEMI': router.push('/live/demi'); break;
+	        case 'FINALE': router.push('/live/finale'); break;
+	        case 'TERMINE': router.push('/live/podium'); break;
+	        default:
+	          // On reste ici si c'est JOUEURS ou EQUIPES
+	          setLoading(false); 
+	      }
+	    }
+
+      const { data: seasons } = await supabase.from('seasons').select('year, is_active');
+      setSeason(seasons.filter(m => m.is_active === true))
+    
       const { data: profilesData } = await supabase.from('profiles').select('id, nom');
       const pMap: Record<number, string> = {};
       if (profilesData) profilesData.forEach(p => pMap[p.id] = p.nom);
@@ -41,11 +63,11 @@ export default function PodiumPage() {
 
       const { data: steps } = await supabase.from('steps').select('id, value');
       if (steps) setStepValues(steps);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+	    } catch (e) {
+	      console.error(e);
+	    } finally {
+	      setLoading(false);
+	    }
   };
 
   const finalTop8 = useMemo(() => {
@@ -89,6 +111,36 @@ export default function PodiumPage() {
     return standings.sort((a, b) => b.pts - a.pts || b.diff - a.diff);
   };
 
+
+  
+    const renderStepper = (currentStatus: string) => {
+      const steps = [
+        { id: 'JOUEURS', label: 'Joueurs' }, { id: 'EQUIPES', label: 'Equipes' },
+        { id: 'POULES', label: 'Poules' }, { id: 'DEMI', label: 'Demi-Finales' },
+        { id: 'FINALE', label: 'Finales' }, { id: 'TERMINE', label: 'Podium' }
+      ];
+      return (
+        <div className="flex items-center justify-between mb-12 w-full max-w-3xl mx-auto px-4">
+          {steps.map((step, idx) => {
+            const currentIdx = steps.map(s => s.id).indexOf(currentStatus);
+            const isPast = currentIdx > idx;
+            const isCurrent = step.id === currentStatus;
+            return (
+              <div key={step.id} className="flex items-center flex-1 last:flex-none">
+                <div className="relative flex flex-col items-center">
+                  <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-black transition-all ${isCurrent ? 'bg-red-600 text-white ring-4 ring-red-600/20' : isPast ? 'bg-zinc-500 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
+                    {isPast ? '✓' : idx + 1}
+                  </div>
+                  <span className={`absolute -bottom-7 text-[9px] font-black uppercase italic whitespace-nowrap ${isCurrent ? 'text-white' : 'text-zinc-600'}`}>{step.label}</span>
+                </div>
+                {idx !== steps.length - 1 && <div className="flex-1 h-[2px] mx-4 bg-zinc-800"><div className={`h-full bg-red-600 transition-all duration-1000 ${isPast ? 'w-full' : 'w-0'}`} /></div>}
+              </div>
+            );
+          })}
+        </div>
+      );
+    };
+
   const renderStandingsMini = (pouleName: string) => {
     const standings = calculateStandings(pouleName);
     return (
@@ -127,8 +179,10 @@ export default function PodiumPage() {
           <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-2">
             Palmarès <span className="text-red-600">Final</span>
           </h1>
-          <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Saison 2024 • Tournament Completed</p>
+          <p className="text-zinc-500 font-bold uppercase text-3xl md:text-4xl tracking-widest">• été {season[0].year} •</p>
         </header>
+
+        {renderStepper(status)}
 
         {/* 1. CLASSEMENT DES 8 ÉQUIPES */}
         <section className="mb-20">
@@ -158,53 +212,89 @@ export default function PodiumPage() {
 
         {/* 2. MATCHES DES FINALES */}
         <section className="mb-16">
-          <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+          <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Scores des Finales <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {matches.map(m => {
               const t1 = teams.find(t => t.id === m.team1_id);
               const t2 = teams.find(t => t.id === m.team2_id);
-              return (
-                <div key={m.id} className="bg-zinc-900/30 border border-white/5 p-5 rounded-2xl flex flex-col items-center gap-3">
-                  <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">{m.type}</span>
-                  <div className="flex items-center justify-between w-full font-bold uppercase text-[10px] md:text-[11px]">
-                    <span className="flex-1 text-right truncate">
-                      {playersMap[t1?.pointeur_id]?.split(' ')[0]} / {playersMap[t1?.tireur_id]?.split(' ')[0]}
-                    </span>
-                    <div className="mx-4 bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white">
-                      {m.score_team1} - {m.score_team2}
-                    </div>
-                    <span className="flex-1 text-left truncate">
-                      {playersMap[t2?.pointeur_id]?.split(' ')[0]} / {playersMap[t2?.tireur_id]?.split(' ')[0]}
-                    </span>
-                  </div>
-                </div>
-              );
+				return (
+				  <div key={m.id} className="bg-zinc-900/30 border border-white/5 p-5 rounded-2xl flex flex-col items-center gap-3">
+				    <span className="text-sm font-black text-red-600 uppercase tracking-widest">{m.type}</span>
+				    
+				    {/* Conteneur principal (La ligne) */}
+				    <div className="flex items-center justify-between w-full font-bold uppercase text-sm md:text-md">
+				      
+				      {/* ÉQUIPE 1 - Bloc de gauche */}
+				      {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
+				      <div className="flex flex-col flex-1 text-right truncate space-y-1">
+				        <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
+				        <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
+				      </div>
+
+				      {/* SCORE - Bloc central */}
+				      {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
+				      <div className="shrink-0 mx-4 bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
+				        {m.score_team1} - {m.score_team2}
+				      </div>
+
+				      {/* ÉQUIPE 2 - Bloc de droite */}
+				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
+				      <div className="flex flex-col flex-1 text-left truncate space-y-1">
+				        <span className="truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span>
+				        <span className="truncate">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
+				      </div>
+
+				    </div>
+				  </div>
+				);
             })}
           </div>
         </section>
 
         {/* 3. MATCHES DES DEMIS */}
         <section className="mb-16">
-          <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
-            <div className="h-[1px] flex-1 bg-zinc-800"></div> Historique Demis <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+            <div className="h-[1px] flex-1 bg-zinc-800"></div> Scores des Demis <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-60">
             {demiMatches.map(m => {
               const t1 = teams.find(t => t.id === m.team1_id);
               const t2 = teams.find(t => t.id === m.team2_id);
-              return (
-                <div key={m.id} className="bg-zinc-900/10 p-3 rounded-xl border border-white/5 flex justify-between items-center text-[9px] md:text-[10px] font-bold italic uppercase">
-                   <span className="flex-1 text-right truncate">
-                    {playersMap[t1?.pointeur_id]?.split(' ')[0]} / {playersMap[t1?.tireur_id]?.split(' ')[0]}
-                   </span>
-                   <span className="text-zinc-600 mx-3">{m.score_team1} - {m.score_team2}</span>
-                   <span className="flex-1 text-left truncate">
-                    {playersMap[t2?.pointeur_id]?.split(' ')[0]} / {playersMap[t2?.tireur_id]?.split(' ')[0]}
-                   </span>
-                </div>
-              );
+
+				return (
+				  <div key={m.id} className="bg-zinc-900/30 border border-white/5 p-2 rounded-2xl flex flex-col items-center gap-3">
+				    <span className="text-sm font-black text-red-600 uppercase tracking-widest">Tableau {m.tableau}</span>
+				    
+				    {/* Conteneur principal (La ligne) */}
+				    <div className="flex items-center justify-between w-full font-bold uppercase text-sm md:text-md">
+				      
+				      {/* ÉQUIPE 1 - Bloc de gauche */}
+				      {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
+				      <div className="flex flex-col flex-1 text-right truncate space-y-0">
+				        <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
+				        <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
+				      </div>
+
+				      {/* SCORE - Bloc central */}
+				      {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
+				      <div className="shrink-0 mx-4 bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
+				        {m.score_team1} - {m.score_team2}
+				      </div>
+
+				      {/* ÉQUIPE 2 - Bloc de droite */}
+				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
+				      <div className="flex flex-col flex-1 text-left truncate space-y-0">
+				        <span className="truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span>
+				        <span className="truncate">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
+				      </div>
+
+				    </div>
+				  </div>
+				);
+
             })}
           </div>
         </section>
@@ -220,7 +310,7 @@ export default function PodiumPage() {
           </div>
         </section>
 
-        {/* 5. NOUVEAU BLOC : TOUS LES MATCHES DE POULES */}
+        {/* 5. TOUS LES MATCHES DE POULES */}
         <section className="mb-24">
           <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Détail des matches de poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
@@ -228,17 +318,39 @@ export default function PodiumPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {['Gassin', 'Ramatuelle'].map((poule) => (
               <div key={poule} className="space-y-2">
-                <div className="text-[10px] font-black uppercase text-zinc-600 mb-3 ml-1 tracking-[0.2em]">Poule {poule}</div>
+                <div className="text-md font-black uppercase text-zinc-600 mb-3 ml-1 tracking-[0.2em]">{poule}</div>
                 {pouleMatches.filter(m => m.poule === poule).map(m => {
                   const t1 = teams.find(t => t.id === m.team1_id);
                   const t2 = teams.find(t => t.id === m.team2_id);
-                  return (
-                    <div key={m.id} className="flex items-center justify-between bg-zinc-900/20 p-2 px-3 rounded-lg border border-white/5 text-[9px] font-medium uppercase text-zinc-400 italic">
-                      <span className="flex-1 text-right truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]} / {playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
-                      <span className="mx-3 font-black text-zinc-600">{m.score_team1} - {m.score_team2}</span>
-                      <span className="flex-1 text-left truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]} / {playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
-                    </div>
-                  );
+				 return (
+				   <div key={m.id} className="bg-zinc-900/30 border border-white/5 p-3 rounded-2xl flex flex-col items-center gap-1">
+				     
+				     {/* Conteneur principal (La ligne) */}
+				     <div className="flex items-center justify-between w-full font-bold uppercase text-sm md:text-md">
+				       
+				       {/* ÉQUIPE 1 - Bloc de gauche */}
+				       {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
+				       <div className="flex flex-col flex-1 text-right truncate">
+				         <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
+				         <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
+				       </div>
+
+				       {/* SCORE - Bloc central */}
+				       {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
+				       <div className="shrink-0 mx-4 bg-black px-4 py-1 rounded-xl font-black text-xl border border-white/5 text-white text-center">
+				         {m.score_team1} - {m.score_team2}
+				       </div>
+
+				       {/* ÉQUIPE 2 - Bloc de droite */}
+				       {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
+				       <div className="flex flex-col flex-1 text-left truncate">
+				         <span className="truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span>
+				         <span className="truncate">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
+				       </div>
+
+				     </div>
+				   </div>
+				 );
                 })}
               </div>
             ))}

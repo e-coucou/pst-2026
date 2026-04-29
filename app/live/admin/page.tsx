@@ -50,7 +50,7 @@ export default function LiveAdminWizard() {
 
  	  // VERIFICATION STRICTE
 	  if (!adminStatus) {
-	    router.push('/'); // Redirige les non-admins vers le classement
+	    router.push('/live'); // Redirige les non-admins vers le classement
 	    return; 
 	  }
 

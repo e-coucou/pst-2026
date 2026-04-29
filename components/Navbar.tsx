@@ -116,9 +116,11 @@ export default function Navbar() {
 
           {/* BOUTON BURGER (Mobile uniquement) */}
           <div className="md:hidden flex items-center gap-4">
-            <div className="flex flex-col items-end mr-2">
-              <span className="text-[8px] font-black text-red-500 uppercase tracking-widest leading-none">Live </span>
-              <span className="text-[10px] font-bold italic text-white uppercase leading-none">2026</span>
+            <div className="flex flex-col items-end group mr-2">
+              <Link href="/live" className="flex flex-col items-end">
+                <span className="text-[8px] font-black text-red-500 uppercase tracking-widest leading-none group-hover:text-white group-active:text-white">Live </span>
+                <span className="text-[10px] font-bold italic text-white uppercase leading-none group-hover:text-red-500 group-active:text-red-500">2026</span>
+              </Link>
             </div>
             <button 
               onClick={() => setIsOpen(!isOpen)}
@@ -132,7 +134,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-4">
             {(userRole === 'admin' || userRole === 'super') && (
               <div className="flex flex-col items-end group">
-                <Link href="/live/admin" className="flex flex-col items-end">
+                <Link href="/live" className="flex flex-col items-end">
                   <span className="text-[10px] font-black text-red-500 uppercase tracking-widest group-hover:text-white">Live</span>
                   <span className="text-xs font-bold italic text-white uppercase group-hover:text-red-600">Saison 2026</span>
                 </Link>
