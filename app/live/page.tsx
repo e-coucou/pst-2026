@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
-import { Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List } from 'lucide-react';
+import { Brain, Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List } from 'lucide-react';
+import PredictionModal from '@/components/PredictionModal';
 
 const statusSteps = [
   { id: 'JOUEURS', label: 'Joueurs' },
@@ -28,6 +29,7 @@ export default function PodiumPage() {
   const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
   const [status, setStatus] = useState<string>('TERMINE');
   const [season, setSeason] = useState<any[]>([]);
+  const [matchToPredict, setMatchToPredict] = useState<{match: any, t1: any, t2: any} | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -261,6 +263,17 @@ export default function PodiumPage() {
 				        {m.score_team1} - {m.score_team2}
 				      </div>
 
+  {/* NOUVEAU BOUTON : Ne s'affiche que si le match n'est pas terminé */}
+    {m.status !== 'TERMINE' && (
+      <button 
+        onClick={() => setMatchToPredict({ match: m, t1, t2 })}
+        className="text-xs flex items-left gap-1 text-zinc-500 hover:text-red-500 transition-colors font-bold uppercase"
+      >
+        <Brain size={18} />
+      </button>
+    )}
+  
+  
 				      {/* ÉQUIPE 2 - Bloc de droite */}
 				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
 				      <div className="flex flex-col flex-1 text-left truncate space-y-0">
@@ -307,6 +320,18 @@ export default function PodiumPage() {
 				      <div className="shrink-0 mx-4 bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
 				        {m.score_team1} - {m.score_team2}
 				      </div>
+
+
+{/* NOUVEAU BOUTON : Ne s'affiche que si le match n'est pas terminé */}
+  {m.status !== 'TERMINE' && (
+    <button 
+      onClick={() => setMatchToPredict({ match: m, t1, t2 })}
+      className="text-xs flex items-left gap-1 text-zinc-500 hover:text-red-500 transition-colors font-bold uppercase"
+    >
+      <Brain size={18} />
+    </button>
+  )}
+
 
 				      {/* ÉQUIPE 2 - Bloc de droite */}
 				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
@@ -369,6 +394,17 @@ export default function PodiumPage() {
 				         {m.score_team1} - {m.score_team2}
 				       </div>
 
+
+{/* NOUVEAU BOUTON : Ne s'affiche que si le match n'est pas terminé */}
+  {m.status !== 'TERMINE' && (
+    <button 
+      onClick={() => setMatchToPredict({ match: m, t1, t2 })}
+      className="text-xs flex items-left gap-1 text-zinc-500 hover:text-red-500 transition-colors font-bold uppercase"
+    >
+      <Brain size={18} />
+    </button>
+  )}
+
 				       {/* ÉQUIPE 2 - Bloc de droite */}
 				       {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
 				       <div className="flex flex-col flex-1 text-left truncate">
@@ -386,6 +422,15 @@ export default function PodiumPage() {
         </section>
         )}
 
+{/* MODALE DE PREDICTION */}
+        {matchToPredict && (
+          <PredictionModal 
+            matchInfo={matchToPredict} 
+            playersMap={playersMap}
+            onClose={() => setMatchToPredict(null)} 
+          />
+        )}
+  
         {/* FOOTER 
         <div className="fixed bottom-8 left-0 right-0 px-4 flex justify-center">
           <button 
@@ -398,6 +443,7 @@ export default function PodiumPage() {
         */}
 
       </div>
+
     </div>
   );
 }
