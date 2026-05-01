@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
+import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import { Brain, Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List } from 'lucide-react';
 import PredictionModal from '@/components/PredictionModal';
 import { calculateTeamsStats } from '@/utils/live-stats';
@@ -16,6 +17,8 @@ const statusSteps = [
   { id: 'FINALE', label: 'Finales' },
   { id: 'TERMINE', label: 'Podium' }
 ];
+
+export const dynamic = 'force-dynamic';
 
 export default function PodiumPage() {
   const supabase = createClient();
@@ -32,6 +35,8 @@ export default function PodiumPage() {
   const [status, setStatus] = useState<string>('TERMINE');
   const [season, setSeason] = useState<any[]>([]);
   const [matchToPredict, setMatchToPredict] = useState<{match: any, t1: any, t2: any} | null>(null);
+  const [timeline, setTimeline] = useState<any[]>([]);
+  const [allPlayerNames, setAllPlayerNames] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -118,6 +123,30 @@ export default function PodiumPage() {
 	    } finally {
 	      setLoading(false);
 	    }
+
+
+  // On lance les deux requêtes en parallèle pour la performance
+  const [timelineRes, profilesRes, seasons] = await Promise.all([
+    supabase.rpc('get_full_live'),
+    supabase.from('live_selected').select('nom'),
+    supabase.from('seasons').select('year').eq('is_active',true),
+  ]);
+
+
+  const nbYears = seasons.data ? new Set(seasons.data.map(g => g.year)).size : 0;
+
+  // Debug : Vérification du nombre de matchs récupérés (dans ta console terminal)
+  if (timelineRes.data) {
+	setTimeline(timelineRes.data);
+  }
+  if (profilesRes.data) {
+  	setAllPlayerNames( profilesRes.data?.map(p => p.nom).filter(Boolean) );
+  	}
+
+
+
+
+	    
   };
 
   const teamsStats = useMemo(() => 
@@ -487,6 +516,31 @@ export default function PodiumPage() {
           </div>
         </section>
         )}
+
+        {/* Container du Graphique */}
+        {/* 5. TOUS LES MATCHES DE POULES */}
+		{currentStepIndex >= statusSteps.findIndex(s => s.id === 'POULES') && (
+        <section className="mb-24">
+          <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+            <div className="h-[1px] bg-zinc-800"></div> Détail des matches de poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
+ 
+
+        <div className="relative h-[70vh] w-full bg-zinc-900/10 rounded-[3rem] border border-white/5 p-6 backdrop-blur-3xl overflow-hidden">
+          {/* Effet de lueur en arrière-plan */}
+          <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-red-600/5 blur-[120px] pointer-events-none" />
+          
+          <GlobalProgressionChart 
+            timeline={timeline} 
+            allPlayerNames={allPlayerNames} 
+          />
+        </div>
+
+        </div>
+        </section>
+        )}
+        
 
 {/* MODALE DE PREDICTION */}
         {matchToPredict && (

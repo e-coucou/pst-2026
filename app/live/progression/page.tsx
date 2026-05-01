@@ -12,14 +12,13 @@ export default async function ProgressionPage() {
   // On lance les deux requêtes en parallèle pour la performance
   const [timelineRes, profilesRes, seasons] = await Promise.all([
     supabase.rpc('get_full_live'),
-    supabase.from('profiles').select('nom'),
+    supabase.from('live_selected').select('nom'),
     supabase.from('seasons').select('year').eq('is_active',true),
 //    supabase.from('games').select('year') //
 //    {data: [{year: 2026}]}//.distinct() // Note: le support du .distinct() dépend de ta version de librairie.
   ]);
 
 
-console.log(seasons)
   const nbYears = seasons.data ? new Set(seasons.data.map(g => g.year)).size : 0;
 
   // Debug : Vérification du nombre de matchs récupérés (dans ta console terminal)
@@ -65,7 +64,7 @@ console.log(seasons)
           <div className="flex gap-8">
             <div className="flex flex-col">
               <span className="text-[8px] text-zinc-600 font-black uppercase tracking-widest">Base de données</span>
-              <span className="text-[10px] font-bold text-zinc-400">history_all</span>
+              <span className="text-[10px] font-bold text-zinc-400">live_history</span>
             </div>
             <div className="flex flex-col">
               <span className="text-[8px] text-zinc-600 font-black uppercase tracking-widest">Joueurs tracés</span>
