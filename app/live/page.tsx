@@ -263,32 +263,30 @@ export default function PodiumPage() {
                       <span>
                         {playersMap[r.team?.pointeur_id]?.split(' ')[0]} <span className="text-red-600">&</span> {playersMap[r.team?.tireur_id]?.split(' ')[0]}
                       </span>
+					  {/* Affichage des stats ELO */}
+					  {(() => {
+					    // On cherche les stats calculées pour cette équipe (r.team.id)
+					    const stats = teamsStats.find(s => s.id === r.team?.id);
+					    const delta = stats?.delta_elo || 0;
+					    const pointeurElo = (r.team?.elo_start_pointeur || 0) + delta;
+					    const tireurElo = (r.team?.elo_start_tireur || 0) + delta;
 
-{/* Affichage des stats ELO */}
-  {(() => {
-    // On cherche les stats calculées pour cette équipe (r.team.id)
-    const stats = teamsStats.find(s => s.id === r.team?.id);
-    const delta = stats?.delta_elo || 0;
-    const pointeurElo = (r.team?.elo_start_pointeur || 0) + delta;
-    const tireurElo = (r.team?.elo_start_tireur || 0) + delta;
-
-    return (
-      <div className="flex items-center gap-2">
-        {/* Le ELO Final */}
-        <span className="text-xs font-black text-zinc-400">
-          {pointeurElo.toFixed(1)} & {tireurElo.toFixed(1)}
-        </span>
-        
-        {/* Le Badge de progression (+/-) */}
-        {delta !== 0 && (
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${delta > 0 ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-            {delta > 0 ? '+' : ''}{delta.toFixed(1)}
-          </span>
-        )}
-      </div>
-    );
-  })()}
-
+					    return (
+					      <div className="flex items-center gap-2">
+					        {/* Le ELO Final */}
+					        <span className="text-xs font-black text-zinc-400">
+					          {pointeurElo.toFixed(1)} & {tireurElo.toFixed(1)}
+					        </span>
+					        
+					        {/* Le Badge de progression (+/-) */}
+					        {delta !== 0 && (
+					          <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${delta > 0 ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+					            {delta > 0 ? '+' : ''}{delta.toFixed(1)}
+					          </span>
+					        )}
+					      </div>
+					    );
+					  })()}
                     </div>
                   </div>
                   {r.rank === 1 && <Star size={20} fill="currentColor" className="text-red-600 animate-pulse" />}
@@ -322,8 +320,6 @@ export default function PodiumPage() {
 				        <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
 				        <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
 				      </div>
-
-
 						{/* SCORE - Bloc central avec bouton IA centré au-dessus */}
 						<div className="shrink-0 mx-4 flex flex-col items-center justify-center min-w-[80px]">
 						  

@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
-import { ArrowLeft, ArrowRight, Save, Trophy, Loader2, Edit2, LayoutGrid } from 'lucide-react';
+import PredictionModal from '@/components/PredictionModal';
+import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, LayoutGrid } from 'lucide-react';
 
 export default function LiveDemiPage() {
   const supabase = createClient();
@@ -21,6 +22,7 @@ export default function LiveDemiPage() {
   const [localScores, setLocalScores] = useState<Record<number, { s1: number | '', s2: number | '' }>>({});
   const [savingMatch, setSavingMatch] = useState<number | null>(null);
   const [eloSettings, setEloSettings] = useState<any>(null);
+  const [matchToPredict, setMatchToPredict] = useState<{match: any, t1: any, t2: any} | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -93,6 +95,22 @@ export default function LiveDemiPage() {
     setLocalScores(prev => ({ ...prev, [matchId]: { ...prev[matchId], [team === 1 ? 's1' : 's2']: numValue } }));
   };
 
+  // Fonction générique pour éviter la répétition de code
+  const executeAction = async (url: string) => {
+    try {
+      const res = await fetch(url, { method: 'POST' });
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(`❌ Erreur : ${data.error}`);
+      }
+    } catch (err) {
+      alert("❌ Erreur réseau");
+    }
+  };
+//	    executeAction('/api/admin/live-elo');
+
+
   const saveMatchResult = async (matchId: number) => {
     const scores = localScores[matchId];
     if (scores.s1 === '' || scores.s2 === '') return;
@@ -109,6 +127,7 @@ export default function LiveDemiPage() {
 
 	    // Mise à jour de l'état local (identique pour toutes les pages)
 	    setMatches(prev => prev.map(m => m.id === matchId ? updatedMatch : m));
+	    executeAction('/api/admin/live-elo');
 
 	  } catch (error: any) {
 	    console.error(error);
@@ -211,21 +230,30 @@ export default function LiveDemiPage() {
                         {playersMap[t2?.tireur_id] || t2?.tireur_id}
                     </div>
                   </div>
-                  {/* Actions */}
-                  <div className="flex shrink-0">
+                  <div className="flex shrink-0 group">
+				  {/* BOUTON IA : Positionné au-dessus et centré */}
+				   {!isTermine && (
+				    <button 
+				      onClick={() => setMatchToPredict({ match: m, t1, t2 })}
+				      className="mb-0 flex flex-col items-center gap-1 transition-all"
+				    >
+				      <div className="p-1.5 bg-zinc-800 rounded-full transition-colors  group-hover:bg-red-500 group-hover:scale-[1.3]">
+				        <Brain size={20} className="text-zinc-500 group-hover:text-white md:h-6 " />
+				      </div>
+				    </button>
+				   )}
+				  </div>
+                  <div className="flex shrink-0 group">
                     {isTermine ? (
-                      <button onClick={() => unlockMatch(m.id)} className="text-red-500 p-1 hover:text-white transition-colors">
+                      <button onClick={() => unlockMatch(m.id)} className="text-red-500 p-1 hover:text-white transition-colors group-hover:scale-[1.3]">
                         <Edit2 size={20} className="md:w-6 md:h-6" />
                       </button>
                     ) : (
-                      <button 
-                        onClick={() => saveMatchResult(m.id)} 
-                        disabled={savingMatch === m.id} 
-                        className={'p-2 rounded-lg text-white transition-all bg-purple-500 active:bg-purple-700'}
-                      >
+                      <button onClick={() => saveMatchResult(m.id)} disabled={savingMatch === m.id} className={'p-2 rounded-lg text-white transition-all bg-purple-500 active:bg-purple-700 group-hover:scale-[1.3]'}>
                         {savingMatch === m.id ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                       </button>
                     )}
+
                   </div>
                 </div>
             );
@@ -344,6 +372,14 @@ export default function LiveDemiPage() {
           {renderStandingsMini('Gassin')}
           {renderStandingsMini('Ramatuelle')}
         </div>
+		{/* MODALE DE PREDICTION */}
+        {matchToPredict && (
+          <PredictionModal 
+            matchInfo={matchToPredict} 
+            playersMap={playersMap}
+            onClose={() => setMatchToPredict(null)} 
+          />
+        )}
       </div>
     </div>
   );

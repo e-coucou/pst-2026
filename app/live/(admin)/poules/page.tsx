@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
+import PredictionModal from '@/components/PredictionModal';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
-import { ArrowLeft, ArrowRight, Save, Trophy, Loader2, Edit2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2 } from 'lucide-react';
 
 export default function LivePoulesPage() {
   const supabase = createClient();
@@ -20,6 +21,7 @@ export default function LivePoulesPage() {
   const [localScores, setLocalScores] = useState<Record<number, { s1: number | '', s2: number | '' }>>({});
   const [savingMatch, setSavingMatch] = useState<number | null>(null);
   const [eloSettings, setEloSettings] = useState<any>(null);
+  const [matchToPredict, setMatchToPredict] = useState<{match: any, t1: any, t2: any} | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -77,7 +79,19 @@ export default function LivePoulesPage() {
     }));
   };
 
+  // Fonction générique pour éviter la répétition de code
+  const executeAction = async (url: string) => {
+    try {
+      const res = await fetch(url, { method: 'POST' });
+      const data = await res.json();
 
+      if (!data.success) {
+        alert(`❌ Erreur : ${data.error}`);
+      }
+    } catch (err) {
+      alert("❌ Erreur réseau");
+    }
+  };
 
   const saveMatchResult = async (matchId: number) => {
     const scores = localScores[matchId];
@@ -95,6 +109,7 @@ export default function LivePoulesPage() {
 
 	    // Mise à jour de l'état local (identique pour toutes les pages)
 	    setMatches(prev => prev.map(m => m.id === matchId ? updatedMatch : m));
+	    executeAction('/api/admin/live-elo');
 
 	  } catch (error: any) {
 	    console.error(error);
@@ -262,6 +277,20 @@ export default function LivePoulesPage() {
                   </div>
 
                   {/* Actions */}
+                  <div className="flex shrink-0 group">
+				  {/* BOUTON IA : Positionné au-dessus et centré */}
+				   {!isTermine && (
+				    <button 
+				      onClick={() => setMatchToPredict({ match: m, t1, t2 })}
+				      className="mb-0 flex flex-col items-center gap-1 transition-all"
+				    >
+				      <div className="p-1.5 bg-zinc-800 rounded-full transition-colors  group-hover:bg-red-500 group-hover:scale-[1.3]">
+				        <Brain size={20} className="text-zinc-500 group-hover:text-white md:h-6 " />
+				      </div>
+				    </button>
+				   )}
+				  </div>
+ 
                   <div className="flex shrink-0">
                     {isTermine ? (
                       <button onClick={() => unlockMatch(m.id)} className="text-red-500 p-1 hover:text-white transition-colors">
@@ -356,6 +385,16 @@ export default function LivePoulesPage() {
         )}
         {renderPouleSection('Gassin', 'orange')}
         {renderPouleSection('Ramatuelle', 'purple')}
+
+		{/* MODALE DE PREDICTION */}
+        {matchToPredict && (
+          <PredictionModal 
+            matchInfo={matchToPredict} 
+            playersMap={playersMap}
+            onClose={() => setMatchToPredict(null)} 
+          />
+        )}
+
       </div>
     </div>
   );
