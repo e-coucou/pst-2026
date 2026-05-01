@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
+import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
 import { ArrowLeft, ArrowRight, Save, Trophy, Loader2, Edit2 } from 'lucide-react';
 
 export default function LivePoulesPage() {
@@ -18,6 +19,7 @@ export default function LivePoulesPage() {
   
   const [localScores, setLocalScores] = useState<Record<number, { s1: number | '', s2: number | '' }>>({});
   const [savingMatch, setSavingMatch] = useState<number | null>(null);
+  const [eloSettings, setEloSettings] = useState<any>(null);
 
   useEffect(() => {
     fetchData();
@@ -31,6 +33,12 @@ export default function LivePoulesPage() {
       setStatus(tournoi?.status); 
     }
 
+    const { data: sData } = await supabase.from('settings').select('*');
+	if (sData) {
+      const parsed = parseSettings(sData || []);
+      setEloSettings(parsed);
+    }
+  
     const { data: profilesData } = await supabase.from('profiles').select('id, nom');
     const pMap: Record<number, string> = {};
     if (profilesData) {
@@ -59,7 +67,7 @@ export default function LivePoulesPage() {
       setLocalScores(scores);
     }
     setLoading(false);
-  };
+  }; // end fetch
 
   const handleScoreChange = (matchId: number, team: 1 | 2, value: string) => {
     const numValue = value === '' ? '' : parseInt(value, 10);
@@ -69,30 +77,32 @@ export default function LivePoulesPage() {
     }));
   };
 
+
+
   const saveMatchResult = async (matchId: number) => {
     const scores = localScores[matchId];
     if (scores.s1 === '' || scores.s2 === '') return;
-
     setSavingMatch(matchId);
-    try {
-      const { error } = await supabase
-        .from('live_matches')
-        .update({
-          score_team1: scores.s1,
-          score_team2: scores.s2,
-          status: 'TERMINE'
-        })
-        .eq('id', matchId);
+	try {
+	    // Appel de la fonction commune
+	    const updatedMatch = await updateMatchScore(
+	      supabase,
+	      matchId,
+	      Number(scores.s1),
+	      Number(scores.s2),
+	      eloSettings // Récupéré au chargement de la page
+	    );
 
-      if (error) throw error;
+	    // Mise à jour de l'état local (identique pour toutes les pages)
+	    setMatches(prev => prev.map(m => m.id === matchId ? updatedMatch : m));
 
-      setMatches(prev => prev.map(m => 
-        m.id === matchId ? { ...m, score_team1: scores.s1, score_team2: scores.s2, status: 'TERMINE' } : m
-      ));
-    } finally {
-      setSavingMatch(null);
-    }
-  };
+	  } catch (error: any) {
+	    console.error(error);
+	    alert("Erreur : " + error.message);
+	  } finally {
+	    setSavingMatch(null);
+	  }
+	};
 
   const unlockMatch = async (matchId: number) => {
     setSavingMatch(matchId);
@@ -111,12 +121,19 @@ export default function LivePoulesPage() {
     const pouleTeams = teams.filter(t => t.poule === pouleName);
     const pouleMatches = matches.filter(m => m.poule === pouleName && m.status === 'TERMINE');
 
-    const standings = pouleTeams.map(t => ({
-      id: t.id,
-      pName: playersMap[t.pointeur_id] ? playersMap[t.pointeur_id] : `ID:${t.pointeur_id}`,
-      tName: playersMap[t.tireur_id] ? playersMap[t.tireur_id] : `ID:${t.tireur_id}`,
-      j: 0, pts: 0, diff: 0, pPlus: 0
-    }));
+    const standings = pouleTeams.map(t => {
+	  const teamDeltas = matches.filter(m => m.status === 'TERMINE' && (m.team1_id === t.id || m.team2_id === t.id));
+      const totalDelta = teamDeltas.reduce((acc, m) => {
+        return acc + (m.team1_id === t.id ? m.delta_elo_team1 : m.delta_elo_team2);
+      }, 0);
+	  return {
+        id: t.id,
+        pName: playersMap[t.pointeur_id] ? playersMap[t.pointeur_id] : `ID:${t.pointeur_id}`,
+        tName: playersMap[t.tireur_id] ? playersMap[t.tireur_id] : `ID:${t.tireur_id}`,
+        currentElo: t.elo_start + totalDelta,
+        j: 0, pts: 0, diff: 0, pPlus: 0
+      };
+    });
 
     pouleMatches.forEach(m => {
       const t1 = standings.find(s => s.id === m.team1_id);
@@ -202,7 +219,7 @@ export default function LivePoulesPage() {
 
               return (
                 <div key={m.id} className={`p-3 md:p-4 rounded-xl md:rounded-2xl border ${isTermine ? ( isG ? 'bg-orange-600/20 border-orange-600/50' : 'bg-purple-600/20 border-purple-500/50') : 'bg-black border-white/10'} flex items-center justify-between gap-2 md:gap-4`}>
-                  
+
                   {/* Team 1 */}
                   <div className="flex-1 text-right min-w-0">
                     <div className="text-[10px] text-zinc-500 font-black">#{m.team1_id}</div>
@@ -281,7 +298,7 @@ export default function LivePoulesPage() {
                 <tbody className="text-[12px] md:text-[14px] text-white font-bold">
                     {standings.map((s, idx) => (
                     <tr key={s.id} className={`border-2b border-white/5 last:border-0 ${idx < 2 ? ( isG ? 'bg-orange-500/10' : 'bg-purple-500/10') : ''}`}>
-                        <td className="p-3 md:p-4 text-zinc-500">{idx + 1}.<span className="text-white">{s.id}</span></td>
+                        <td className="p-3 md:p-4 text-zinc-500">{idx + 1}.<span className="text-white">{s.id} </span></td>
                         <td className="p-3 md:p-4 uppercase text-zinc-300 truncate max-w-[100px] md:max-w-none">
                             <span className="text-[12px] md:text-[14px] text-white block md:inline md:mr-1">{s.pName.split(' ')[0]} / </span>
                             {s.tName.split(' ')[0]}

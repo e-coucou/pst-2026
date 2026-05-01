@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
+import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
 import { ArrowLeft, ArrowRight, Save, Trophy, Loader2, Edit2, LayoutGrid } from 'lucide-react';
 
 export default function LiveDemiPage() {
@@ -19,6 +20,7 @@ export default function LiveDemiPage() {
   
   const [localScores, setLocalScores] = useState<Record<number, { s1: number | '', s2: number | '' }>>({});
   const [savingMatch, setSavingMatch] = useState<number | null>(null);
+  const [eloSettings, setEloSettings] = useState<any>(null);
 
   useEffect(() => {
     fetchData();
@@ -30,7 +32,13 @@ export default function LiveDemiPage() {
     if (tournoi) {
       setStatus(tournoi.status);
     }
-
+    
+    const { data: sData } = await supabase.from('settings').select('*');
+	if (sData) {
+      const parsed = parseSettings(sData || []);
+      setEloSettings(parsed);
+    }
+    
     const { data: profilesData } = await supabase.from('profiles').select('id, nom');
     const pMap: Record<number, string> = {};
     if (profilesData) profilesData.forEach(p => pMap[p.id] = p.nom);
@@ -89,13 +97,39 @@ export default function LiveDemiPage() {
     const scores = localScores[matchId];
     if (scores.s1 === '' || scores.s2 === '') return;
     setSavingMatch(matchId);
+	try {
+	    // Appel de la fonction commune
+	    const updatedMatch = await updateMatchScore(
+	      supabase,
+	      matchId,
+	      Number(scores.s1),
+	      Number(scores.s2),
+	      eloSettings // Récupéré au chargement de la page
+	    );
+
+	    // Mise à jour de l'état local (identique pour toutes les pages)
+	    setMatches(prev => prev.map(m => m.id === matchId ? updatedMatch : m));
+
+	  } catch (error: any) {
+	    console.error(error);
+	    alert("Erreur : " + error.message);
+	  } finally {
+	    setSavingMatch(null);
+	  }
+	};
+
+/*
+  const saveMatchResult = async (matchId: number) => {
+    const scores = localScores[matchId];
+    if (scores.s1 === '' || scores.s2 === '') return;
+    setSavingMatch(matchId);
     const { error } = await supabase.from('live_matches').update({
       score_team1: scores.s1, score_team2: scores.s2, status: 'TERMINE'
     }).eq('id', matchId);
     if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, score_team1: scores.s1, score_team2: scores.s2, status: 'TERMINE' } : m));
     setSavingMatch(null);
   };
-
+*/
   const unlockMatch = async (matchId: number) => {
     setSavingMatch(matchId);
     const { error } = await supabase.from('live_matches').update({ status: 'EN_COURS' }).eq('id', matchId);

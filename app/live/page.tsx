@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
 import { Brain, Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List } from 'lucide-react';
 import PredictionModal from '@/components/PredictionModal';
+import { calculateTeamsStats } from '@/utils/live-stats';
 
 const statusSteps = [
   { id: 'JOUEURS', label: 'Joueurs' },
@@ -22,6 +23,7 @@ export default function PodiumPage() {
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
+  const [pmatches, setPMatches] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [demiMatches, setDemiMatches] = useState<any[]>([]);
   const [pouleMatches, setPouleMatches] = useState<any[]>([]);
@@ -103,7 +105,7 @@ export default function PodiumPage() {
 		    const priorityB = statusPriority[b.status] || 99;
 		    return priorityA - priorityB;
 		  };
-      
+        setPMatches(allMatches);
         setMatches(allMatches.filter(m => m.type.toLowerCase().includes('inale')).sort(sortByStatus));
         setDemiMatches(allMatches.filter(m => m.type === 'Demi'));
         setPouleMatches(allMatches.filter(m => m.type === 'Poule'));      
@@ -117,6 +119,12 @@ export default function PodiumPage() {
 	      setLoading(false);
 	    }
   };
+
+  const teamsStats = useMemo(() => 
+	calculateTeamsStats(teams, pmatches), 
+	[teams, pmatches]
+  );
+
 
   const finalTop8 = useMemo(() => {
     const results: any[] = [];
@@ -135,15 +143,16 @@ export default function PodiumPage() {
     });
     return results.sort((a, b) => a.rank - b.rank);
   }, [matches, stepValues, teams]);
+  
 
   const calculateStandings = (pouleName: string) => {
     const pouleTeams = teams.filter(t => t.poule === pouleName);
     const pMatches = pouleMatches.filter(m => m.poule === pouleName && m.status === 'TERMINE');
     const standings = pouleTeams.map(t => ({
-      id: t.id,
-      pName: playersMap[t.pointeur_id] || `ID:${t.pointeur_id}`,
-      tName: playersMap[t.tireur_id] || `ID:${t.tireur_id}`,
-      pts: 0, diff: 0
+        id: t.id,
+        pName: playersMap[t.pointeur_id] || `ID:${t.pointeur_id}`,
+        tName: playersMap[t.tireur_id] || `ID:${t.tireur_id}`,
+        pts: 0, diff: 0
     }));
     pMatches.forEach(m => {
       const t1 = standings.find(s => s.id === m.team1_id);
@@ -222,7 +231,35 @@ export default function PodiumPage() {
                   <div className="flex-1">
                     <div className="text-[9px] font-black uppercase text-zinc-500 mb-1">{r.type}</div>
                     <div className="text-sm md:text-lg font-bold uppercase truncate">
-                      {playersMap[r.team?.pointeur_id]?.split(' ')[0]} <span className="text-red-600">&</span> {playersMap[r.team?.tireur_id]?.split(' ')[0]}
+                      <span>
+                        {playersMap[r.team?.pointeur_id]?.split(' ')[0]} <span className="text-red-600">&</span> {playersMap[r.team?.tireur_id]?.split(' ')[0]}
+                      </span>
+
+{/* Affichage des stats ELO */}
+  {(() => {
+    // On cherche les stats calculées pour cette équipe (r.team.id)
+    const stats = teamsStats.find(s => s.id === r.team?.id);
+    const delta = stats?.delta_elo || 0;
+    const pointeurElo = (r.team?.elo_start_pointeur || 0) + delta;
+    const tireurElo = (r.team?.elo_start_tireur || 0) + delta;
+
+    return (
+      <div className="flex items-center gap-2">
+        {/* Le ELO Final */}
+        <span className="text-xs font-black text-zinc-400">
+          {pointeurElo.toFixed(1)} & {tireurElo.toFixed(1)}
+        </span>
+        
+        {/* Le Badge de progression (+/-) */}
+        {delta !== 0 && (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${delta > 0 ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+            {delta > 0 ? '+' : ''}{delta.toFixed(1)}
+          </span>
+        )}
+      </div>
+    );
+  })()}
+
                     </div>
                   </div>
                   {r.rank === 1 && <Star size={20} fill="currentColor" className="text-red-600 animate-pulse" />}
@@ -257,23 +294,32 @@ export default function PodiumPage() {
 				        <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
 				      </div>
 
-				      {/* SCORE - Bloc central */}
-				      {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
-				      <div className="shrink-0 mx-4 bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
-				        {m.score_team1} - {m.score_team2}
-				      </div>
 
-  {/* NOUVEAU BOUTON : Ne s'affiche que si le match n'est pas terminé */}
-    {m.status !== 'TERMINE' && (
-      <button 
-        onClick={() => setMatchToPredict({ match: m, t1, t2 })}
-        className="text-xs flex items-left gap-1 text-zinc-500 hover:text-red-500 transition-colors font-bold uppercase"
-      >
-        <Brain size={18} />
-      </button>
-    )}
-  
-  
+						{/* SCORE - Bloc central avec bouton IA centré au-dessus */}
+						<div className="shrink-0 mx-4 flex flex-col items-center justify-center min-w-[80px]">
+						  
+						  {/* BOUTON IA : Positionné au-dessus et centré */}
+						  {m.status !== 'TERMINE' && (
+						    <button 
+						      onClick={() => setMatchToPredict({ match: m, t1, t2 })}
+						      className="mb-2 flex flex-col items-center gap-1 group transition-all"
+						    >
+						      <div className="p-1.5 text-white bg-zinc-800 rounded-full group-hover:bg-red-600/20 group-hover:text-red-500 transition-colors">
+						        <Brain size={16} className="text-zinc-500 group-hover:text-red-500" />
+						      </div>
+						      <span className="text-[9px] font-black uppercase tracking-tighter text-zinc-600 group-hover:text-red-500">
+						        IA Prono
+						      </span>
+						    </button>
+						  )}
+
+						  {/* LE SCORE */}
+						  <div className="bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center w-full">
+						    {m.score_team1} - {m.score_team2}
+						  </div>
+						</div>
+
+
 				      {/* ÉQUIPE 2 - Bloc de droite */}
 				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
 				      <div className="flex flex-col flex-1 text-left truncate space-y-0">
@@ -315,22 +361,30 @@ export default function PodiumPage() {
 				        <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
 				      </div>
 
-				      {/* SCORE - Bloc central */}
-				      {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
-				      <div className="shrink-0 mx-4 bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
-				        {m.score_team1} - {m.score_team2}
-				      </div>
 
+						{/* SCORE - Bloc central avec bouton IA centré au-dessus */}
+						<div className="shrink-0 mx-4 flex flex-col items-center justify-center min-w-[80px]">
+						  
+						  {/* BOUTON IA : Positionné au-dessus et centré */}
+						  {m.status !== 'TERMINE' && (
+						    <button 
+						      onClick={() => setMatchToPredict({ match: m, t1, t2 })}
+						      className="mb-2 flex flex-col items-center gap-1 group transition-all"
+						    >
+						      <div className="p-1.5 text-white bg-zinc-800 rounded-full group-hover:bg-red-600/20 group-hover:text-red-500 transition-colors">
+						        <Brain size={16} className="text-zinc-500 group-hover:text-red-500" />
+						      </div>
+						      <span className="text-[9px] font-black uppercase tracking-tighter text-zinc-600 group-hover:text-red-500">
+						        IA Prono
+						      </span>
+						    </button>
+						  )}
 
-{/* NOUVEAU BOUTON : Ne s'affiche que si le match n'est pas terminé */}
-  {m.status !== 'TERMINE' && (
-    <button 
-      onClick={() => setMatchToPredict({ match: m, t1, t2 })}
-      className="text-xs flex items-left gap-1 text-zinc-500 hover:text-red-500 transition-colors font-bold uppercase"
-    >
-      <Brain size={18} />
-    </button>
-  )}
+						  {/* LE SCORE */}
+						  <div className="bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center w-full">
+						    {m.score_team1} - {m.score_team2}
+						  </div>
+						</div>
 
 
 				      {/* ÉQUIPE 2 - Bloc de droite */}
@@ -390,20 +444,32 @@ export default function PodiumPage() {
 
 				       {/* SCORE - Bloc central */}
 				       {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
-				       <div className="shrink-0 mx-4 bg-black px-4 py-1 rounded-xl font-black text-xl border border-white/5 text-white text-center">
-				         {m.score_team1} - {m.score_team2}
-				       </div>
 
 
-{/* NOUVEAU BOUTON : Ne s'affiche que si le match n'est pas terminé */}
-  {m.status !== 'TERMINE' && (
-    <button 
-      onClick={() => setMatchToPredict({ match: m, t1, t2 })}
-      className="text-xs flex items-left gap-1 text-zinc-500 hover:text-red-500 transition-colors font-bold uppercase"
-    >
-      <Brain size={18} />
-    </button>
-  )}
+						{/* SCORE - Bloc central avec bouton IA centré au-dessus */}
+						<div className="shrink-0 mx-4 flex flex-col items-center justify-center min-w-[80px]">
+						  
+						  {/* BOUTON IA : Positionné au-dessus et centré */}
+						  {m.status !== 'TERMINE' && (
+						    <button 
+						      onClick={() => setMatchToPredict({ match: m, t1, t2 })}
+						      className="mb-2 flex flex-col items-center gap-1 group transition-all"
+						    >
+						      <div className="p-1.5 text-white bg-zinc-800 rounded-full group-hover:bg-red-600/20 group-hover:text-red-500 transition-colors">
+						        <Brain size={16} className="text-zinc-500 group-hover:text-red-500" />
+						      </div>
+						      <span className="text-[9px] font-black uppercase tracking-tighter text-zinc-600 group-hover:text-red-500">
+						        IA Prono
+						      </span>
+						    </button>
+						  )}
+
+						  {/* LE SCORE */}
+						  <div className="bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center w-full">
+						    {m.score_team1} - {m.score_team2}
+						  </div>
+						</div>
+
 
 				       {/* ÉQUIPE 2 - Bloc de droite */}
 				       {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}

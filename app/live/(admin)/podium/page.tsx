@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
 import { Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List } from 'lucide-react';
+import { calculateTeamsStats } from '@/utils/live-stats';
 
 export default function PodiumPage() {
   const supabase = createClient();
@@ -12,6 +13,7 @@ export default function PodiumPage() {
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
+  const [pmatches, setPMatches] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [demiMatches, setDemiMatches] = useState<any[]>([]);
   const [pouleMatches, setPouleMatches] = useState<any[]>([]);
@@ -48,6 +50,7 @@ export default function PodiumPage() {
 
       const { data: allMatches } = await supabase.from('live_matches').select('*').order('id', { ascending: true });
       if (allMatches) {
+        setPMatches(allMatches);
         setMatches(allMatches.filter(m => m.type.toLowerCase().includes('inale')));
         setDemiMatches(allMatches.filter(m => m.type === 'Demi'));
         setPouleMatches(allMatches.filter(m => m.type === 'Poule'));      
@@ -102,6 +105,12 @@ export default function PodiumPage() {
     });
     return standings.sort((a, b) => b.pts - a.pts || b.diff - a.diff);
   };
+
+
+  const teamsStats = useMemo(() => 
+	calculateTeamsStats(teams, pmatches), 
+	[teams, pmatches]
+  );
 
   const renderStandingsMini = (pouleName: string) => {
     const standings = calculateStandings(pouleName);
@@ -164,6 +173,32 @@ export default function PodiumPage() {
                     <div className="text-sm md:text-lg font-bold uppercase truncate">
                       {playersMap[r.team?.pointeur_id]?.split(' ')[0]} <span className="text-red-600">&</span> {playersMap[r.team?.tireur_id]?.split(' ')[0]}
                     </div>
+
+{/* Affichage des stats ELO */}
+  {(() => {
+    // On cherche les stats calculées pour cette équipe (r.team.id)
+    const stats = teamsStats.find(s => s.id === r.team?.id);
+    const delta = stats?.delta_elo || 0;
+    const pointeurElo = (r.team?.elo_start_pointeur || 0) + delta;
+    const tireurElo = (r.team?.elo_start_tireur || 0) + delta;
+
+    return (
+      <div className="flex items-center gap-2">
+        {/* Le ELO Final */}
+        <span className="text-xs font-black text-zinc-400">
+          {pointeurElo.toFixed(1)} & {tireurElo.toFixed(1)}
+        </span>
+        
+        {/* Le Badge de progression (+/-) */}
+        {delta !== 0 && (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${delta > 0 ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+            {delta > 0 ? '+' : ''}{delta.toFixed(1)}
+          </span>
+        )}
+      </div>
+    );
+  })()}
+
                   </div>
                   {r.rank === 1 && <Star size={20} fill="currentColor" className="text-red-600 animate-pulse" />}
                 </div>
