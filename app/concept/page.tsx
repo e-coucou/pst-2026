@@ -94,10 +94,17 @@ export default function ConceptPage() {
 	          <div className="bg-zinc-900 p-6 rounded-2xl border-l-4 border-red-600 shadow-xl">
 	            <span className="font-black uppercase tracking-widest text-red-500 text-xs">Poule Gassin</span>
 	            <p className="text-3xl font-black text-white italic mt-2 underline decoration-zinc-700">A, C, E, G</p>
+	            <p className="text-xl font-black text-white italic mt-2 decoration-zinc-700">Organisée en 3 série de 2 matches</p>
+	            <p className="text-sm font-black text-white italic mt-2 decoration-zinc-700">A-C & E-G</p>
+	            <p className="text-sm font-black text-white italic mt-2 decoration-zinc-700">A-E & C-G</p>
+	            <p className="text-sm font-black text-white italic mt-2 decoration-zinc-700">A-G & C-E</p>
 	          </div>
 	          <div className="bg-zinc-900 p-6 rounded-2xl border-l-4 border-red-600 shadow-xl">
 	            <span className="font-black uppercase tracking-widest text-red-500 text-xs">Poule Ramatuelle</span>
 	            <p className="text-3xl font-black text-white italic mt-2 underline decoration-zinc-700">B, D, F, H</p>
+	            <p className="text-sm font-black text-white italic mt-2 decoration-zinc-700">B-D & F-H</p>
+	            <p className="text-sm font-black text-white italic mt-2 decoration-zinc-700">B-F & D-H</p>
+	            <p className="text-sm font-black text-white italic mt-2 decoration-zinc-700">B-H & D-F</p>
 	          </div>
 	        </div>
           <div className="space-y-4">
@@ -146,7 +153,7 @@ export default function ConceptPage() {
         </h2>
         <div className="grid grid-cols-1 gap-4">
           {[
-            { title: "Grande Finale", desc: "Le titre suprême (Vainqueurs Principal)", ranking: "Places 1 & 2", color: "border-red-600 bg-red-600/10 text-red-500" },
+            { title: "Finale", desc: "Le titre suprême (Vainqueurs Principal)", ranking: "Places 1 & 2", color: "border-red-600 bg-red-600/10 text-red-500" },
             { title: "Petite Finale", desc: "Le podium (Perdants Principal)", ranking: "Places 3 & 4", color: "border-zinc-500 bg-zinc-900/50 text-zinc-300" },
             { title: "Toute Petite Finale", desc: "L'honneur du repêchage (Vainqueurs Repêchage)", ranking: "Places 5 & 6", color: "border-zinc-700 bg-zinc-900/30 text-zinc-500" },
             { title: "Finale d'Honneur", desc: "Le courage (Perdants Repêchage)", ranking: "Places 7 & 8", color: "border-zinc-800 bg-zinc-900/10 text-zinc-600" },

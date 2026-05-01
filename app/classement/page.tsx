@@ -90,20 +90,20 @@ export default async function Leaderboard() {
               const rankColor = index === 0 ? 'text-red-600' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-orange-500' : 'text-zinc-700';
 
               return (
-                <Link key={player.id} href={`/joueurs/${player.id}`} className="flex items-center p-6 hover:bg-white/5 transition-all group">
+                <Link key={player.id} href={`/joueurs/${player.id}`} className="flex items-center p-4 sm-p6 hover:bg-white/5 transition-all group">
                   {/* RANG */}
-                  <div className={`w-12 flex justify-center text-3xl font-black italic ${rankColor}`}>
+                  <div className={`w-10 sm:w-12 flex justify-center text-3xl font-black italic ${rankColor}`}>
                     {index + 1}
                   </div>
 
                   {/* VIGNETTE PHOTO SIGNÉE */}
                   <div className="ml-4 relative">
                     {player.photo ? (
-                      <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/10 group-hover:border-red-600/50 transition-colors">
+                      <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl overflow-hidden border border-white/10 group-hover:border-red-600/50 transition-colors">
                         <img src={player.photo} alt={player.nom} className="w-full h-full object-cover group-hover:scale-[1.5]" />
                       </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center border border-white/5">
+                      <div className="w-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-800 flex items-center justify-center border border-white/5">
                         <User size={20} className="text-zinc-600" />
                       </div>
                     )}
@@ -111,7 +111,7 @@ export default async function Leaderboard() {
 
                   {/* INFOS */}
                   <div className="flex-1 ml-6">
-                    <span className="text-lg font-black uppercase italic text-white group-hover:text-red-500 transition-colors">
+                    <span className="text-sm truncate sm:text-lg font-black uppercase italic text-white group-hover:text-red-500 transition-colors">
                       {player.nom}
                     </span>
                   </div>
@@ -119,7 +119,7 @@ export default async function Leaderboard() {
                   <div className="flex items-center gap-6">
                     <div className="text-right">
                       <p className="text-[9px] text-gray-600 font-black uppercase mb-1">ELO</p>
-                      <p className="text-3xl font-mono font-black italic text-white leading-none">
+                      <p className="text-xl sm:text-3xl font-mono font-black italic text-white leading-none">
                         {player.elo.toFixed(0)}
                       </p>
                     </div>

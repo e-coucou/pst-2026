@@ -144,11 +144,6 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="py-12 border-t border-white/5 text-center">
-        <p className="text-[10px] font-black text-gray-700 uppercase tracking-[0.5em]">
-          Design & Code by eCoucou Digital Engine • 2026
-        </p>
-      </footer>
     </div>
   );
 }
