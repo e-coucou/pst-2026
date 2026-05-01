@@ -42,7 +42,7 @@ export default function VideosPage() {
 
   return (
     <div className="min-h-screen bg-black text-white p-6 md:p-20">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto w-full">
         
         {/* Header de la page centré */}
         <div className="mb-16 text-center flex flex-col items-center">
@@ -84,44 +84,48 @@ export default function VideosPage() {
             <p className="text-zinc-600 font-black uppercase tracking-widest">Aucune vidéo disponible.</p>
           </div>
         ) : (
-          years.map(year => (
-            <section key={year} className="mb-24">
-              <div className="flex items-center gap-6 mb-10">
-                <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter">
-                  Saison <span className="text-red-600">{year}</span>
-                </h2>
-                <div className="h-px flex-1 bg-gradient-to-r from-zinc-800 to-transparent"></div>
-              </div>
+		years.map(year => (
+		  <section key={year} className="mb-24 w-full">
+		    {/* Titre de saison */}
+		    <div className="flex items-center gap-6 mb-10 w-full">
+		      <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter shrink-0">
+		        Saison <span className="text-red-600">{year}</span>
+		      </h2>
+		      <div className="h-px flex-1 bg-gradient-to-r from-zinc-800 to-transparent"></div>
+		    </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                {videos.filter(v => v.year === year).map(video => (
-                  <div key={video.id} className="group flex flex-col">
-                    <div className="relative aspect-video bg-zinc-900 rounded-[2rem] overflow-hidden border border-white/5 group-hover:border-red-600/50 transition-all duration-500 shadow-2xl">
-                      <iframe 
-                        src={getEmbedUrl(video.link)}
-                        className="w-full h-full"
-                        allowFullScreen
-                      />
-                    </div>
-                    
-                    <div className="mt-5 px-6 flex justify-between items-center">
-                      <div className="flex items-center gap-2 text-zinc-500">
-                        <Calendar size={14} className="text-red-600" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">{video.year}</span>
-                      </div>
-                      <a 
-                        href={video.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="bg-zinc-900 p-2 rounded-full text-zinc-500 hover:text-white hover:bg-red-600 transition-all duration-300"
-                      >
-                        <ExternalLink size={14} />
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+		    {/* GRILLE : On force le w-full et on s'assure que les colonnes sont égales */}
+		    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 w-full justify-items-center">
+		      {videos.filter(v => v.year === year).map(video => (
+		        <div key={video.id} className="group flex flex-col w-full max-w-full lg:max-w-none">
+		          {/* Cadre Vidéo */}
+		          <div className="relative aspect-video bg-zinc-900 rounded-[2rem] overflow-hidden border border-white/5 group-hover:border-red-600/50 transition-all duration-500 shadow-2xl w-full">
+		            <iframe 
+		              src={getEmbedUrl(video.link)}
+		              className="w-full h-full absolute inset-0"
+		              allowFullScreen
+		            />
+		          </div>
+		          
+		          {/* Infos Vidéo */}
+		          <div className="mt-5 px-4 flex justify-between items-center w-full">
+		            <div className="flex items-center gap-2 text-zinc-500">
+		              <Calendar size={14} className="text-red-600" />
+		              <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">{video.year}</span>
+		            </div>
+		            <a 
+		              href={video.link} 
+		              target="_blank" 
+		              rel="noopener noreferrer"
+		              className="bg-zinc-900 p-2 rounded-full text-zinc-500 hover:text-white hover:bg-red-600 transition-all duration-300"
+		            >
+		              <ExternalLink size={14} />
+		            </a>
+		          </div>
+		        </div>
+		      ))}
+		    </div>
+		  </section>
           ))
         )}
       </div>

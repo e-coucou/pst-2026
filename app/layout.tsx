@@ -32,7 +32,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
 		<Navbar /> {/* La Navbar sera au-dessus de tout */}
-        <main>
+		<main className="w-full flex-grow">
           {children} {/* C'est ici que tes pages (tournois, etc.) s'afficheront */}
         </main>
         <Footer/>
