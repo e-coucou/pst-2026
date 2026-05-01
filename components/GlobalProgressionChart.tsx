@@ -18,7 +18,6 @@ const Top16Tooltip = ({ active, payload }: any) => {
   if (active && payload && payload[0]) {
     const data = payload[0].payload;
     const topPlayers = data.top16 || [];
-console.log(topPlayers)
 
     return (
       <div className="bg-black/95 backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-2xl min-w-[240px]">
@@ -64,8 +63,6 @@ export default function GlobalProgressionChart({
   allPlayerNames: string[] 
 }) {
   const [isClient, setIsClient] = useState(false);
-
-  console.log(allPlayerNames)
 
   // Sécurité pour l'hydratation Next.js
   useEffect(() => {

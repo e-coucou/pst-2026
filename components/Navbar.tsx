@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   Trophy, Swords, Home, BarChart3, Menu, X, Video, 
-  User, Crown, Zap, Loader2 
-} from 'lucide-react';
+  User, Crown, Zap, Loader2, Fingerprint, Settings2, ShieldAlert, Skull} from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
 export default function Navbar() {
@@ -88,23 +87,47 @@ export default function Navbar() {
     <nav className="sticky top-0 z-[100] w-full border-b border-white/5 bg-black/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          
-          {/* LOGO & AUTH ICON DYNAMIQUE */}
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={handleAuthAction}
-              className={`p-1.5 rounded-lg transition-all duration-500 shadow-lg ${
-                !userRole ? 'bg-red-600 shadow-red-600/20' : 'bg-red-600 border border-white/10'
-              } hover:scale-110 active:scale-95`}
-              title={userRole ? `Connecté en tant que ${userRole}` : "Se connecter"}
-            >
-              {getRoleIcon()}
-            </button>
-            <Link href="/" className="group font-black italic uppercase tracking-tighter text-lg leading-none block" onClick={closeMenu}>
-              <span className="text-white group-hover:text-red-600 transition-colors">Paris </span>
-              <span className="text-red-600 group-hover:text-white transition-colors">Saint-Tropez</span>
-            </Link>
-          </div>
+
+{/* LOGO & AUTH ICON DYNAMIQUE */}
+<div className="flex items-center gap-2">
+  <div className="flex items-center gap-1.5">
+    {/* Accès direct à /live/super pour le rôle super */}
+    {userRole === 'super' && (
+      <Link
+        href="/live/super"
+        className="p-1.5 rounded-lg bg-zinc-900 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-lg hover:scale-110 active:scale-95"
+        title="Panel Super Admin"
+      >
+        <Fingerprint size={20} className="group-hover:animate-pulse" />
+      </Link>
+    )}
+    {/* Accès direct à /live/super pour le rôle super */}
+    { (userRole === 'admin' || userRole === 'super') && (
+      <Link
+        href="/live/switch"
+        className="p-1.5 rounded-lg bg-zinc-900 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-lg hover:scale-110 active:scale-95"
+        title="Panel Live"
+      >
+        <Settings2 size={20} fill="currentColor" />
+      </Link>
+    )}
+    {/* Bouton de Connexion/Déconnexion existant */}
+    <button 
+      onClick={handleAuthAction}
+      className={`p-1.5 rounded-lg transition-all duration-500 shadow-lg ${
+        !userRole ? 'bg-red-600 shadow-red-600/20' : 'bg-red-600 border border-white/10'
+      } hover:scale-110 active:scale-95`}
+      title={userRole ? `Connecté en tant que ${userRole}` : "Se connecter"}
+    >
+      {getRoleIcon()}
+    </button>
+  </div>
+
+  <Link href="/" className="group font-black italic uppercase tracking-tighter text-lg leading-none block ml-1" onClick={closeMenu}>
+    <span className="text-white group-hover:text-red-600 transition-colors">Paris </span>
+    <span className="text-red-600 group-hover:text-white transition-colors">Saint-Tropez</span>
+  </Link>
+</div>
 
           {/* NAVIGATION DESKTOP */}
           <div className="hidden md:flex items-center gap-8">
@@ -160,6 +183,9 @@ export default function Navbar() {
               Déconnexion
             </button>
           )}
+		  {userRole === 'super' && (
+		    <MobileNavLink href="/live/super" label="🚀 Super Admin" active={pathname === "/live/super"} onClick={closeMenu} />
+		  )}
         </div>
       )}
     </nav>
