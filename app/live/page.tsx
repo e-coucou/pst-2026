@@ -257,6 +257,37 @@ const renderJoueursSelected = () => {
   );
 };
 
+const renderEquipesSelected = () => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full col-span-2">
+      {teams.map((team) => (
+        <div key={team.id} className="bg-zinc-900/40 border border-white/5 p-4 rounded-[2rem] flex items-center justify-between group hover:border-red-600/30 transition-all">
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-red-600 uppercase italic">Team {team.id}</span>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold uppercase text-zinc-100">
+                  {playersMap[team.pointeur_id]?.split(' ')[0]}
+                </span>
+                <span className="text-sm font-bold uppercase text-zinc-400">
+                  {playersMap[team.tireur_id]?.split(' ')[0]}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <div className="text-[9px] font-black text-zinc-500 uppercase mb-1">Moyenne ELO</div>
+            <div className="text-md font-black text-white italic">
+              {((team.elo_start_pointeur + team.elo_start_tireur) / 2).toFixed(0)}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
   const currentStepIndex = statusSteps.findIndex(s => s.id === status);
 
   return (
@@ -540,11 +571,11 @@ const renderJoueursSelected = () => {
         </section>
         )}
 
-        {/* 4. LES JOUEURS */}
+        {/* 6. LES JOUEURS */}
         {currentStepIndex >= statusSteps.findIndex(s => s.id === 'JOUEURS') && (
         <section className="mb-16">
           <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
-            <div className="h-[1px] flex-1 bg-zinc-800"></div> Les Pétenquistes en lisse ... <div className="h-[1px] flex-1 bg-zinc-800"></div>
+            <div className="h-[1px] flex-1 bg-zinc-800"></div> Les Pétenquistes en Lice. <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 	      {renderJoueursSelected()}
@@ -552,10 +583,23 @@ const renderJoueursSelected = () => {
         </section>
         )}
 
+        {/* 7. LES EQUIPES */}
+        {currentStepIndex >= statusSteps.findIndex(s => s.id === 'EQUIPE') && (
+        <section className="mb-16">
+          <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+            <div className="h-[1px] flex-1 bg-zinc-800"></div> Les Doublettes <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+	      {renderEquipesSelected()}
+          </div>
+        </section>
+        )}
+
+  
         
 
         {/* Container du Graphique */}
-        {/* 5. TOUS LES MATCHES DE POULES */}
+        {/* 10. TOUS LES MATCHES DE POULES */}
 		{currentStepIndex >= statusSteps.findIndex(s => s.id === 'POULES') && (
         <section className="mb-24">
           <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">

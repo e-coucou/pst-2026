@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation'; // <-- AJOUT POUR LE ROUTING
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper'
-import { ArrowRight, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 
 export default function LiveAdminWizard() {
   const supabase = createClient();
@@ -33,19 +33,31 @@ export default function LiveAdminWizard() {
 	  const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
 	  if (tournoi?.status) {
 	    setStatus(tournoi.status);
+	    setStep(2);
 	  }
 
       await fetchPlayersWithElo();
       
-      // Tentative de récupération d'une sélection déjà existante en base
+      // 1. Tentative de récupération d'une sélection déjà existante en base
       const { data: existing } = await supabase.from('live_selected').select('*');
       if (existing && existing.length > 0) {
         const ps = existing.filter(x => x.role === 'Pointeur').map(x => ({ id: x.player_id, nom: x.nom, elo: x.elo_at_selection, modern: x.modern_at_selection }));
         const ts = existing.filter(x => x.role === 'Tireur').map(x => ({ id: x.player_id, nom: x.nom, elo: x.elo_at_selection, modern: x.modern_at_selection }));
         setSelectedPointeurs(ps);
         setSelectedTireurs(ts);
-      }
 
+  	  // 2. Tentative DE RECONSTRUCTION DU DRAFT (Si les équipes existent déjà)
+        const { data: existingTeams } = await supabase.from('live_teams').select('*').neq('id', 'Z').order('id', { ascending: true });
+      
+        if (existingTeams && existingTeams.length > 0) {
+          // On reconstruit l'ordre des pointeurs et tireurs basé sur l'ordre des équipes A, B, C...
+          const orderedP = existingTeams.map(t => ps.find(p => p.id === t.pointeur_id)).filter(Boolean);
+          const orderedT = existingTeams.map(t => ts.find(tireur => tireur.id === t.tireur_id)).filter(Boolean);
+        
+          setDraftP(orderedP);
+          setDraftT(orderedT);
+        }
+	  }
       setLoading(false);
     }
     init();
@@ -102,12 +114,12 @@ export default function LiveAdminWizard() {
       await supabase.from('live_tournament').update({ status: 'EQUIPES' }).eq('id', 1);
       setStatus('EQUIPES');
       
-
       if (error) throw error;
 
       // 3. Initialisation du draft visuel
-      handleInitialShuffle();
-      setStep(2);
+await supabase.from('live_teams').delete().neq('id', 'Z'); 
+handleInitialShuffle(); // Cette fonction appellera maintenant syncTeamsToDatabase
+setStep(2);
     } catch (err: any) {
       alert("Erreur de sauvegarde base de données : " + err.message);
     } finally {
@@ -115,23 +127,54 @@ export default function LiveAdminWizard() {
     }
   };
 
-  const handleInitialShuffle = () => {
-    const sP = [...selectedPointeurs].sort((a, b) => b.elo - a.elo);
-    const sT = [...selectedTireurs].sort((a, b) => b.elo - a.elo);
-    const shuffle = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
+  const syncTeamsToDatabase = async (pList: any[], tList: any[]) => {
+    const teamIds = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    const teamsToInsert = pList.map((p, i) => ({
+      id: teamIds[i],
+      tireur_id: tList[i].id,
+      pointeur_id: p.id,
+      elo_start: (tList[i].elo + p.elo) / 2,
+      elo_start_pointeur: p.elo,
+      elo_start_tireur: tList[i].elo,
+      modern_start: (tList[i].modern + p.modern) / 2 || 100,
+      poule: ['A', 'C', 'E', 'G'].includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle'
+    }));
 
-    // Ta règle : P (1-4 top, 5-8 bottom) / T (1-4 bottom, 5-8 top)
-    setDraftP([...shuffle(sP.slice(0, 4)), ...shuffle(sP.slice(4, 8))]);
-    setDraftT([...shuffle(sT.slice(4, 8)), ...shuffle(sT.slice(0, 4))]);
+    // On utilise upsert pour mettre à jour les lignes existantes A, B, C...
+    await supabase.from('live_teams').upsert(teamsToInsert);
   };
+  
+const handleInitialShuffle = async () => {
+  const sP = [...selectedPointeurs].sort((a, b) => b.elo - a.elo);
+  const sT = [...selectedTireurs].sort((a, b) => b.elo - a.elo);
+  const shuffle = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
 
-  const movePlayer = (index: number, direction: number, list: any[], setList: any) => {
-    const newList = [...list];
-    const target = index + direction;
-    if (target < 0 || target >= newList.length) return;
-    [newList[index], newList[target]] = [newList[target], newList[index]];
-    setList(newList);
-  };
+  const newP = [...shuffle(sP.slice(0, 4)), ...shuffle(sP.slice(4, 8))];
+  const newT = [...shuffle(sT.slice(4, 8)), ...shuffle(sT.slice(0, 4))];
+
+  setDraftP(newP);
+  setDraftT(newT);
+  
+  // Sauvegarde immédiate en base
+  await syncTeamsToDatabase(newP, newT);
+};
+
+
+const movePlayer = async (index: number, direction: number, list: any[], setList: any) => {
+  const newList = [...list];
+  const target = index + direction;
+  if (target < 0 || target >= newList.length) return;
+  [newList[index], newList[target]] = [newList[target], newList[index]];
+  
+  setList(newList);
+
+  // On identifie quelle liste a changé pour envoyer les données fraîches à syncTeamsToDatabase
+  if (list === draftP) {
+    await syncTeamsToDatabase(newList, draftT);
+  } else {
+    await syncTeamsToDatabase(draftP, newList);
+  }
+};
 
   const confirmAndCreateTournament = async () => {
     setLoading(true);
@@ -194,7 +237,7 @@ export default function LiveAdminWizard() {
       await supabase.from('live_matches').insert(pouleMatches);
       await supabase.from('live_tournament').update({ status: 'POULES' }).eq('id', 1);
 
-      alert("🔥 C'est parti ! Le tournoi est en ligne.");
+//      alert("🔥 C'est parti ! Le tournoi est en ligne.");
       router.push('/live/poules');
       
     } catch (err: any) {
@@ -204,11 +247,15 @@ export default function LiveAdminWizard() {
     }
   };
 
-
-
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black italic animate-pulse">CHARGEMENT...</div>;
 //  const selectionOK = false;
   const selectionOK = (selectedPointeurs.length == 8 && selectedTireurs.length == 8);
+
+  const backSelection = async () => {
+  	setStep(1);
+    await supabase.from('live_tournament').update({ status: 'JOUEURS' }).eq('id', 1);
+    setStatus('JOUEURS');
+  };
 
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-12">
@@ -217,9 +264,14 @@ export default function LiveAdminWizard() {
           <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter group-hover:text-red-600">
             Live <span className="text-red-600 group-hover:text-white">équipe</span>
           </h1>
-          <button onClick={() => router.push('/live/poules')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
-            <ArrowRight size={14} /> <span className="hidden md:inline">poules</span>
-		  </button>
+          <div className="flex flex-cols">
+            <button onClick={() => backSelection()} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
+              <ArrowLeft size={14} /> <span className="hidden md:inline">Sélection</span>
+            </button>
+            <button onClick={() => router.push('/live/poules')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
+              <ArrowRight size={14} /> <span className="hidden md:inline">Poules</span>
+			</button>
+          </div>
         </header>
 
 		<RenderStepper currentStatus = {status} />
@@ -229,12 +281,12 @@ export default function LiveAdminWizard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
  
-          <div className="md:col-span-3 flex justify-center mt-12">
-       {/* SECTION BOUTON POUR LANCER LES DEMIS */}
+          <div className="md:col-span-3 flex justify-center mt-1">
+       {/* SECTION BOUTON POUR LANCER LES EQUIPES */}
         {selectionOK && (
           <div className="mb-12 p-8 rounded-[2.5rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(220,38,38,0.3)] animate-bounce-subtle">
             <div className="text-center md:text-left">
-              <h3 className="text-2xl font-black uppercase italic text-white leading-none mb-2">Terminé !</h3>
+              <h3 className="text-2xl font-black uppercase italic text-white leading-none mb-2">Quorum !</h3>
               <p className="text-red-100 font-bold text-sm">La sélection des Joueurs est terminé. Prêt pour la constitution des équipes ?</p>
             </div>
             <button 
@@ -300,6 +352,27 @@ export default function LiveAdminWizard() {
         ) : (
           /* ÉTAPE 2 : DRAFT INTERACTIF */
           <div className="space-y-12">
+
+
+          <div className="md:col-span-3 flex justify-center mt-1">
+       {/* SECTION BOUTON POUR LANCER LES DEMIS */}
+        {selectionOK && (
+          <div className="mb-12 p-8 rounded-[2.5rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(220,38,38,0.3)] animate-bounce-subtle">
+            <div className="text-center md:text-left">
+              <h3 className="text-2xl font-black uppercase italic text-white leading-none mb-2">En Lice !</h3>
+              <p className="text-red-100 font-bold text-sm">Si les Doublettes sont constituées, lance la génération du Tournois...</p>
+            </div>
+            <button 
+              onClick={confirmAndCreateTournament}
+              className="w-full md:w-auto bg-black text-white px-10 py-4 rounded-2xl font-black uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all active:scale-95"
+            >
+              <Trophy size={20} />
+              Lancement du Tournois
+            </button>
+          </div>
+        )}
+        </div>
+
             <div className="flex justify-between items-end">
                <div>
                   <h2 className="text-3xl font-black italic uppercase">Doublettes</h2>
@@ -362,15 +435,6 @@ export default function LiveAdminWizard() {
                </div>
             </div>
 
-            <div className="flex justify-center gap-6 pt-12 border-t border-white/5">
-              <button onClick={() => setStep(1)} className="px-8 py-4 text-zinc-500 font-black uppercase text-xs tracking-widest hover:text-white transition-colors">Retour Sélection</button>
-              <button 
-                onClick={confirmAndCreateTournament}
-                className="px-16 py-6 bg-red-600 rounded-3xl font-black uppercase tracking-widest hover:bg-green-600 transition-all shadow-2xl shadow-red-600/20 active:scale-95"
-              >
-                Lancer le Tournoi Officiel
-              </button>
-            </div>
           </div>
         )}
       </div>
