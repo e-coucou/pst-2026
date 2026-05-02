@@ -39,62 +39,8 @@ export default function PodiumPage() {
   const [allPlayerNames, setAllPlayerNames] = useState<any[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<{pointeurs: any[], tireurs: any[]}>({ pointeurs: [], tireurs: [] });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-
-// --- REALTIME SUBSCRIPTION ---
-  useEffect(() => {
-    // On crée un canal de diffusion
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // On écoute tout : INSERT, UPDATE, DELETE
-          schema: 'public',
-          table: 'live_matches',
-        },
-        () => fetchData() // Dès que ça bouge, on recharge tout
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'live_tournament',
-        },
-        () => fetchData() // Si le statut du tournoi change, on recharge
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'live_selected',
-        },
-        () => fetchData() // Si la selection des joueurs change, on recharge
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'live_teams',
-        },
-        () => fetchData() // Si la selection des équipes change, on recharge
-      )
-      .subscribe();
-
-    // NETTOYAGE : Très important pour éviter les fuites de mémoire
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]); // On ne l'exécute qu'une fois au montage
-
-  const fetchData = async () => {
-    setLoading(true);
+const fetchData = async (isInitialLoad = false) => {
+    if (isInitialLoad) setLoading(true);
     try {
 
       // --- AJOUT : VÉRIFICATION DU STATUT DU TOURNOI ---
@@ -137,43 +83,64 @@ export default function PodiumPage() {
 
       const { data: steps } = await supabase.from('steps').select('id, value');
       if (steps) setStepValues(steps);
-	    } catch (e) {
-	      console.error(e);
-	    } finally {
-	      setLoading(false);
-	    }
 
-	const { data: selectedData } = await supabase
-      .from('live_selected')
-      .select('*')
-      .order('nom', { ascending: true });
+	  const { data: selectedData } = await supabase
+	        .from('live_selected')
+	        .select('*')
+	        .order('nom', { ascending: true });
 
-    if (selectedData) {
-      setSelectedPlayers({
-        pointeurs: selectedData.filter(p => p.role === 'Pointeur'),
-        tireurs: selectedData.filter(p => p.role === 'Tireur')
-      });
-    }
+	  if (selectedData) {
+	        setSelectedPlayers({
+	          pointeurs: selectedData.filter(p => p.role === 'Pointeur'),
+	          tireurs: selectedData.filter(p => p.role === 'Tireur')
+	        });
+	      }      
 
-  // On lance les deux requêtes en parallèle pour la performance
-  const [timelineRes, profilesRes, seasons] = await Promise.all([
-    supabase.rpc('get_full_live'),
-    supabase.from('live_selected').select('nom'),
-    supabase.from('seasons').select('year').eq('is_active',true),
-  ]);
-
-
-    const nbYears = seasons.data ? new Set(seasons.data.map(g => g.year)).size : 0;
-
-    // Debug : Vérification du nombre de matchs récupérés (dans ta console terminal)
-    if (timelineRes.data) {
-	  setTimeline(timelineRes.data);
-    }
-    if (profilesRes.data) {
-  	  setAllPlayerNames( profilesRes.data?.map(p => p.nom).filter(Boolean) );
-  	}
+	} catch (e) {
+	    console.error(e);
+	} finally {
+		if (isInitialLoad) setLoading(false);
+	}
 	    
     };
+
+
+useEffect(() => {
+    fetchData(true); // Chargement initial avec loader
+  }, []);
+
+  // --- REALTIME SUBSCRIPTION OPTIMISÉ ---
+  useEffect(() => {
+    const channel = supabase
+      .channel('podium-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'live_matches' },
+        () => fetchData(false) // Refresh silencieux
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'live_tournament' },
+        () => fetchData(false)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'live_selected' },
+        () => fetchData(false)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'live_teams' },
+        () => fetchData(false)
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') console.log('Connecté au Realtime');
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
     const teamsStats = useMemo(() =>  calculateTeamsStats(teams, pmatches), [teams, pmatches]);
 
