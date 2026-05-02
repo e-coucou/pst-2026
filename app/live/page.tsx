@@ -37,6 +37,7 @@ export default function PodiumPage() {
   const [matchToPredict, setMatchToPredict] = useState<{match: any, t1: any, t2: any} | null>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
   const [allPlayerNames, setAllPlayerNames] = useState<any[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<{pointeurs: any[], tireurs: any[]}>({ pointeurs: [], tireurs: [] });
 
   useEffect(() => {
     fetchData();
@@ -65,6 +66,24 @@ export default function PodiumPage() {
           table: 'live_tournament',
         },
         () => fetchData() // Si le statut du tournoi change, on recharge
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'live_selected',
+        },
+        () => fetchData() // Si la selection des joueurs change, on recharge
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'live_teams',
+        },
+        () => fetchData() // Si la selection des équipes change, on recharge
       )
       .subscribe();
 
@@ -124,6 +143,17 @@ export default function PodiumPage() {
 	      setLoading(false);
 	    }
 
+	const { data: selectedData } = await supabase
+      .from('live_selected')
+      .select('*')
+      .order('nom', { ascending: true });
+
+    if (selectedData) {
+      setSelectedPlayers({
+        pointeurs: selectedData.filter(p => p.role === 'Pointeur'),
+        tireurs: selectedData.filter(p => p.role === 'Tireur')
+      });
+    }
 
   // On lance les deux requêtes en parallèle pour la performance
   const [timelineRes, profilesRes, seasons] = await Promise.all([
@@ -133,45 +163,38 @@ export default function PodiumPage() {
   ]);
 
 
-  const nbYears = seasons.data ? new Set(seasons.data.map(g => g.year)).size : 0;
+    const nbYears = seasons.data ? new Set(seasons.data.map(g => g.year)).size : 0;
 
-  // Debug : Vérification du nombre de matchs récupérés (dans ta console terminal)
-  if (timelineRes.data) {
-	setTimeline(timelineRes.data);
-  }
-  if (profilesRes.data) {
-  	setAllPlayerNames( profilesRes.data?.map(p => p.nom).filter(Boolean) );
+    // Debug : Vérification du nombre de matchs récupérés (dans ta console terminal)
+    if (timelineRes.data) {
+	  setTimeline(timelineRes.data);
+    }
+    if (profilesRes.data) {
+  	  setAllPlayerNames( profilesRes.data?.map(p => p.nom).filter(Boolean) );
   	}
-
-
-
-
 	    
-  };
+    };
 
-  const teamsStats = useMemo(() => 
-	calculateTeamsStats(teams, pmatches), 
-	[teams, pmatches]
-  );
+    const teamsStats = useMemo(() =>  calculateTeamsStats(teams, pmatches), [teams, pmatches]);
 
 
-  const finalTop8 = useMemo(() => {
-    const results: any[] = [];
-    const stepsMap = stepValues.reduce((acc, s) => ({ ...acc, [s.id]: s.value }), {});
+    const finalTop8 = useMemo(() => {
+      const results: any[] = [];
+      const stepsMap = stepValues.reduce((acc, s) => ({ ...acc, [s.id]: s.value }), {});
 
-    matches.forEach(m => {
-      const baseRank = stepsMap[m.type];
-      if (baseRank !== undefined) {
-        const isTeam1Winner = (m.score_team1 ?? 0) > (m.score_team2 ?? 0);
-        const t1 = teams.find(t => t.id === m.team1_id);
-        const t2 = teams.find(t => t.id === m.team2_id);
+      matches.forEach(m => {
+        const baseRank = stepsMap[m.type];
+        if (baseRank !== undefined) {
+          const isTeam1Winner = (m.score_team1 ?? 0) > (m.score_team2 ?? 0);
+          const t1 = teams.find(t => t.id === m.team1_id);
+          const t2 = teams.find(t => t.id === m.team2_id);
 
-        if (t1) results.push({ rank: isTeam1Winner ? baseRank : baseRank + 1, team: t1, type: m.type });
-        if (t2) results.push({ rank: isTeam1Winner ? baseRank + 1 : baseRank, team: t2, type: m.type });
-      }
-    });
-    return results.sort((a, b) => a.rank - b.rank);
-  }, [matches, stepValues, teams]);
+          if (t1) results.push({ rank: isTeam1Winner ? baseRank : baseRank + 1, team: t1, type: m.type });
+          if (t2) results.push({ rank: isTeam1Winner ? baseRank + 1 : baseRank, team: t2, type: m.type });
+        }
+      });
+      return results.sort((a, b) => a.rank - b.rank);
+    }, [matches, stepValues, teams]);
   
 
   const calculateStandings = (pouleName: string) => {
@@ -224,6 +247,48 @@ export default function PodiumPage() {
     </div>
   );
 
+
+const renderJoueursSelected = () => {
+  return (
+    <>
+      {/* Colonne POINTEURS */}
+      <div className="bg-purple-900/5 border border-purple-500/20 p-6 rounded-[2.5rem]">
+        <h2 className="text-purple-500 text-center text-[10px] font-black uppercase mb-6 tracking-[0.2em] italic flex items-center justify-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></div>
+          Les Pointeurs
+        </h2>
+        <div className="grid grid-cols-1 gap-2">
+          {selectedPlayers.pointeurs.map((p) => (
+            <div key={p.player_id} className="p-3 bg-purple-600/10 border border-purple-500/30 rounded-2xl flex justify-between items-center group hover:bg-purple-600/20 transition-all">
+              <span className="text-xs font-bold uppercase tracking-tight text-purple-100">{p.nom}</span>
+              <span className="text-[9px] font-black text-purple-500/50 group-hover:text-purple-500 tracking-tighter">
+                ELO: {p.elo_at_selection?.toFixed(0)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Colonne TIREURS */}
+      <div className="bg-orange-900/5 border border-orange-500/20 p-6 rounded-[2.5rem]">
+        <h2 className="text-orange-500 text-center text-[10px] font-black uppercase mb-6 tracking-[0.2em] italic flex items-center justify-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
+          Les Tireurs
+        </h2>
+        <div className="grid grid-cols-1 gap-2">
+          {selectedPlayers.tireurs.map((t) => (
+            <div key={t.player_id} className="p-3 bg-orange-600/10 border border-orange-500/30 rounded-2xl flex justify-between items-center group hover:bg-orange-600/20 transition-all">
+              <span className="text-xs font-bold uppercase tracking-tight text-orange-100">{t.nom}</span>
+              <span className="text-[9px] font-black text-orange-500/50 group-hover:text-orange-500 tracking-tighter">
+                ELO: {t.elo_at_selection?.toFixed(0)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+};
 
   const currentStepIndex = statusSteps.findIndex(s => s.id === status);
 
@@ -466,11 +531,8 @@ export default function PodiumPage() {
 				         <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
 				         <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
 				       </div>
-
 				       {/* SCORE - Bloc central */}
 				       {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
-
-
 						{/* SCORE - Bloc central avec bouton IA centré au-dessus */}
 						<div className="shrink-0 mx-4 flex flex-col items-center justify-center min-w-[80px]">
 						  
@@ -494,8 +556,6 @@ export default function PodiumPage() {
 						    {m.score_team1} - {m.score_team2}
 						  </div>
 						</div>
-
-
 				       {/* ÉQUIPE 2 - Bloc de droite */}
 				       {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
 				       <div className="flex flex-col flex-1 text-left truncate">
@@ -512,6 +572,20 @@ export default function PodiumPage() {
           </div>
         </section>
         )}
+
+        {/* 4. LES JOUEURS */}
+        {currentStepIndex >= statusSteps.findIndex(s => s.id === 'JOUEURS') && (
+        <section className="mb-16">
+          <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+            <div className="h-[1px] flex-1 bg-zinc-800"></div> Les Pétenquistes en lisse ... <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+	      {renderJoueursSelected()}
+          </div>
+        </section>
+        )}
+
+        
 
         {/* Container du Graphique */}
         {/* 5. TOUS LES MATCHES DE POULES */}
@@ -538,7 +612,7 @@ export default function PodiumPage() {
         )}
         
 
-{/* MODALE DE PREDICTION */}
+		{/* MODALE DE PREDICTION */}
         {matchToPredict && (
           <PredictionModal 
             matchInfo={matchToPredict} 
@@ -546,20 +620,7 @@ export default function PodiumPage() {
             onClose={() => setMatchToPredict(null)} 
           />
         )}
-  
-        {/* FOOTER 
-        <div className="fixed bottom-8 left-0 right-0 px-4 flex justify-center">
-          <button 
-            onClick={() => router.push('/')}
-            className="flex items-center gap-3 bg-white text-black px-8 py-4 rounded-2xl font-black uppercase italic text-sm shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:bg-red-600 hover:text-white transition-all active:scale-95"
-          >
-            <ArrowLeft size={18} /> Quitter le Live
-          </button>
-        </div>
-        */}
-
       </div>
-
     </div>
   );
 }

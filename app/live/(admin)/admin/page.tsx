@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation'; // <-- AJOUT POUR LE ROUTING
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper'
-import { ArrowRight, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowRight, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 
 export default function LiveAdminWizard() {
   const supabase = createClient();
@@ -64,6 +64,22 @@ export default function LiveAdminWizard() {
     }
   };
 
+  const saveOneToDatabase = async (player: any, role: string) => {
+    await supabase.from('live_selected').upsert({
+      player_id: player.id,
+      role: role,
+      elo_at_selection: player.elo,
+      modern_at_selection: player.modern,
+      nom: player.nom
+    });
+  };
+
+  const removeOneFromDatabase = async (playerId: number) => {
+    await supabase.from('live_selected').delete().eq('player_id', playerId);
+  };
+
+  
+
   // --- SAUVEGARDE EN TABLE ET PASSAGE ÉTAPE 2 ---
   const finalizeSelectionAndSave = async () => {
     setLoading(true);
@@ -85,6 +101,7 @@ export default function LiveAdminWizard() {
       const { error } = await supabase.from('live_selected').insert(toInsert);
       await supabase.from('live_tournament').update({ status: 'EQUIPES' }).eq('id', 1);
       setStatus('EQUIPES');
+      
 
       if (error) throw error;
 
@@ -115,7 +132,6 @@ export default function LiveAdminWizard() {
     [newList[index], newList[target]] = [newList[target], newList[index]];
     setList(newList);
   };
-
 
   const confirmAndCreateTournament = async () => {
     setLoading(true);
@@ -191,6 +207,8 @@ export default function LiveAdminWizard() {
 
 
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black italic animate-pulse">CHARGEMENT...</div>;
+//  const selectionOK = false;
+  const selectionOK = (selectedPointeurs.length == 8 && selectedTireurs.length == 8);
 
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-12">
@@ -209,18 +227,30 @@ export default function LiveAdminWizard() {
         {step === 1 ? (
           /* ÉTAPE 1 : SÉLECTION */
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-3 flex justify-center mt-12">
-               <button 
-                disabled={selectedPointeurs.length !== 8 || selectedTireurs.length !== 8}
-                onClick={finalizeSelectionAndSave}
-                className="bg-red-600 disabled:bg-zinc-900 disabled:text-zinc-700 px-16 py-6 rounded-3xl font-black uppercase tracking-widest flex items-center gap-4 transition-all hover:scale-105 active:scale-95"
-               >
-                 Sauvegarder & Équilibrer <ArrowRight />
-               </button>
+
+ 
+          <div className="md:col-span-3 flex justify-center mt-12">
+       {/* SECTION BOUTON POUR LANCER LES DEMIS */}
+        {selectionOK && (
+          <div className="mb-12 p-8 rounded-[2.5rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(220,38,38,0.3)] animate-bounce-subtle">
+            <div className="text-center md:text-left">
+              <h3 className="text-2xl font-black uppercase italic text-white leading-none mb-2">Terminé !</h3>
+              <p className="text-red-100 font-bold text-sm">La sélection des Joueurs est terminé. Prêt pour la constitution des équipes ?</p>
             </div>
+            <button 
+              onClick={finalizeSelectionAndSave}
+              className="w-full md:w-auto bg-black text-white px-10 py-4 rounded-2xl font-black uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all active:scale-95"
+            >
+              <Trophy size={20} />
+              Constitution des équipes
+            </button>
+          </div>
+        )}
+        </div>
+
 
              <div className="bg-zinc-900/40 p-6 rounded-[2.5rem] border border-white/5 h-[600px] flex flex-col">
-              <h2 className="text-center text-[10px] font-black uppercase text-zinc-500 mb-4 tracking-[0.2em]">Base Profiles (Elo)</h2>
+              <h2 className="text-center text-sm font-black uppercase text-zinc-500 mb-4 tracking-[0.2em]">Pétanquistes</h2>
 
 
               <div className="overflow-y-auto space-y-2 pr-2 custom-scrollbar">
@@ -230,10 +260,10 @@ export default function LiveAdminWizard() {
                   return (
                     <div key={p.id} className={`p-3 rounded-2xl border transition-all ${isP || isT ? 'opacity-20 bg-black' : 'bg-zinc-900 border-white/5 hover:border-red-600'}`}>
                       <div className="flex justify-between items-center">
-                        <span className="font-bold text-[11px] uppercase">{p.nom} <span className="text-zinc-600 ml-2">{p.elo.toFixed(1)} / {p.modern.toFixed(0)}</span></span>
-                        <div className="flex gap-1">
-                          <button onClick={() => setSelectedPointeurs(prev => [...prev, p])} disabled={!!(isP || isT || selectedPointeurs.length >= 8)} className="bg-blue-600 text-[8px] font-black px-2 py-1 rounded-lg uppercase disabled:hidden">P</button>
-                          <button onClick={() => setSelectedTireurs(prev => [...prev, p])} disabled={!!(isP || isT || selectedTireurs.length >= 8)} className="bg-red-600 text-[8px] font-black px-2 py-1 rounded-lg uppercase disabled:hidden">T</button>
+                        <span className="font-bold text-sm uppercase">{p.nom} <span className="text-zinc-600 ml-2 text-[11px]">{p.elo.toFixed(0)} / {p.modern.toFixed(0)}</span></span>
+                        <div className="flex gap-2">
+                          <button onClick={async() =>{ setSelectedPointeurs(prev => [...prev, p]); await saveOneToDatabase(p, 'Pointeur');}} disabled={!!(isP || isT || selectedPointeurs.length >= 8)} className="bg-purple-600 text-sm font-black px-2 py-1 rounded-lg uppercase disabled:hidden">P</button>
+                          <button onClick={async() =>{ setSelectedTireurs(prev => [...prev, p]); await saveOneToDatabase(p, 'Tireur');}} disabled={!!(isP || isT || selectedTireurs.length >= 8)} className="bg-orange-600 text-sm font-black px-2 py-1 rounded-lg uppercase disabled:hidden">T</button>
                         </div>
                       </div>
                     </div>
@@ -242,25 +272,25 @@ export default function LiveAdminWizard() {
               </div>
             </div>
 
-            <div className="bg-blue-900/5 border border-blue-500/10 p-6 rounded-[2.5rem]">
-              <h2 className="text-blue-500 text-center text-[10px] font-black uppercase mb-4 italic">Pointeurs ({selectedPointeurs.length}/8)</h2>
+            <div className="bg-purple-900/5 border border-purple-500/50 p-6 rounded-[2.5rem]">
+              <h2 className="text-purple-500 text-center text-xs font-black uppercase mb-4 italic">Pointeurs ({selectedPointeurs.length}/8)</h2>
               <div className="space-y-2">
                 {selectedPointeurs.map(p => (
-                  <div key={p.id} className="p-3 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex justify-between items-center">
-                    <span className="text-[11px] font-bold uppercase">{p.nom}</span>
-                    <button onClick={() => setSelectedPointeurs(prev => prev.filter(x => x.id !== p.id))} className="text-blue-500 font-black text-xs px-2">✕</button>
+                  <div key={p.id} className="p-3 bg-purple-600/20 border border-purple-500 rounded-2xl flex justify-between items-center">
+                    <span className="text-xs font-bold uppercase">{p.nom}</span>
+                    <button onClick={async () =>{ setSelectedPointeurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); }} className="text-purple-500 font-black text-xm px-2">✕</button>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-red-900/5 border border-red-500/10 p-6 rounded-[2.5rem]">
-              <h2 className="text-red-500 text-center text-[10px] font-black uppercase mb-4 italic">Tireurs ({selectedTireurs.length}/8)</h2>
+            <div className="bg-orange-900/5 border border-orange-500/50 p-6 rounded-[2.5rem]">
+              <h2 className="text-orange-500 text-center text-xs font-black uppercase mb-4 italic">Tireurs ({selectedTireurs.length}/8)</h2>
               <div className="space-y-2">
                 {selectedTireurs.map(p => (
-                  <div key={p.id} className="p-3 bg-red-600/10 border border-red-500/20 rounded-2xl flex justify-between items-center">
-                    <span className="text-[11px] font-bold uppercase">{p.nom}</span>
-                    <button onClick={() => setSelectedTireurs(prev => prev.filter(x => x.id !== p.id))} className="text-red-500 font-black text-xs px-2">✕</button>
+                  <div key={p.id} className="p-3 bg-orange-600/20 border border-orange-500 rounded-2xl flex justify-between items-center">
+                    <span className="text-xs font-bold uppercase">{p.nom}</span>
+                    <button onClick={async () =>{ setSelectedTireurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); }} className="text-orange-500 font-black text-xm px-2">✕</button>
                   </div>
                 ))}
               </div>
@@ -284,7 +314,7 @@ export default function LiveAdminWizard() {
                {/* PANNEAU DE CONTRÔLE MANUEL (FLÈCHES) */}
                <div className="grid grid-cols-2 gap-4 bg-zinc-900/30 p-8 rounded-[3rem] border border-white/5">
                   <div className="space-y-2">
-                    <p className="text-center text-[10px] font-black text-blue-500 uppercase mb-4 tracking-tighter underline decoration-2 underline-offset-4">Pointeurs</p>
+                    <p className="text-center text-[10px] font-black text-purple-500 uppercase mb-4 tracking-tighter underline decoration-2 underline-offset-4">Pointeurs</p>
                     {draftP.map((p, i) => (
                       <div key={p.id} className="flex items-center justify-between p-3 bg-black rounded-xl border border-white/5">
                         <span className="text-[10px] font-bold uppercase truncate max-w-[80px]">{p.nom}</span>

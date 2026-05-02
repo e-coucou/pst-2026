@@ -30,6 +30,7 @@ export default function AdminEntryPoint() {
         // revenir sur cette page "vide" en faisant 'Précédent'
         switch (tournoi.status) {
           case 'PREPARATION':
+          case 'JOUEURS':
           case 'EQUIPES':
             // Si on est au début, on peut imaginer une page de config initiale
             // ou rester ici si tu as un menu de gestion
