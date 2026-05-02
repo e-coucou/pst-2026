@@ -234,21 +234,23 @@ export default function LiveDemiPage() {
             return (
               <div key={m.id} className={`p-4 rounded-xl border ${isTermine ? 'bg-red-600/5 border-red-600/20' : 'bg-black border-white/10'} flex items-center justify-between gap-4`}>
                   <div className="flex-1 text-right min-w-0">
-                    <div className="text-[10px] text-zinc-500 font-black">#{m.team1_id}</div>
-                    <div className="text-[11px] md:text-[14px] font-bold uppercase truncate leading-tight">
+                    <div className="text-sm text-red-500 font-black">#{m.team1_id}</div>
+                    <div className="text-xs md:text-lg font-bold uppercase truncate leading-tight">
                         {playersMap[t1?.pointeur_id] || t1?.pointeur_id}<br className="md:hidden" /> 
                         <span className="hidden md:inline"> & </span> 
                         {playersMap[t1?.tireur_id] || t1?.tireur_id}
                     </div>
                   </div>
+                <div className="items-center text-center text-sm text-zinc-500">{m.type}
                   <div className="flex items-center gap-1 md:gap-2 bg-zinc-900 p-1 md:p-2 rounded-lg md:rounded-xl">
                     <input type="number" inputMode="numeric" value={s.s1} onChange={(e) => handleScoreChange(m.id, 1, e.target.value)} disabled={isTermine} className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" />
                     <span className="text-zinc-600 font-bold">-</span>
                     <input type="number" inputMode="numeric" value={s.s2} onChange={(e) => handleScoreChange(m.id, 2, e.target.value)} disabled={isTermine} className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" />
                   </div>
+				</div>
                   <div className="flex-1 text-left min-w-0">
-                    <div className="text-[10px] text-zinc-500 font-black">#{m.team2_id}</div>
-                    <div className="text-[11px] md:text-[14px] font-bold uppercase truncate leading-tight">
+                    <div className="text-sm text-red-500 font-black">#{m.team2_id}</div>
+                    <div className="text-xs md:text-lg font-bold uppercase truncate leading-tight">
                         {playersMap[t2?.pointeur_id] || t2?.pointeur_id}<br className="md:hidden" />
                         <span className="hidden md:inline"> & </span> 
                         {playersMap[t2?.tireur_id] || t2?.tireur_id}

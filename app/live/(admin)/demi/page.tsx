@@ -137,18 +137,6 @@ export default function LiveDemiPage() {
 	  }
 	};
 
-/*
-  const saveMatchResult = async (matchId: number) => {
-    const scores = localScores[matchId];
-    if (scores.s1 === '' || scores.s2 === '') return;
-    setSavingMatch(matchId);
-    const { error } = await supabase.from('live_matches').update({
-      score_team1: scores.s1, score_team2: scores.s2, status: 'TERMINE'
-    }).eq('id', matchId);
-    if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, score_team1: scores.s1, score_team2: scores.s2, status: 'TERMINE' } : m));
-    setSavingMatch(null);
-  };
-*/
   const unlockMatch = async (matchId: number) => {
     setSavingMatch(matchId);
     const { error } = await supabase.from('live_matches').update({ status: 'EN_COURS' }).eq('id', matchId);
@@ -269,6 +257,11 @@ export default function LiveDemiPage() {
 
 
   const generateFinals = async () => {
+    const message = status === 'FINALE' 
+      ? "Attention : Tu vas régénérer les finales. Cela effacera TOUS les scores des finales déjà enregistrés. Continuer ?"
+      : "Générer les finales ?";
+
+    if (!confirm(message)) return;
     setLoading(true);
   
     // 1. On récupère les résultats frais des demis
@@ -277,6 +270,16 @@ export default function LiveDemiPage() {
   
     const getWinner = (m: any) => (m.score_team1 > m.score_team2 ? m.team1_id : m.team2_id);
     const getLoser = (m: any) => (m.score_team1 > m.score_team2 ? m.team2_id : m.team1_id);
+
+	// 2. NETTOYAGE DES FINALES EXISTANTES
+    // On cherche tout ce qui contient "inale" mais qui n'est pas une "Demi"
+    const { error: deleteError } = await supabase
+        .from('live_matches')
+        .delete()
+        .ilike('type', '%inale%')
+        .neq('type', 'Demi'); // Sécurité pour ne pas effacer les demis sur lesquelles on est
+
+    if (deleteError) throw deleteError;
   
     // 2. Préparation des 4 matches de finales
     const finalMatches = [

@@ -219,16 +219,16 @@ export default function PodiumPage() {
     <>
       {/* Colonne POINTEURS */}
       <div className="bg-purple-900/5 border border-purple-500/20 p-6 rounded-[2.5rem]">
-        <h2 className="text-purple-500 text-center text-[10px] font-black uppercase mb-6 tracking-[0.2em] italic flex items-center justify-center gap-2">
+        <h2 className="text-purple-500 text-center text-sm font-black uppercase mb-6 tracking-[0.2em] italic flex items-center justify-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></div>
           Les Pointeurs
         </h2>
         <div className="grid grid-cols-1 gap-2">
           {selectedPlayers.pointeurs.map((p) => (
             <div key={p.player_id} className="p-3 bg-purple-600/10 border border-purple-500/30 rounded-2xl flex justify-between items-center group hover:bg-purple-600/20 transition-all">
-              <span className="text-xs font-bold uppercase tracking-tight text-purple-100">{p.nom}</span>
-              <span className="text-[9px] font-black text-purple-500/50 group-hover:text-purple-500 tracking-tighter">
-                ELO: {p.elo_at_selection?.toFixed(0)}
+              <span className="text-sm font-bold uppercase tracking-tight text-purple-100">{p.nom}</span>
+              <span className="text-[10px] font-black text-purple-500/50 group-hover:text-purple-500 tracking-tighter">
+                ELO: {p.elo_at_selection?.toFixed(0)}/{p.modern_at_selection?.toFixed(0)}
               </span>
             </div>
           ))}
@@ -237,16 +237,16 @@ export default function PodiumPage() {
 
       {/* Colonne TIREURS */}
       <div className="bg-orange-900/5 border border-orange-500/20 p-6 rounded-[2.5rem]">
-        <h2 className="text-orange-500 text-center text-[10px] font-black uppercase mb-6 tracking-[0.2em] italic flex items-center justify-center gap-2">
+        <h2 className="text-orange-500 text-center text-sm font-black uppercase mb-6 tracking-[0.2em] italic flex items-center justify-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
           Les Tireurs
         </h2>
         <div className="grid grid-cols-1 gap-2">
           {selectedPlayers.tireurs.map((t) => (
             <div key={t.player_id} className="p-3 bg-orange-600/10 border border-orange-500/30 rounded-2xl flex justify-between items-center group hover:bg-orange-600/20 transition-all">
-              <span className="text-xs font-bold uppercase tracking-tight text-orange-100">{t.nom}</span>
-              <span className="text-[9px] font-black text-orange-500/50 group-hover:text-orange-500 tracking-tighter">
-                ELO: {t.elo_at_selection?.toFixed(0)}
+              <span className="text-sm font-bold uppercase tracking-tight text-orange-100">{t.nom}</span>
+              <span className="text-[10px] font-black text-orange-500/50 group-hover:text-orange-500 tracking-tighter">
+                ELO: {t.elo_at_selection?.toFixed(0)}/{t.modern_at_selection?.toFixed(0)}
               </span>
             </div>
           ))}
@@ -275,7 +275,7 @@ export default function PodiumPage() {
           </div>
 
           <div className="text-right">
-            <div className="text-xs font-black text-zinc-500 uppercase mb-1">ELO / Modern</div>
+            <div className="text-[10px] font-black text-zinc-500 uppercase mb-1">ELO / Modern</div>
             <div className="text-sm font-black text-white italic">
               {((team.elo_start_pointeur + team.elo_start_tireur) / 2).toFixed(0)} -<span className="text-purple-500"> {(team.modern_start).toFixed(0)}</span>
             </div>
@@ -569,6 +569,18 @@ export default function PodiumPage() {
         </section>
         )}
 
+        {/* 7. LES EQUIPES */}
+        {currentStepIndex >= statusSteps.findIndex(s => s.id === 'EQUIPES') && (
+        <section className="mb-16">
+          <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
+            <div className="h-[1px] flex-1 bg-zinc-800"></div> Les Doublettes <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+	      {renderEquipesSelected()}
+          </div>
+        </section>
+        )}        
+
         {/* 6. LES JOUEURS */}
         {currentStepIndex == statusSteps.findIndex(s => s.id === 'JOUEURS') && (
         <section className="mb-16">
@@ -580,18 +592,6 @@ export default function PodiumPage() {
           </div>
         </section>
         )}
-
-        {/* 7. LES EQUIPES */}
-        {currentStepIndex >= statusSteps.findIndex(s => s.id === 'EQUIPE') && (
-        <section className="mb-16">
-          <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
-            <div className="h-[1px] flex-1 bg-zinc-800"></div> Les Doublettes <div className="h-[1px] flex-1 bg-zinc-800"></div>
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-	      {renderEquipesSelected()}
-          </div>
-        </section>
-        )}        
         {/* Container du Graphique */}
         {/* 10. TOUS LES MATCHES DE POULES */}
 		{currentStepIndex >= statusSteps.findIndex(s => s.id === 'POULES') && (

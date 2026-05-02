@@ -168,15 +168,25 @@ export default function LivePoulesPage() {
 
 
   const generateDemis = async () => {
-    if (!confirm("Générer les demi-finales ? Cette action verrouille les poules.")) return;
+    const message = status === 'DEMI' || status === 'FINALE' 
+      ? "Attention : Tu vas régénérer les demi-finales. Cela effacera TOUS les scores des demis et de la finale déjà enregistrés. Continuer ?"
+      : "Générer les demi-finales ? Cette action verrouille les poules.";
+
+    if (!confirm(message)) return;
     setLoading(true);
   
     try {
       // 1. On récupère les classements finaux
       const standingsGassin = calculateStandings('Gassin');
       const standingsRamatuelle = calculateStandings('Ramatuelle');
-  
-      // 2. Construction des matchs selon ta logique
+      // 2. NETTOYAGE TOTAL des phases finales
+      // On supprime tout ce qui n'est pas 'Poule' (donc 'Demi' et 'Finale')
+	  const { error: deleteError } = await supabase
+  		.from('live_matches')
+  		.delete()
+  		.neq('type', 'Poule'); // Supprime TOUT sauf les matchs de poule
+      if (deleteError) throw deleteError;
+      // 3. Construction des matchs selon ta logique
       // Principal : G1 vs R2 et R1 vs G2
       // Honneur : G3 vs R4 et R3 vs G4
       const demiMatchs = [
