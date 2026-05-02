@@ -90,7 +90,7 @@ export default function Navbar() {
 
 {/* LOGO & AUTH ICON DYNAMIQUE */}
 <div className="flex items-center gap-2">
-  <div className="flex items-center gap-1.5">
+  <div className="flex items-center gap-1.5"> 
     {/* Accès direct à /live/super pour le rôle super */}
     {userRole === 'super' && (
       <Link

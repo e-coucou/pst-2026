@@ -1,4 +1,6 @@
 // components/Footer.tsx
+import { Logo } from './Logo';
+
 export default function Footer() {
   const version = process.env.APP_VERSION || "1.0.0";
   const commitHash = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.substring(0, 7) || "dev";
@@ -21,14 +23,15 @@ export default function Footer() {
             <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
             <span className="text-zinc-400 text-[8px] sm:text-[9px]">System Live</span>
           </div>
-
           {/* Version Number */}
           <span className="opacity-40 hover:opacity-100 transition-opacity cursor-default">
             v{version} <span className="hidden sm:inline">({commitHash})</span>
           </span>
         </div>
-
       </div>
+       <div className="flex flex-col items-center gap-6">
+       <Logo className="h-10" />
+	   </div>
     </footer>
   );
 }
