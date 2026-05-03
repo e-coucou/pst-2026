@@ -21,7 +21,7 @@ export default function Footer() {
           {/* Badge System Status */}
           <div className="flex items-center gap-2 bg-zinc-900/50 px-3 py-1 rounded-full border border-white/10">
             <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-            <span className="text-zinc-400 text-[8px] sm:text-[9px]">System Live</span>
+            <span className="text-zinc-500 text-[10px] sm:text-[9px]">System Live</span>
           </div>
           {/* Version Number */}
           <span className="opacity-40 hover:opacity-100 transition-opacity cursor-default">
