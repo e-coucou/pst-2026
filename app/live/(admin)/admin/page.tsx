@@ -33,7 +33,7 @@
 	  const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
 	  if (tournoi?.status) {
 	    setStatus(tournoi.status);
-	    setStep(2);
+	    setStep(1);
 	  }
 
 	     await fetchPlayersWithElo();

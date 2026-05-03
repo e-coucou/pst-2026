@@ -206,14 +206,14 @@ export default function PodiumPage() {
     const standings = calculateStandings(pouleName);
     return (
       <div className="bg-zinc-900/50 border border-white/5 rounded-2xl overflow-hidden">
-        <div className="bg-zinc-800/50 px-4 py-2 text-[10px] font-black uppercase italic text-zinc-400 border-b border-white/5">Poule {pouleName}</div>
-        <table className="w-full text-[11px]">
+        <div className="bg-zinc-800/50 px-4 py-2 text-sm font-black uppercase italic text-zinc-400 border-b border-white/5">Poule {pouleName}</div>
+        <table className="w-full text-xs">
           <tbody>
             {standings.map((s, idx) => (
               <tr key={s.id} className="border-b border-white/5 last:border-0">
-                <td className="p-2 text-zinc-500 w-6">#{idx + 1}</td>
-                <td className="p-2 uppercase font-bold text-zinc-300">{s.pName.split(' ')[0]} / {s.tName.split(' ')[0]}</td>
-                <td className="p-2 text-right font-black text-red-500">{s.pts} pts</td>
+                <td className="p-2 text-zinc-500 w-6">#{idx + 1}<span className="p-4 text-red-500 text-sm font-black w-2" >{s.id}</span></td>
+                <td className="p-2 uppercase text-zinc-300 text-sm font-black">{s.pName.split(' ')[0]} / {s.tName.split(' ')[0]}</td>
+                <td className="p-2 text-right font-black text-red-500 text-sm">{s.pts} pts</td>
               </tr>
             ))}
           </tbody>

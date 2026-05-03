@@ -132,11 +132,7 @@ export default function ManagePlayersPage() {
 
       if (updError) throw updError;
       fetchData();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setIsUploading(false);
-    }
+    } catch (err: any) { alert(err.message); } finally { setIsUploading(false); }
   };
 
   const handleDeletePlayer = async (id: number, name: string, photoPath: string | null) => {
@@ -152,12 +148,10 @@ export default function ManagePlayersPage() {
         await supabase.storage.from('joueurs_photos').remove([photoPath]);
       }
       const { error } = await supabase.from('profiles').delete().eq('id', id);
-      if (error) throw error;
-      fetchData();
-    } catch (err: any) {
-      alert("Erreur suppression: " + err.message);
-    }
+      if (error) throw error; fetchData();
+    } catch (err: any) { alert("Erreur suppression: " + err.message); }
   };
+
 
   return (
     <div className="min-h-screen bg-black text-white p-6 md:p-12 font-sans">
