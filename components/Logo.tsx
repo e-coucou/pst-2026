@@ -10,10 +10,10 @@ export const Logo = ({ className = "h-12" }: { className?: string }) => {
         className="h-full w-auto rounded-xl shadow-md"
       >
         {/* Fond rouge Saint-Tropez */}
-        <rect width="512" height="512" fill="#e31e24" />
+        <rect width="512" height="512" fill="#444460" />
 
         {/* Groupe avec translation ajustée pour un centrage parfait à l'échelle 1.3 */}
-        <g transform="translate(-45, -115) scale(1.5)">
+        <g transform="translate(-45, -125) scale(1.5)">
           
           {/* Tour de St-Tropez */}
           <g 
@@ -60,3 +60,4 @@ export const Logo = ({ className = "h-12" }: { className?: string }) => {
     </div>
   );
 };
+

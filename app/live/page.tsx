@@ -52,6 +52,7 @@ export default function PodiumPage() {
       const { data: seasons } = await supabase.from('seasons').select('year, is_active');
       if (seasons) {
 	      setSeason(seasons.filter(m => m.is_active === true)) }
+
     
       const { data: profilesData } = await supabase.from('profiles').select('id, nom');
       const pMap: Record<number, string> = {};
@@ -94,8 +95,23 @@ export default function PodiumPage() {
 	          pointeurs: selectedData.filter(p => p.role === 'Pointeur'),
 	          tireurs: selectedData.filter(p => p.role === 'Tireur')
 	        });
-	      }      
-
+  const names = selectedData.map(p => p.nom).filter(Boolean);
+  setAllPlayerNames(names);
+	      }
+ 	  // On lance les deux requêtes en parallèle pour la performance
+  	  const [timelineRes] = await Promise.all([
+    	supabase.rpc('get_full_live'),
+//    	supabase.from('live_selected').select('nom')
+  	  ]);
+	  // Debug : Vérification du nombre de matchs récupérés (dans ta console terminal)
+	  if (timelineRes.data) {
+	    setTimeline(timelineRes.data);
+    	console.log(`[DEBUG] Timeline récupérée : ${timelineRes.data.length} matchs.`);
+  	  }
+	  if (timelineRes.error) {
+	    console.error('[ERROR] Erreur RPC get_full_timeline:', timelineRes.error);
+	  }
+//      setAllPlayerNames(profilesRes.data?.map(p => p.nom).filter(Boolean));
 	} catch (e) {
 	    console.error(e);
 	} finally {
@@ -103,7 +119,6 @@ export default function PodiumPage() {
 	}
 	    
   }; //fetch
-
 
   useEffect(() => {
     fetchData(true); // Chargement initial avec loader
