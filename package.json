@@ -1,6 +1,6 @@
 {
   "name": "pst-2026",
-  "version": "1.5.4",
+  "version": "1.6.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,12 +10,13 @@
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "latest",
+    "browser-image-compression": "^2.0.2",
     "dotenv": "^17.4.2",
+    "lucide-react": "latest",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "lucide-react": "latest",
-    "@supabase/supabase-js": "latest",
     "recharts": "latest"
   },
   "devDependencies": {

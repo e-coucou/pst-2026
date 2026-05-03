@@ -22,6 +22,11 @@ export default function AdminControlPanel() {
     window.location.href = '/live/reset';
   };
 
+  const triggerJoueurs = () => {
+    window.location.href = '/live/admin_joueurs';
+  };
+
+
   // Fonction générique pour éviter la répétition de code
   const executeAction = async (label: string, url: string) => {
     setStatus({ loading: true, action: label });
@@ -77,6 +82,14 @@ export default function AdminControlPanel() {
 	  >
 	    ⚠️  RESET du LIVE
       </button>
+	  {/**/}
+	  <button
+	    onClick={triggerJoueurs}
+  	    className="px-4 py-3 rounded-lg font-bold text-white shadow-lg transition-all bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 active:scale-95 flex items-center justify-center gap-2"
+	    >
+	    👤 Gérer les Joueurs (Profiles)
+	  </button>
+      
     </div>
   );
 }
