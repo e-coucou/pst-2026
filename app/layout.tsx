@@ -19,8 +19,9 @@ export const metadata: Metadata = {
   title: "PST-2026",
   description: "Tournoi Officiel de Pétanque - Résidence Paris Saint-Tropez",
   icons: {
-    icon: "/icon.png", 
-    apple: "/apple-icon.png",
+    icon: "/icon.png?v=1", 
+    apple: "/apple-icon.png?v=1",
+    shortcut: "/icon.png?v=1",
   },
   openGraph: {
     title: "PST 2026 — Paris Saint-Tropez",
