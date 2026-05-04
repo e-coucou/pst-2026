@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Loader2, ArrowLeft, Camera, AlertCircle, Upload } from 'lucide-react';
+import { Trash2, UserPlus, Loader2, ArrowLeft, Camera, AlertCircle, Upload, X } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
 export default function ManagePlayersPage() {
   const supabase = createClient();
+  const router = useRouter();
   
   // États pour les données
   const [players, setPlayers] = useState<any[]>([]);
@@ -155,16 +157,18 @@ export default function ManagePlayersPage() {
 
   return (
     <div className="min-h-screen bg-black text-white p-6 md:p-12 font-sans">
-      <div className="max-w-2xl mx-auto">
-        <button onClick={() => window.history.back()} className="mb-8 flex items-center gap-2 text-zinc-500 hover:text-white transition-colors group">
-          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> 
-          Retour Admin
-        </button>
-
-        <h1 className="text-3xl font-black uppercase italic mb-8 tracking-tight">
+      <div className="max-w-2xl mx-auto mb-8 flex justify-between items-center">
+        <h1 className="text-2xl font-black uppercase italic mb-8 tracking-tight">
           Gestion des <span className="text-red-600">Joueurs</span>
         </h1>
-
+        <button 
+          onClick={() => router.push('/live/super')}
+          className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors"
+        >
+          <X size={24} />
+        </button>
+      </div>
+      <div className="max-w-2xl mx-auto">
         <form onSubmit={handleAddPlayer} className="bg-zinc-900/50 p-6 rounded-3xl border border-white/10 space-y-4 mb-12 shadow-2xl">
           <div className="flex flex-col md:flex-row gap-6">
             <div className="relative w-24 h-24 bg-zinc-800 rounded-2xl flex items-center justify-center border-2 border-dashed border-zinc-700 hover:border-red-600 transition-all overflow-hidden group shrink-0">
