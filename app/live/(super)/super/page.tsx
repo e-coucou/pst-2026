@@ -71,6 +71,12 @@ export default function AdminControlPanel() {
           desc="Coefficients & Seuils"
           onClick={() => navTo('/live/params_elo')}
         />
+        <AdminNavButton 
+          icon={<Settings2 size={20} />} 
+          label="Listes de équipes" 
+          desc="Doublettes & Archives"
+          onClick={() => navTo('/live/admin_teams')}
+        />
       </div>
 
       {/* SECTION 2 : CALCULS ELO (LOURD) */}

@@ -168,7 +168,6 @@ export default function ManagePlayersPage() {
           <X size={24} />
         </button>
       </div>
-      <div className="max-w-2xl mx-auto">
         <form onSubmit={handleAddPlayer} className="bg-zinc-900/50 p-6 rounded-3xl border border-white/10 space-y-4 mb-12 shadow-2xl">
           <div className="flex flex-col md:flex-row gap-6">
             <div className="relative w-24 h-24 bg-zinc-800 rounded-2xl flex items-center justify-center border-2 border-dashed border-zinc-700 hover:border-red-600 transition-all overflow-hidden group shrink-0">
@@ -259,6 +258,5 @@ export default function ManagePlayersPage() {
           </div>
         )}
       </div>
-    </div>
   );
 }

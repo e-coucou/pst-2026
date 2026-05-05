@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     siteName: "PST 2026",
     images: [
       {
-        url: "/apple-icon.png", // Utilise ton joli logo pour le partage
+        url: "/apple-icon.png?v=1", // Utilise ton joli logo pour le partage
         width: 800,
         height: 600,
       },

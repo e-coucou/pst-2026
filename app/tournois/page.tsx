@@ -98,7 +98,7 @@ export default async function TournamentsPage() {
                 <span className="text-7xl font-black italic text-white/20 group-hover:text-red-600/40 transition-colors duration-700">
                   {t.year}
                 </span>
-                <div className="bg-red-600 p-4 rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.4)] group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 relative z-30">
+                <div className="bg-red-600 p-4 rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.4)] group-hover:scale-110 group-hover:rotate-0 transition-all duration-500 relative z-30">
                   <Trophy size={28} className="text-white" />
                 </div>
               </div>
@@ -106,7 +106,7 @@ export default async function TournamentsPage() {
               {/* ZONE PHOTOS (Desktop) - Écartement accentué */}
               <div className="absolute right-10 top-1/2 -translate-y-1/2 hidden lg:block w-56 h-56">
                 {/* Photo 1 (Tireur, Arrière-plan, plus grand) */}
-                <div className="absolute -top-6 left-0 w-32 h-36 border-2 border-red-600/20 rounded-2xl overflow-hidden rotate-[-15deg] group-hover:rotate-[-22deg] group-hover:scale-105 transition-all duration-700 bg-zinc-800 z-10 shadow-xl">
+                <div className="absolute -top-6 left-0 w-32 h-36 border-2 border-red-600/20 rounded-2xl overflow-hidden rotate-[-0deg] group-hover:rotate-[-0deg] group-hover:scale-105 transition-all duration-700 bg-zinc-800 z-10 shadow-xl">
                   {t.photoTireur ? (
                     <img 
                       src={t.photoTireur} 
@@ -119,7 +119,7 @@ export default async function TournamentsPage() {
                 </div>
 
                 {/* Photo 2 (Pointeur, Premier plan) */}
-                <div className="absolute -bottom-6 right-0 w-28 h-32 border-2 border-red-600 rounded-2xl overflow-hidden rotate-[10deg] group-hover:rotate-[18deg] group-hover:scale-110 transition-all duration-700 shadow-2xl bg-zinc-800 z-20">
+                <div className="absolute -bottom-6 right-0 w-32 h-38 border-2 border-red-600 rounded-2xl overflow-hidden rotate-[0deg] group-hover:rotate-[0deg] group-hover:scale-110 transition-all duration-700 shadow-2xl bg-zinc-800 z-20">
                   {t.photoPointeur ? (
                     <img 
                       src={t.photoPointeur} 
