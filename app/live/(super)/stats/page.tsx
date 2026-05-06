@@ -8,8 +8,10 @@ import {
 } from 'recharts';
 import { 
   Trophy, Users, Target, Activity, 
-  TrendingUp, BarChart3, ChevronRight, Zap
+  TrendingUp, BarChart3, ChevronRight, Zap, X
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
 
 export default function StatsPage() {
   const [matches, setMatches] = useState<any[]>([]);
@@ -17,6 +19,7 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(true);
   const [eloHistory, setEloHistory] = useState<any[]>([]);
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     async function getStats() {
@@ -71,7 +74,7 @@ const playerStats = useMemo(() => {
     const isFannyTaken = row.sc_p === 0 && row.sc_c === 13;
 
     // Déduire le nom du joueur (selon qu'il était tireur ou pointeur)
-    const playerName = row.tireur_id === row.player_id ? row.tireur : row.pointeur;
+    const playerName = row.nom;
 
     if (!playersMap.has(row.player_id)) {
       playersMap.set(row.player_id, {
@@ -85,7 +88,6 @@ const playerStats = useMemo(() => {
         fannyTaken: 0,
       });
     }
-console.log(playersMap)
 
     const p = playersMap.get(row.player_id);
     p.matches += 1;
@@ -137,9 +139,17 @@ console.log(playersMap)
     <div className="min-h-screen bg-zinc-950 text-white p-4 pb-20">
       {/* HEADER */}
       <header className="max-w-6xl mx-auto mb-10">
-        <h1 className="text-4xl font-black italic tracking-tighter uppercase">
-          Stats <span className="text-red-600">Academy</span>
-        </h1>
+        <div className="max-w-6xl mx-auto mb-8 flex flex-cols justify-between items-center gap-4">
+          <h1 className="text-4xl font-black italic tracking-tighter uppercase">
+            Stats <span className="text-red-600">Academy</span>
+          </h1>
+          <button 
+            onClick={() => router.push('/live/super')}
+            className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors"
+          >
+          <X size={24} />
+          </button>
+        </div>
         <div className="flex gap-4 mt-6 overflow-x-auto pb-2 no-scrollbar">
           {['global', 'scores', 'joueurs'].map((tab) => (
             <button
@@ -234,8 +244,8 @@ console.log(playersMap)
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-black/20 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
-              <th className="px-6 py-4">Rang</th>
-              <th className="px-6 py-4">Joueur</th>
+              <th className="px-3 py-4">Rang</th>
+              <th className="px-4 py-4">Joueur</th>
               <th className="px-6 py-4 text-center">Winrate</th>
               <th className="px-6 py-4 text-center">Matches</th>
               <th className="px-6 py-4 text-center">Diff. Pts</th>
@@ -247,9 +257,9 @@ console.log(playersMap)
               .filter(p => p.matches >= 5) // On filtre ceux qui ont joué au moins 5 matches pour que le winrate soit significatif
               .map((player, index) => (
               <tr key={player.id} className="hover:bg-white/5 transition-colors group">
-                <td className="px-6 py-4">
+                <td className="px-4 py-4">
                   {index < 3 ? (
-                    <span className={`flex items-center justify-center w-8 h-8 rounded-full font-black text-black ${
+                    <span className={`flex items-center justify-center w-7 h-7 rounded-full font-black text-black ${
                       index === 0 ? 'bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.4)]' : 
                       index === 1 ? 'bg-zinc-300' : 'bg-amber-700'
                     }`}>
@@ -259,7 +269,7 @@ console.log(playersMap)
                     <span className="text-zinc-500 font-bold ml-2">{index + 1}</span>
                   )}
                 </td>
-                <td className="px-6 py-4 font-black italic uppercase text-lg">{player.name}</td>
+                <td className="px-6 py-4 font-black italic uppercase text-sm">{player.name}</td>
                 <td className="px-6 py-4 text-center">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                     parseFloat(player.winrate) >= 60 ? 'bg-green-500/10 text-green-500' : 

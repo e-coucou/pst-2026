@@ -77,6 +77,12 @@ export default function AdminControlPanel() {
           desc="Doublettes & Archives"
           onClick={() => navTo('/live/admin_teams')}
         />
+        <AdminNavButton 
+          icon={<Settings2 size={20} />} 
+          label="Statistiques" 
+          desc="Statistiques avancées & historiques"
+          onClick={() => navTo('/live/stats')}
+        />
       </div>
 
       {/* SECTION 2 : CALCULS ELO (LOURD) */}

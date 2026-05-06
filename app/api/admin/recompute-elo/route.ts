@@ -98,6 +98,8 @@ export async function POST() {
         const advIdx = i < 2 ? 2 : 0; // Index du tireur adverse
         historyEntries.push({
           player_id: pid,
+          nom: players.find(p => p.id === pid)?.nom || '?',
+          role: i % 2 === 0 ? 'tireur' : 'pointeur',
           game_id: g.id,
           year: g.year,
           elo_value: currentElo[pid].pst,
