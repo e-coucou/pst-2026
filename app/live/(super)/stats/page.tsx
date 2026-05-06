@@ -8,10 +8,10 @@ import {
 } from 'recharts';
 import { 
   Trophy, Users, Target, Activity, 
-  TrendingUp, BarChart3, ChevronRight, Zap, X
+  TrendingUp, BarChart3, ChevronRight, Zap, X,
+  Flame, Skull, HeartPulse, Crosshair, Crown
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
 
 export default function StatsPage() {
   const [matches, setMatches] = useState<any[]>([]);
@@ -61,77 +61,133 @@ export default function StatsPage() {
     return { chartData, totalPoints, matchNuls, avgPoints: (totalPoints / matches.length).toFixed(1) };
   }, [matches]);
 
-// --- NOUVEAU CALCUL DES STATS JOUEURS ---
-const playerStats = useMemo(() => {
-  if (!eloHistory.length) return [];
+  // --- NOUVEAU CALCUL DES STATS JOUEURS (AVEC SÉRIES ET RECORDS) ---
+  const playerStats = useMemo(() => {
+    if (!eloHistory || eloHistory.length === 0) return [];
 
-  const playersMap = new Map();
+    const playersMap = new Map();
 
-  eloHistory.forEach(row => {
-    // Dans elo_history, win = 1 (victoire), -1 (défaite)
-    const isWin = row.win === 1;
-    const isFannyGiven = row.sc_p === 13 && row.sc_c === 0;
-    const isFannyTaken = row.sc_p === 0 && row.sc_c === 13;
+    // On trie l'historique par ordre chronologique pour que le calcul des séries fonctionne
+    const sortedHistory = [...eloHistory].sort((a, b) => a.id - b.id);
 
-    // Déduire le nom du joueur (selon qu'il était tireur ou pointeur)
-    const playerName = row.nom;
+    sortedHistory.forEach(row => {
+      // Sécurisation des types (conversion en nombres)
+      const winVal = Number(row.win);
+      const scP = Number(row.sc_p);
+      const scC = Number(row.sc_c);
+      const currentElo = Number(row.elo_value);
+      const role = row.role ? row.role.toLowerCase() : '';
 
-    if (!playersMap.has(row.player_id)) {
-      playersMap.set(row.player_id, {
-        id: row.player_id,
-        name: playerName || `Joueur ${row.player_id}`,
-        matches: 0,
-        wins: 0,
-        pointsPour: 0,
-        pointsContre: 0,
-        fannyGiven: 0,
-        fannyTaken: 0,
-      });
-    }
+      const isWin = winVal === 1;
+      const isFannyGiven = scP === 13 && scC === 0;
+      const isFannyTaken = scP === 0 && scC === 13;
+      const playerName = row.nom || `Joueur ${row.player_id}`;
 
-    const p = playersMap.get(row.player_id);
-    p.matches += 1;
-    if (isWin) p.wins += 1;
-    p.pointsPour += (row.sc_p || 0);
-    p.pointsContre += (row.sc_c || 0);
-    if (isFannyGiven) p.fannyGiven += 1;
-    if (isFannyTaken) p.fannyTaken += 1;
-  });
+      if (!playersMap.has(row.player_id)) {
+        playersMap.set(row.player_id, {
+          id: row.player_id,
+          name: playerName,
+          matches: 0,
+          wins: 0,
+          pointsPour: 0,
+          pointsContre: 0,
+          fannyGiven: 0,
+          fannyTaken: 0,
+          // Nouvelles stats records :
+          currentWinStreak: 0,
+          maxWinStreak: 0,
+          currentLossStreak: 0,
+          maxLossStreak: 0,
+          clutchWins: 0,
+          peakElo: isNaN(currentElo) ? 0 : currentElo,
+          tireurMatches: 0,
+          tireurWins: 0,
+          pointeurMatches: 0,
+          pointeurWins: 0
+        });
+      }
 
-  // Transformer la Map en Array et calculer les ratios
-  return Array.from(playersMap.values())
-    .map(p => ({
-      ...p,
-      winrate: p.matches > 0 ? ((p.wins / p.matches) * 100).toFixed(1) : 0,
-      goalAverage: p.pointsPour - p.pointsContre
-    }))
-    // On trie par défaut par Winrate, puis par nombre de matches
-    .sort((a, b) => b.winrate - a.winrate || b.matches - a.matches);
+      const p = playersMap.get(row.player_id);
+      p.matches += 1;
 
-}, [eloHistory]);
+      // --- SÉRIES (STREAKS) & VICTOIRES ---
+      if (isWin) {
+        p.wins += 1;
+        p.currentWinStreak += 1;
+        p.currentLossStreak = 0; // Remise à zéro de la série de défaites
+        if (p.currentWinStreak > p.maxWinStreak) p.maxWinStreak = p.currentWinStreak;
+      } else if (winVal === -1) {
+        p.currentLossStreak += 1;
+        p.currentWinStreak = 0; // Remise à zéro de la série de victoires
+        if (p.currentLossStreak > p.maxLossStreak) p.maxLossStreak = p.currentLossStreak;
+      }
 
+      // --- POINTS & FANNYS ---
+      if (!isNaN(scP)) p.pointsPour += scP;
+      if (!isNaN(scC)) p.pointsContre += scC;
+      if (isFannyGiven) p.fannyGiven += 1;
+      if (isFannyTaken) p.fannyTaken += 1;
+
+      // --- INDICE CLUTCH (Gagné 13-12) ---
+      if (isWin && scP === 13 && scC === 12) {
+        p.clutchWins += 1;
+      }
+
+      // --- SOMMET ELO ---
+      if (!isNaN(currentElo) && currentElo > p.peakElo) {
+        p.peakElo = currentElo;
+      }
+
+      // --- SPÉCIALISATION (RÔLE) ---
+      if (role === 'tireur') {
+        p.tireurMatches += 1;
+        if (isWin) p.tireurWins += 1;
+      } else if (role === 'pointeur') {
+        p.pointeurMatches += 1;
+        if (isWin) p.pointeurWins += 1;
+      }
+    });
+
+    // Transformer la Map en Array et formater les ratios
+    return Array.from(playersMap.values())
+      .map(p => {
+        const winrateCalc = p.matches > 0 ? (p.wins / p.matches) * 100 : 0;
+        return {
+          ...p,
+          winrate: winrateCalc.toFixed(1),
+          winrateNum: winrateCalc, // Gardé sous forme numérique pour le tri correct
+          goalAverage: p.pointsPour - p.pointsContre,
+          tireurWinrate: p.tireurMatches > 0 ? ((p.tireurWins / p.tireurMatches) * 100).toFixed(1) : "-",
+          pointeurWinrate: p.pointeurMatches > 0 ? ((p.pointeurWins / p.pointeurMatches) * 100).toFixed(1) : "-",
+          peakElo: p.peakElo.toFixed(1)
+        };
+      })
+      // On trie par défaut par Winrate, puis par nombre de matches
+      .sort((a, b) => b.winrateNum - a.winrateNum || b.matches - a.matches);
+
+  }, [eloHistory]);
 
   const CustomBar = (props: any) => {
-  const { x, y, width, height, payload } = props;
-  
-  // Règle de couleur : Rouge si gap == 13 (Fanny), sinon Gris
-  const fillColor = payload.gap === 13 ? '#dc2626' : '#3f3f46';
-  
-  // S'il n'y a pas de hauteur (quantité à 0), on ne dessine rien
-  if (height === 0 || isNaN(height)) return null;
+    const { x, y, width, height, payload } = props;
+    
+    // Règle de couleur : Rouge si gap == 13 (Fanny), sinon Gris
+    const fillColor = payload.gap === 13 ? '#dc2626' : '#3f3f46';
+    
+    // S'il n'y a pas de hauteur (quantité à 0), on ne dessine rien
+    if (height === 0 || isNaN(height)) return null;
 
-  return (
-    <rect 
-      x={x} 
-      y={y} 
-      width={width} 
-      height={height} 
-      fill={fillColor} 
-      rx={4} // Bords arrondis en haut
-      ry={4} 
-    />
-  );
-};
+    return (
+      <rect 
+        x={x} 
+        y={y} 
+        width={width} 
+        height={height} 
+        fill={fillColor} 
+        rx={4} // Bords arrondis en haut
+        ry={4} 
+      />
+    );
+  };
 
   if (loading) return <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-red-600 animate-pulse font-black italic">CHARGEMENT DE LA DATA...</div>;
 
@@ -147,11 +203,11 @@ const playerStats = useMemo(() => {
             onClick={() => router.push('/live/super')}
             className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors"
           >
-          <X size={24} />
+            <X size={24} />
           </button>
         </div>
         <div className="flex gap-4 mt-6 overflow-x-auto pb-2 no-scrollbar">
-          {['global', 'scores', 'joueurs'].map((tab) => (
+          {['global', 'scores', 'joueurs', 'records'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -186,7 +242,6 @@ const playerStats = useMemo(() => {
                 Distribution des écarts de score
               </h3>
               
-              {/* On supprime le h-[300px] du div parent et on le met direct dans le composant Recharts */}
               <div className="w-full">
                 <ResponsiveContainer width="99%" height={300}>
                   <BarChart 
@@ -216,7 +271,6 @@ const playerStats = useMemo(() => {
                       }}
                       formatter={(value) => [`${value} match(s)`, 'Quantité']}
                     />
-                    {/* C'est ici qu'on appelle notre CustomBar pour éviter le warning <Cell> */}
                     <Bar dataKey="quantite" shape={<CustomBar />} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -228,87 +282,139 @@ const playerStats = useMemo(() => {
             </div>
           </div>
         )}        
-        {/* On peut ajouter ici les autres onglets avec des listes de joueurs (Top Winrate, etc.) */}
-{/* ONGLET JOUEURS (HALL OF FAME) */}
-{activeTab === 'joueurs' && (
-  <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
-    <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] overflow-hidden">
-      <div className="p-6 border-b border-white/5 flex items-center justify-between">
-        <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-          <Trophy className="text-yellow-500" size={18} />
-          Hall of Fame <span className="text-zinc-500">(Min. 5 matches)</span>
-        </h3>
-      </div>
-      
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-black/20 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
-              <th className="px-3 py-4">Rang</th>
-              <th className="px-4 py-4">Joueur</th>
-              <th className="px-6 py-4 text-center">Winrate</th>
-              <th className="px-6 py-4 text-center">Matches</th>
-              <th className="px-6 py-4 text-center">Diff. Pts</th>
-              <th className="px-6 py-4 text-center text-red-500">Fanny Mises</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {playerStats
-              .filter(p => p.matches >= 5) // On filtre ceux qui ont joué au moins 5 matches pour que le winrate soit significatif
-              .map((player, index) => (
-              <tr key={player.id} className="hover:bg-white/5 transition-colors group">
-                <td className="px-4 py-4">
-                  {index < 3 ? (
-                    <span className={`flex items-center justify-center w-7 h-7 rounded-full font-black text-black ${
-                      index === 0 ? 'bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.4)]' : 
-                      index === 1 ? 'bg-zinc-300' : 'bg-amber-700'
-                    }`}>
-                      {index + 1}
-                    </span>
-                  ) : (
-                    <span className="text-zinc-500 font-bold ml-2">{index + 1}</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 font-black italic uppercase text-sm">{player.name}</td>
-                <td className="px-6 py-4 text-center">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    parseFloat(player.winrate) >= 60 ? 'bg-green-500/10 text-green-500' : 
-                    parseFloat(player.winrate) <= 40 ? 'bg-red-500/10 text-red-500' : 
-                    'bg-zinc-800 text-zinc-300'
-                  }`}>
-                    {player.winrate}%
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-center font-bold text-zinc-400">
-                  {player.matches} <span className="text-[10px] font-normal">({player.wins}V)</span>
-                </td>
-                <td className="px-6 py-4 text-center">
-                  <span className={`font-black ${player.goalAverage > 0 ? 'text-green-500' : player.goalAverage < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
-                    {player.goalAverage > 0 ? '+' : ''}{player.goalAverage}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-center">
-                  {player.fannyGiven > 0 ? (
-                    <span className="inline-flex items-center gap-1 font-bold text-red-600">
-                      {player.fannyGiven} <Zap size={12} className="fill-red-600" />
-                    </span>
-                  ) : '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-)}
 
+        {/* ONGLET JOUEURS (HALL OF FAME) */}
+        {activeTab === 'joueurs' && (
+          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+            <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] overflow-hidden">
+              <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                  <Trophy className="text-yellow-500" size={18} />
+                  Hall of Fame <span className="text-zinc-500">(Min. 5 matches)</span>
+                </h3>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-black/20 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                      <th className="px-3 py-4">Rang</th>
+                      <th className="px-4 py-4">Joueur</th>
+                      <th className="px-6 py-4 text-center">Winrate</th>
+                      <th className="px-6 py-4 text-center">Matches</th>
+                      <th className="px-6 py-4 text-center">Diff. Pts</th>
+                      <th className="px-6 py-4 text-center text-red-500">Fanny Mises</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {playerStats
+                      .filter(p => p.matches >= 5) 
+                      .map((player, index) => (
+                      <tr key={player.id} className="hover:bg-white/5 transition-colors group">
+                        <td className="px-4 py-4">
+                          {index < 3 ? (
+                            <span className={`flex items-center justify-center w-7 h-7 rounded-full font-black text-black ${
+                              index === 0 ? 'bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.4)]' : 
+                              index === 1 ? 'bg-zinc-300' : 'bg-amber-700'
+                            }`}>
+                              {index + 1}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-500 font-bold ml-2">{index + 1}</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 font-black italic uppercase text-sm">{player.name}</td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            parseFloat(player.winrate) >= 60 ? 'bg-green-500/10 text-green-500' : 
+                            parseFloat(player.winrate) <= 40 ? 'bg-red-500/10 text-red-500' : 
+                            'bg-zinc-800 text-zinc-300'
+                          }`}>
+                            {player.winrate}%
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center font-bold text-zinc-400">
+                          {player.matches} <span className="text-[10px] font-normal">({player.wins}V)</span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`font-black ${player.goalAverage > 0 ? 'text-green-500' : player.goalAverage < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
+                            {player.goalAverage > 0 ? '+' : ''}{player.goalAverage}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {player.fannyGiven > 0 ? (
+                            <span className="inline-flex items-center gap-1 font-bold text-red-600">
+                              {player.fannyGiven} <Zap size={12} className="fill-red-600" />
+                            </span>
+                          ) : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ONGLET RECORDS & TROPHÉES */}
+        {activeTab === 'records' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in zoom-in-95 duration-300">
+            
+            <RecordCard 
+              title="Série d'Invincibilité" 
+              icon={<Flame className="text-orange-500" size={24} />}
+              data={playerStats.sort((a, b) => b.maxWinStreak - a.maxWinStreak)[0]}
+              valueKey="maxWinStreak"
+              suffix="Victoires consécutives"
+              color="border-orange-500/30 bg-orange-500/5 text-orange-500"
+            />
+
+            <RecordCard 
+              title="Le Chat Noir" 
+              icon={<Skull className="text-zinc-500" size={24} />}
+              data={playerStats.sort((a, b) => b.maxLossStreak - a.maxLossStreak)[0]}
+              valueKey="maxLossStreak"
+              suffix="Défaites consécutives"
+              color="border-zinc-700 bg-zinc-900 text-zinc-400"
+            />
+
+            <RecordCard 
+              title="Nerfs d'Acier" 
+              icon={<HeartPulse className="text-red-500" size={24} />}
+              data={playerStats.sort((a, b) => b.clutchWins - a.clutchWins)[0]}
+              valueKey="clutchWins"
+              suffix="Victoires sur le fil (13-12)"
+              color="border-red-500/30 bg-red-500/5 text-red-500"
+            />
+
+            <RecordCard 
+              title="Tireur d'Élite" 
+              icon={<Crosshair className="text-blue-500" size={24} />}
+              data={playerStats.filter(p => p.tireurMatches >= 5).sort((a, b) => Number(b.tireurWinrate) - Number(a.tireurWinrate))[0]}
+              valueKey="tireurWinrate"
+              suffix="% de victoire au tir"
+              color="border-blue-500/30 bg-blue-500/5 text-blue-500"
+            />
+
+            <RecordCard 
+              title="Le Sommet ELO" 
+              icon={<Crown className="text-yellow-500" size={24} />}
+              data={playerStats.sort((a, b) => Number(b.peakElo) - Number(a.peakElo))[0]}
+              valueKey="peakElo"
+              suffix="Record ELO absolu"
+              color="border-yellow-500/30 bg-yellow-500/5 text-yellow-500"
+            />
+
+          </div>
+        )}
 
       </main>
     </div>
   );
 }
 
+// --- SOUS COMPOSANTS ---
 
 function StatCard({ label, value, icon, color }: any) {
   return (
@@ -316,6 +422,28 @@ function StatCard({ label, value, icon, color }: any) {
       <div className={`${color} opacity-80`}>{icon}</div>
       <div className="text-2xl font-black italic tracking-tighter">{value}</div>
       <div className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">{label}</div>
+    </div>
+  );
+}
+
+function RecordCard({ title, icon, data, valueKey, suffix, color }: any) {
+  if (!data) return null; // Sécurité si aucune donnée
+
+  return (
+    <div className={`p-6 rounded-3xl border ${color} flex flex-col justify-between min-h-[160px]`}>
+      <div className="flex items-center gap-3 mb-4">
+        {icon}
+        <h3 className="text-sm font-black uppercase tracking-widest">{title}</h3>
+      </div>
+      
+      <div>
+        <div className="text-3xl font-black italic tracking-tighter text-white uppercase">
+          {data.name}
+        </div>
+        <div className="text-lg font-bold mt-1">
+          {data[valueKey]} <span className="text-xs font-normal uppercase tracking-widest opacity-70">{suffix}</span>
+        </div>
+      </div>
     </div>
   );
 }
