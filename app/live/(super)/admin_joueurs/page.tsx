@@ -12,6 +12,7 @@ export default function ManagePlayersPage() {
   
   // États pour les données
   const [players, setPlayers] = useState<any[]>([]);
+  const [live, setlivePlayers] = useState<any[]>([]);
   const [engagedPlayerIds, setEngagedPlayerIds] = useState<Set<number>>(new Set());
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   
@@ -28,8 +29,12 @@ export default function ManagePlayersPage() {
         .from('profiles')
         .select('*')
         .order('nom');
-      
       if (pError) throw pError;
+
+      const { data: liveProfiles, error: lError } = await supabase
+        .from('live_selected')
+        .select('*');
+      if (lError) throw lError;
 
       const [teamsRes, liveTeamsRes] = await Promise.all([
         supabase.from('teams').select('pointeur_id, tireur_id'),
@@ -49,6 +54,7 @@ export default function ManagePlayersPage() {
       });
 
       setEngagedPlayerIds(engaged);
+      setlivePlayers(liveProfiles || []);
 
       const filePaths = profiles?.map(p => p.photo_url).filter(Boolean) as string[];
       
@@ -67,8 +73,8 @@ export default function ManagePlayersPage() {
           setSignedUrls(urls);
         }
       }
-
       setPlayers(profiles || []);
+
     } catch (error: any) {
       console.error("Erreur fetch:", error.message);
     } finally {
@@ -205,6 +211,7 @@ export default function ManagePlayersPage() {
           <div className="space-y-3">
             {players.map(player => {
               const isEngaged = engagedPlayerIds.has(Number(player.id));
+              const isLive = live.find((l: any) => l.player_id === player.id)?.role || false;
               const imageUrl = player.photo_url ? signedUrls[player.photo_url] : null;
 
               return (
@@ -239,9 +246,8 @@ export default function ManagePlayersPage() {
                     )}
 
                     {isEngaged ? (
-                      <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-black uppercase tracking-widest bg-zinc-800/80 px-3 py-2 rounded-full border border-white/5 shadow-sm">
-                        <AlertCircle size={10} className="text-zinc-600" /> 
-                        Engagé
+                      <div className="flex items-center gap-1.5 text-purple-500 text-[9px] font-black uppercase tracking-widest bg-zinc-800/80 px-3 py-2 rounded-full border border-white/5 shadow-sm">
+                        <AlertCircle size={10} className="text-white" />
                       </div>
                     ) : (
                       <button
@@ -251,6 +257,13 @@ export default function ManagePlayersPage() {
                         <Trash2 size={20} />
                       </button>
                     )}
+                    {isLive != false ? (
+                      <div className={`flex items-center gap-1.5 ${isLive === 'Pointeur' ? "text-purple-600" : "text-orange-500"} text-[9px] font-black uppercase tracking-widest bg-zinc-800/80 px-3 py-2 rounded-full border border-white/5 shadow-sm`}> 
+                        {isLive}
+                      </div>
+                    ) : ('')
+                    }
+
                   </div>
                 </div>
               );
