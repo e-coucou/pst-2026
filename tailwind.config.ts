@@ -1,15 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-	"./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}", // <--- Indispensable pour tes halos et tes zooms !
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      // Tu peux ajouter ici tes couleurs PST si besoin
+      // ex: colors: { pstRed: '#e11d48' }
+    },
   },
   future: {
     hoverOnlyWhenSupported: true,
   },  
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'), // <--- INDISPENSABLE pour le style des fichiers .md
+  ],
 }

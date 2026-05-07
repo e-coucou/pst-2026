@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NODE_ENV === 'production' 
+      ? 'https:/pst.e-coucou.com' 
+      : 'http://localhost:3000'
+  ),
   title: "PST-2026",
   description: "Tournoi Officiel de Pétanque - Résidence Paris Saint-Tropez",
   icons: {
