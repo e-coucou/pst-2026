@@ -1,25 +1,26 @@
-// proxy.ts
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server' // ✅ NextRequest vient d'ici !
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) { // ✅ On renomme la fonction en 'proxy'
+export async function proxy(request: NextRequest) {
+  // 1. Créer la réponse initiale
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
+  // 2. Initialiser Supabase Client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        // Utilisation des méthodes recommandées pour Next.js 15/16
         getAll() {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          // On recrée la réponse pour y injecter les cookies
           response = NextResponse.next({
             request,
           })
@@ -31,26 +32,29 @@ export async function proxy(request: NextRequest) { // ✅ On renomme la fonctio
     }
   )
 
+  // 3. Récupérer l'utilisateur
   const { data: { user } } = await supabase.auth.getUser()
 
-  const publicRoutes = ['/', '/concept', '/regles-elo', '/about', '/login', '/signup']
-  
-  // Petite astuce : on ajoute une vérification pour les fichiers statiques ici aussi
-  const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
+  const pathname = request.nextUrl.pathname
 
+  // 4. LES ROUTES PUBLIQUES + LA ROUTE DE CALLBACK (Indispensable !)
+  const publicRoutes = ['/', '/concept', '/regles-elo', '/about', '/login', '/signup', '/auth/callback']
+  const isPublicRoute = publicRoutes.includes(pathname)
+
+  // 5. LOGIQUE DE REDIRECTION
+  // Si pas d'utilisateur et que la route n'est PAS publique -> Login
   if (!user && !isPublicRoute) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // Si l'utilisateur est connecté et essaie d'aller sur /login -> /stats
+  if (user && pathname === '/login') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/stats'
+    return NextResponse.redirect(url)
   }
 
   return response
-}
-
-export const config = {
-  matcher: [
-    /*
-     * Match toutes les routes sauf celles exclues ci-dessous
-     * Ajout des extensions d'images pour éviter que le proxy n'intercepte les fichiers du storage
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
 }
