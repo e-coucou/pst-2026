@@ -11,7 +11,7 @@ import {
   AlertTriangle, 
   Loader2,
   ChevronRight,
-  Fingerprint
+  Fingerprint, BookOpen, ListTodo
 } from 'lucide-react';
 
 export default function AdminControlPanel() {
@@ -82,6 +82,18 @@ export default function AdminControlPanel() {
           label="Statistiques" 
           desc="Statistiques avancées & historiques"
           onClick={() => navTo('/live/stats')}
+        />
+         <AdminNavButton 
+          icon={<BookOpen size={20} />} 
+          label="Charte Graphique" 
+          desc="Charte graphique du projet (Markdown)"
+          onClick={() => navTo('/live/charte')}
+        />
+        <AdminNavButton 
+          icon={<ListTodo size={20} />} 
+          label="Todo List" 
+          desc="Todo list de la roadmap (Markdown)"
+          onClick={() => navTo('/live/todo')}
         />
       </div>
 
