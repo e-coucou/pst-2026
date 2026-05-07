@@ -1,15 +1,25 @@
+// proxy.ts
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
-  // 1. Créer la réponse initiale
+  // 1. NE PAS INTERCEPTER LES FICHIERS TECHNIQUES
+  // C'est ça qui causait tes erreurs de connexion perdue
+  const { pathname } = request.nextUrl
+  if (
+    pathname.startsWith('/_next') || 
+    pathname.includes('.') || 
+    pathname.startsWith('/api')
+  ) {
+    return NextResponse.next()
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
-  // 2. Initialiser Supabase Client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -20,7 +30,6 @@ export async function proxy(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          // On recrée la réponse pour y injecter les cookies
           response = NextResponse.next({
             request,
           })
@@ -32,29 +41,23 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // 3. Récupérer l'utilisateur
+  // 2. Vérification de l'utilisateur
   const { data: { user } } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
-
-  // 4. LES ROUTES PUBLIQUES + LA ROUTE DE CALLBACK (Indispensable !)
-  const publicRoutes = ['/', '/concept', '/regles-elo', '/about', '/login', '/signup', '/auth/callback']
+  // 3. Gestion des accès
+  const publicRoutes = ['/', '/login', '/signup', '/auth/callback']
   const isPublicRoute = publicRoutes.includes(pathname)
 
-  // 5. LOGIQUE DE REDIRECTION
-  // Si pas d'utilisateur et que la route n'est PAS publique -> Login
   if (!user && !isPublicRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  // Si l'utilisateur est connecté et essaie d'aller sur /login -> /stats
-  if (user && pathname === '/login') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/stats'
-    return NextResponse.redirect(url)
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return response
+}
+
+// Next.js 16 utilise cet export pour savoir quelles routes filtrer
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }

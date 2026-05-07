@@ -11,8 +11,8 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (!error) {
-      // Une fois connecté, on va sur /stats
-      return NextResponse.redirect(`${origin}/stats`);
+      // Une fois connecté, on va sur / la page d'accueil.
+      return NextResponse.redirect(`${origin}/`);
     }
   }
 
