@@ -60,8 +60,9 @@ export default function SignupPage() {
     }
   };
 
-const handleGoogleSignup = async () => {
-    const invitationValue = formData.invitation.trim();
+const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
+  if (e) e.preventDefault();
+  const invitationValue = formData.invitation.trim();
     
     if (!invitationValue) {
       setError("Saisis d'abord le code d'invitation !");
@@ -121,6 +122,8 @@ const handleGoogleSignup = async () => {
             required
           />
         </div>
+        
+        {error && <div className="bg-red-600/10 border border-red-600/20 p-4 rounded-xl text-red-500 text-[10px] font-black uppercase text-center">{error}</div>}
 
         <button 
           type="button"
@@ -158,8 +161,6 @@ const handleGoogleSignup = async () => {
               required={!loading}
             />
           </div>
-
-          {error && <div className="bg-red-600/10 border border-red-600/20 p-4 rounded-xl text-red-500 text-[10px] font-black uppercase text-center">{error}</div>}
 
           <button 
             disabled={loading}
