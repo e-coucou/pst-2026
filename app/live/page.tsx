@@ -43,11 +43,10 @@ export default function PodiumPage() {
     if (isInitialLoad) setLoading(true);
     try {
 
-      // --- AJOUT : VÉRIFICATION DU STATUT DU TOURNOI ---
       const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
-	  if (tournoi) {
+	    if (tournoi) {
 	      setStatus(tournoi?.status);
-	  }
+	    }
 
       const { data: seasons } = await supabase.from('seasons').select('year, is_active');
       if (seasons) {

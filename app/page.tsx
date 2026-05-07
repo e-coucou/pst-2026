@@ -8,6 +8,8 @@ import Link from 'next/link';
 export default function Home() {
   const [count, setCount] = useState<number | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [season, setSeason] = useState<any[]>([2026]); // Saison actuelle
+  const [status, setStatus] = useState<string>('TERMINE');
 
   useEffect(() => {
     const fetchJoueurs = async () => {
@@ -22,6 +24,17 @@ export default function Home() {
       // Vérification de la session utilisateur pour l'affichage du bouton
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
+
+      const { data: seasons } = await supabase.from('seasons').select('year, is_active');
+      if (seasons) {
+        setSeason(seasons.filter(m => m.is_active === true))
+      }
+
+      const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
+	    if (tournoi) {
+	      setStatus(tournoi?.status);
+	    }
+
     };
     fetchJoueurs();
   }, []);
@@ -52,11 +65,36 @@ export default function Home() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-full bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
 
         {/* Badge Saison */}
-        <Link href="/live/switch">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-zinc-900 border border-red-600/30 text-white rounded-full mb-8 hover:bg-zinc-800">
-          <Zap size={14} className="text-red-600 fill-red-600 animate-pulse" />
-          <span className="text-[16px] font-black uppercase tracking-[0.3em]">Saison 2026</span>
-        </div>
+        <Link href="/live">
+          <div className="flex justify-center w-full"> {/* Conteneur parent pour centrer le badge dans la page */}
+            
+            <div className="w-fit flex items-center bg-zinc-900 border border-red-600/30 text-white rounded-full px-5 py-2 mb-8 hover:bg-zinc-800 transition-all group">
+              
+              {/* 1. L'Eclair (Zap) fixé à gauche */}
+              <div className="flex-shrink-0 mr-4">
+                <Zap size={18} className="text-red-600 fill-red-600 animate-pulse" />
+              </div>
+
+              {/* 2. Le Texte centré verticalement et horizontalement au milieu du reste de l'espace */}
+              <div className="flex flex-col items-center pr-4"> 
+                <div className="leading-tight">
+                  <span className="text-lg font-black uppercase tracking-[0.2em]">
+                    Saison {season[0].year}
+                  </span>
+                </div>
+                
+                <div className="flex items-center">
+                  <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">
+                    EN DIRECT :&nbsp;
+                  </span>
+                  <span className="text-red-600 text-xl font-bold uppercase tracking-widest animate-pulse">
+                    {status}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </Link>
         
         <h2 className="group relative text-5xl md:text-8xl font-black leading-[0.8] uppercase italic tracking-tighter mb-8">
