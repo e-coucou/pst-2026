@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Star, Loader2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client'; // On utilise le client ici
+import { useRouter } from 'next/navigation';
 
 interface Props {
   playerId: number;
@@ -14,12 +15,12 @@ export default function FavoriteButton({ playerId, initialIsFavori, userId }: Pr
   const [isFavori, setIsFavori] = useState(initialIsFavori);
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
+  const router = useRouter();
 
 const toggleFavori = async () => {
   setLoading(true);
   const newValue = isFavori ? null : playerId;
-
-  console.log("Tentative d'update...", { userId, newValue }); // DEBUG
+//  console.log("Tentative d'update...", { userId, newValue }); // DEBUG
 
   const { data, error } = await supabase
     .from('site_users')
@@ -32,7 +33,8 @@ const toggleFavori = async () => {
     alert("Erreur : " + error.message); // Pour le voir sur mobile/tablette
   } else {
     console.log("Update réussi ! Nouveau favori :", newValue);
-    setIsFavori(!isFavori);
+      setIsFavori(!isFavori);
+      router.refresh();
   }
   setLoading(false);
 };    
