@@ -53,8 +53,8 @@ export default function SuperAdminPage() {
       const fieldName = data.role ? 'Rôle' : 'Favori';
       const newValue = data.role || data.favoris;
       await supabase.from('session_logs').insert({
-        user_id: user.id, // C'est TON ID qui est autorisé par la RLS
-        player_nickname: nickname, // Ton nickname
+        user_id: user.id, // C'est l'ID qui est autorisé par la RLS
+        player_nickname: nickname, // Le nickname
         action: 'ADMIN_UPDATE_MEMBER',
         details: `Changement de ${fieldName} pour ${nickname} -> ${newValue}`
       });

@@ -2,18 +2,29 @@ import { createClient } from '@/utils/supabase/server';
 import EloChart from '@/components/EloChart';
 import StatsCard from '@/components/StatsCard';
 import SeasonHistory from '@/components/SeasonHistory';
+import FavoriteButton from '@/components/FavoriteButton';
 import Link from 'next/link';
-import { ChevronLeft, Zap, Target, Award, Swords, Video, Users } from 'lucide-react';
+import { ChevronLeft, Zap, Target, Award, Swords, Video, Users, Star } from 'lucide-react';
+import { use } from 'react';
 
 
 export default async function PlayerProfile({ params }: { params: Promise<{ id: string }> }) {
 
-  // 1. On attend les params (Obligatoire en Next 15/16)
+  // On attend les params (Obligatoire en Next 15/16)
   const { id } = await params;
   const playerId = parseInt(id, 10);
 
-  // 2. ON INITIALISE LE CLIENT ICI (Pas à l'extérieur)
+  // client supabase _ get_user (/favori/)
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return <div className="p-20 text-center text-white font-black italic">Veuillez vous connecter pour voir le classement.</div>;
+  }
+  const [ favoriRes] = await Promise.all([
+    supabase.from('site_users').select('favoris').eq('id', user.id).single()
+  ]);
+
+  const favori = favoriRes.data?.favoris;
 
   // 1. Récupération des données en parallèle pour la performance
   const [
@@ -103,8 +114,13 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 		        </h1>
 		        <p className="text-zinc-500 font-bold text-sm uppercase tracking-[0.3em]">
 		          Ranking PST : <span className="text-red-500">#{lastEntry?.rank_at_time || "--"}</span>
-		        </p>
-		      </div>
+              </p>
+<FavoriteButton 
+  playerId={player.id} 
+  userId={user.id} 
+  initialIsFavori={favori === player.id} 
+/>
+            </div>
 		    </div>
 
  
