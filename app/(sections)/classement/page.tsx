@@ -113,15 +113,6 @@ export default async function Leaderboard() {
                       </div>
                     )}
                   </div>
-                  {/* Condition : Si l'ID du joueur est égal au favori enregistré */}
-                  {player.id === favori && (
-                    <div className="relative ml-2">
-                      {/* Étoile Rouge PST */}
-                      <Star size={14} className="text-red-600 fill-red-600" />
-                      {/* Effet de lueur (glow) rouge pour rester dans la charte luxe */}
-                      <div className="absolute inset-0 bg-red-600 blur-md opacity-40 animate-pulse" />
-                    </div>
-                  )}
                   {/* INFOS */}
                   <div className="flex-1 ml-6">
                     <span className="text-sm truncate sm:text-lg font-black uppercase italic text-white group-hover:text-red-500 transition-colors">
@@ -137,6 +128,7 @@ export default async function Leaderboard() {
                       </p>
                     </div>
                     <ArrowRight size={20} className="text-zinc-800 group-hover:text-red-600 transition-all" />
+                    <Star size={14} className={`${player.id === favori ? "text-red-600 fill-red-600" : "text-zinc-600 fill-zinc-600"}`} />
                   </div>
                 </Link>
               );
