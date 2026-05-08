@@ -6,12 +6,12 @@ import {
   RefreshCw, 
   Globe, 
   Trash2, 
-  Users, 
+  Users, UserPlus, 
   Settings2, 
   AlertTriangle, 
   Loader2,
   ChevronRight,
-  Fingerprint, BookOpen, ListTodo
+  Fingerprint, BookOpen, ListTodo, BarChart3, Gauge
 } from 'lucide-react';
 
 export default function AdminControlPanel() {
@@ -47,7 +47,7 @@ export default function AdminControlPanel() {
       {/* HEADER PANEL */}
       <div className="flex items-center gap-4 mb-2 px-2">
         <div className="p-3 bg-red-600/10 rounded-2xl">
-          <Fingerprint className="text-red-600" size={24} />
+          {/*<Fingerprint className="text-red-600" size={24} />*/}
         </div>
         <div>
           <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white">
@@ -60,25 +60,25 @@ export default function AdminControlPanel() {
       {/* SECTION 1 : GESTION & DONNÉES */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AdminNavButton 
-          icon={<Users size={20} />} 
+          icon={<UserPlus size={20} />} 
           label="Gérer les Joueurs" 
           desc="Profiles & Statistiques"
           onClick={() => navTo('/live/admin_joueurs')}
         />
         <AdminNavButton 
-          icon={<Settings2 size={20} />} 
+          icon={<Gauge size={20} />} 
           label="Paramètres ELO" 
           desc="Coefficients & Seuils"
           onClick={() => navTo('/live/params_elo')}
         />
         <AdminNavButton 
-          icon={<Settings2 size={20} />} 
+          icon={<Users size={20} />} 
           label="Listes de équipes" 
           desc="Doublettes & Archives"
           onClick={() => navTo('/live/admin_teams')}
         />
         <AdminNavButton 
-          icon={<Settings2 size={20} />} 
+          icon={<BarChart3 size={20} />} 
           label="Statistiques" 
           desc="Statistiques avancées & historiques"
           onClick={() => navTo('/live/stats')}
@@ -106,7 +106,7 @@ export default function AdminControlPanel() {
             icon={status.loading && status.action === 'live' ? <Loader2 className="animate-spin" /> : <RefreshCw size={18} />}
             label="Recalculer ELO Live"
             loading={status.loading && status.action === 'live'}
-            variant="danger"
+            variant="warning"
             onClick={() => executeAction('live', '/api/admin/live-elo', "Recalculer tout l'historique ELO Live ?")}
           />
 
@@ -121,7 +121,7 @@ export default function AdminControlPanel() {
       </div>
 
       {/* SECTION 3 : ZONE DE DANGER */}
-      <div className="border border-red-900/20 bg-red-950/5 rounded-[2.5rem] p-6">
+      <div className="border border-red-900/20 bg-red-950/50 rounded-[2.5rem] p-6">
         <div className="flex items-center gap-3 mb-4 px-2 text-red-500">
           <AlertTriangle size={16} />
           <h3 className="text-[10px] font-black uppercase tracking-widest">Zone critique</h3>
@@ -147,9 +147,9 @@ function AdminNavButton({ icon, label, desc, onClick }: any) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-4 p-5 bg-zinc-900/50 border border-white/5 rounded-[2rem] hover:bg-white hover:text-black transition-all duration-300 group text-left"
+      className="flex items-center gap-4 p-5 bg-zinc-900/50 border border-white/5 rounded-[2rem] hover:bg-zinc-200 hover:text-black transition-all duration-300 group text-left"
     >
-      <div className="p-3 bg-zinc-800 group-hover:bg-black/10 rounded-xl text-red-600 transition-colors">
+      <div className="p-3 bg-zinc-800 group-hover:bg-black/20 rounded-xl text-red-600 transition-colors">
         {icon}
       </div>
       <div>
@@ -164,7 +164,7 @@ function AdminNavButton({ icon, label, desc, onClick }: any) {
 function AdminActionButton({ icon, label, onClick, loading, variant }: any) {
   const colors = variant === 'danger' 
     ? 'bg-red-600 hover:bg-red-500 shadow-red-900/20' 
-    : 'bg-orange-600 hover:bg-orange-500 shadow-orange-900/20';
+    : 'bg-orange-600 hover:bg-purple-500 shadow-orange-900/20';
 
   return (
     <button
