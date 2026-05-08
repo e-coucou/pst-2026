@@ -97,7 +97,7 @@ export default async function Leaderboard() {
               return (
                 <Link key={player.id} href={`/joueurs/${player.id}`} className="flex items-center p-4 sm-p6 hover:bg-white/5 transition-all group">
                   {/* RANG */}
-                  <div className={`w-10 sm:w-12 flex justify-center text-3xl font-black italic ${rankColor}`}>
+                  <div className={`w-8 sm:w-12 flex justify-center text-xl font-black italic ${rankColor}`}>
                     {index + 1}
                   </div>
 
@@ -122,12 +122,12 @@ export default async function Leaderboard() {
                   {/* ELO */}
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="text-[9px] text-gray-600 font-black uppercase mb-1">ELO</p>
-                      <p className="text-xl sm:text-3xl font-mono font-black italic text-white leading-none">
+                      <p className="hidden md:block text-[9px] text-gray-600 font-black uppercase mb-1">ELO</p>
+                      <p className="text-sm sm:text-3xl font-mono font-black italic text-white leading-none">
                         {player.elo.toFixed(0)}
                       </p>
                     </div>
-                    <ArrowRight size={20} className="text-zinc-800 group-hover:text-red-600 transition-all" />
+                    <ArrowRight size={14} className="text-zinc-800 group-hover:text-red-600 transition-all" />
                     <Star size={14} className={`${player.id === favori ? "text-red-600 fill-red-600" : "text-zinc-600 fill-zinc-600"}`} />
                   </div>
                 </Link>
