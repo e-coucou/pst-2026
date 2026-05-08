@@ -125,8 +125,8 @@ export default function AdminTeamsPage() {
                 <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
                   <th className="px-2 py-5">Équipe</th>
                   <th className="px-2 py-5">Année</th>
-                  <th className="px-6 py-5 text-red-600"><div className="flex items-center gap-2"><History size={14}/> Tireur</div></th>
-                  <th className="px-6 py-5 text-blue-500"><div className="flex items-center gap-2"><ArrowRightLeft size={14}/> Pointeur</div></th>
+                  <th className="px-6 py-5 text-orange-600"><div className="flex items-center gap-2"><History size={14}/> Tireur</div></th>
+                  <th className="px-6 py-5 text-purple-500"><div className="flex items-center gap-2"><ArrowRightLeft size={14}/> Pointeur</div></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -144,7 +144,7 @@ export default function AdminTeamsPage() {
                       <select 
                         value={team.tireur_id}
                         onChange={(e) => handleUpdateMember(team.id, 'tireur_id', e.target.value)}
-                        className="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer hover:text-red-500 transition-colors outline-none"
+                        className="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer hover:text-orange-500 transition-colors outline-none"
                       >
                         {profiles.map(p => (
                           <option key={p.id} value={p.id} className="bg-zinc-900">{p.nom}</option>
@@ -157,7 +157,7 @@ export default function AdminTeamsPage() {
                       <select 
                         value={team.pointeur_id}
                         onChange={(e) => handleUpdateMember(team.id, 'pointeur_id', e.target.value)}
-                        className="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer hover:text-blue-500 transition-colors outline-none"
+                        className="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer hover:text-purple-500 transition-colors outline-none"
                       >
                         {profiles.map(p => (
                           <option key={p.id} value={p.id} className="bg-zinc-900">{p.nom}</option>

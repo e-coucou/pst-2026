@@ -11,7 +11,7 @@ import {
   AlertTriangle, 
   Loader2,
   ChevronRight,
-  Fingerprint, BookOpen, ListTodo, BarChart3, Gauge
+  Fingerprint, BookOpen, ListTodo, BarChart3, Gauge, Users2
 } from 'lucide-react';
 
 export default function AdminControlPanel() {
@@ -94,6 +94,12 @@ export default function AdminControlPanel() {
           label="Todo List" 
           desc="Todo list de la roadmap (Markdown)"
           onClick={() => navTo('/live/todo')}
+        />
+         <AdminNavButton 
+          icon={<Users2 size={20} />} 
+          label="Gestion des Accès" 
+          desc="Gestion des accès et rôles des Users"
+          onClick={() => navTo('/live/users')}
         />
       </div>
 

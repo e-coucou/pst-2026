@@ -13,13 +13,23 @@ export default function LogoutButton() {
   const handleLogout = async () => {
     setLoading(true);
     try {
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('session_logs').insert({
+          user_id: user.id,
+          player_nickname: user.user_metadata.nickname || user.email,
+          action: 'LOGOUT',
+          details: 'Déconnexion manuelle'
+        });
+      }
       // Déconnecte l'utilisateur et détruit la session dans Supabase
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
       // Redirection + Rafraîchissement pour purger le cache des Server Components
       router.push('/login?message=Déconnexion réussie');
       router.refresh();
+      
     } catch (error) {
       console.error("Erreur lors de la déconnexion:", error);
       setLoading(false);

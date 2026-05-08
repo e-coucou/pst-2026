@@ -27,11 +27,12 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
 
-  const logActivity = async (action: string, details: string) => {
+  const logActivity = async (action: string, details: string, userId?: string) => {
     try {
       await supabase.from('session_logs').insert({
+        user_id: userId || null, // Ajout du user_id pour valider la RLS
         player_nickname: nickname ? nickname.toLowerCase().trim() : 'google_auth',
-        action: action,
+        action: action.toUpperCase(), // Style PST : Uppercase
         details: details
       });
     } catch (e) {
@@ -39,7 +40,6 @@ function LoginForm() {
     }
   };
 
-  // --- LOGIN CLASSIQUE ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -48,17 +48,20 @@ function LoginForm() {
     const cleanNickname = nickname.trim();
     const email = `${cleanNickname.toLowerCase()}@pst.net`;
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ 
+    // Récupération de 'data' qui contient l'utilisateur
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ 
       email, 
       password 
     });
 
     if (authError) {
       setError("Nickname ou mot de passe incorrect.");
+      // Pas de userId ici car l'auth a échoué
       await logActivity('LOGIN_FAILED', authError.message);
       setLoading(false);
     } else {
-      await logActivity('LOGIN_SUCCESS', 'Connexion réussie');
+      // Connexion réussie : on passe l'ID de l'utilisateur au log
+      await logActivity('LOGIN_SUCCESS', 'Connexion réussie', data.user?.id);
       router.push('/');
       router.refresh();
     }

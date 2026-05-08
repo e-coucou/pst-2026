@@ -64,6 +64,16 @@ export default function Navbar() {
       router.push('/login');
     } else {
       if (confirm("Voulez-vous vous déconnecter ?")) {
+        const { data: { user } } = await supabase.auth.getUser();
+          
+        if (user) {
+          await supabase.from('session_logs').insert({
+            user_id: user.id,
+            player_nickname: user.user_metadata.nickname || user.email,
+            action: 'LOGOUT',
+            details: 'Déconnexion manuelle'
+          });
+        }
         await supabase.auth.signOut();
         router.push('/');
         router.refresh();

@@ -299,11 +299,11 @@ export default function StatsPage() {
                   <thead>
                     <tr className="bg-black/20 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
                       <th className="px-3 py-4">Rang</th>
-                      <th className="px-4 py-4">Joueur</th>
-                      <th className="px-6 py-4 text-center">Winrate</th>
-                      <th className="px-6 py-4 text-center">Matches</th>
-                      <th className="px-6 py-4 text-center">Diff. Pts</th>
-                      <th className="px-6 py-4 text-center text-red-500">Fanny Mises</th>
+                      <th className="px-15 py-4">Joueur</th>
+                      <th className="px-4 py-4 text-center">Winrate</th>
+                      <th className="px-4 py-4 text-center">Matches</th>
+                      <th className="px-4 py-4 text-center">Diff. Pts</th>
+                      <th className="px-4 py-4 text-center text-red-500">Fanny Mises</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
