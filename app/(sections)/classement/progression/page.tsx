@@ -70,7 +70,7 @@ export default async function ProgressionPage() {
           </div>
           
           <div className="text-[8px] text-zinc-700 font-bold uppercase tracking-tighter">
-            © 2026 PST Database Engine by eCoucou
+            © 2026 PST eCoucou digital
           </div>
         </footer>
       </div>

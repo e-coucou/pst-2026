@@ -1,17 +1,22 @@
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
-import { Trophy, ArrowRight, ChevronLeft, Target, Zap, User, Activity, TrendingUp } from 'lucide-react';
+import { Trophy, ArrowRight, ChevronLeft, Target, Zap, User, Activity, TrendingUp,Star } from 'lucide-react';
 
 
 export default async function Leaderboard() {
   const supabase = await createClient();
-
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return <div className="p-20 text-center text-white font-black italic">Veuillez vous connecter pour voir le classement.</div>;
+  }
   // 1. Récupération des profils et de l'historique
-  const [profilesRes, historyRes] = await Promise.all([
+  const [profilesRes, historyRes, favoriRes] = await Promise.all([
     supabase.from('profiles').select('id, nom, photo_url'),
-    supabase.from('elo_history').select('player_id, elo_value').order('id', { ascending: false })
+    supabase.from('elo_history').select('player_id, elo_value').order('id', { ascending: false }),
+    supabase.from('site_users').select('favoris').eq('id', user.id).single()
   ]);
 
+  const favori = favoriRes.data?.favoris;
   const profiles = profilesRes.data || [];
   const rawHistory = historyRes.data || [];
 
@@ -108,7 +113,15 @@ export default async function Leaderboard() {
                       </div>
                     )}
                   </div>
-
+                  {/* Condition : Si l'ID du joueur est égal au favori enregistré */}
+                  {player.id === favori && (
+                    <div className="relative ml-2">
+                      {/* Étoile Rouge PST */}
+                      <Star size={14} className="text-red-600 fill-red-600" />
+                      {/* Effet de lueur (glow) rouge pour rester dans la charte luxe */}
+                      <div className="absolute inset-0 bg-red-600 blur-md opacity-40 animate-pulse" />
+                    </div>
+                  )}
                   {/* INFOS */}
                   <div className="flex-1 ml-6">
                     <span className="text-sm truncate sm:text-lg font-black uppercase italic text-white group-hover:text-red-500 transition-colors">

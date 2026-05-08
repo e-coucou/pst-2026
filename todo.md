@@ -9,7 +9,6 @@
 ## 🔴 PRIORITÉS CRITIQUES
 - [ ] **Super :** Corriger la page visualisation charte graphique. Le bouton retour est a remplacer par X : `/live/charte/page.tsx`. En plus le bouton retour revient à la page d'accueil !
 - [ ] **Data :** Vérifier l'intégrité des schémas de base de données pour la version 2026.
-- [ ] **Admin :** Créer la page d'administration des utilisateurs (table `site_users` Supabase) avec gestion des rôles (membre/admin/super) accessible uniquement par les "super".
 
 ## 🛠️ EN COURS (Sprint Actuel)
 - [ ] **UI :** Mise en place d'un layout "Dark Mode" pour le dashboard admin.
@@ -35,6 +34,7 @@
 ---
 
 ## ✅ RÉALISATIONS
+- [x] **Admin** Créer la page d'administration des utilisateurs (table `site_users` Supabase) avec gestion des rôles (membre/admin/super) accessible uniquement par les "super".
 - [x] **API/TODO&CHART** Développer l'endpoint `/api/dev/todo` pour lire le fichier MD local, done egalement pour la charte
 - [x] **R/2026** Ajouter à la table `site_users` une relation avec le joueur préféré (tables `profiles` et `live_selected`). Colonne `favoris` créée dans `site_users` avec foreign_key vers `profiles`
 - [x] **5/2026** Implémenter le middleware de restriction pour la page `/admin/todo` (accès réservé aux `super-members`).

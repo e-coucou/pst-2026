@@ -11,7 +11,12 @@ import {
   TrendingUp, BarChart3, ChevronRight, Zap, X,
   Flame, Skull, HeartPulse, Crosshair, Crown
 } from 'lucide-react';
+import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import { useRouter } from 'next/navigation';
+
+//pour le graphique de progression historique, on peut réutiliser le même composant que dans la section classement/progression, en lui passant les données nécessaires (timeline complète et liste des joueurs)
+//export const dynamic = 'force-dynamic';
+//export const revalidate = 0;
 
 export default function StatsPage() {
   const [matches, setMatches] = useState<any[]>([]);
@@ -20,6 +25,9 @@ export default function StatsPage() {
   const [eloHistory, setEloHistory] = useState<any[]>([]);
   const supabase = createClient();
   const router = useRouter();
+  const [timeline, setTimeline] = useState<any[]>([]);
+  const [allPlayerNames, setAllPlayerNames] = useState<string[]>([]);
+  const [nbYears, setNbYears] = useState(0);
 
   useEffect(() => {
     async function getStats() {
@@ -27,6 +35,29 @@ export default function StatsPage() {
       if (data) setMatches(data);
       const { data: eloData } = await supabase.from('elo_history').select('*');
       if (eloData) setEloHistory(eloData);
+
+      // On lance les deux requêtes en parallèle pour la performance
+      const [timelineRes, profilesRes, seasons] = await Promise.all([
+        supabase.rpc('get_full_timeline'),
+        supabase.from('profiles').select('nom'),
+        supabase.from('games').select('year') //.distinct() // Note: le support du .distinct() dépend de ta version de librairie.
+      ]);
+
+      setNbYears(seasons.data ? new Set(seasons.data.map(g => g.year)).size : 0);
+
+      // Debug : Vérification du nombre de matchs récupérés (dans ta console terminal)
+      if (timelineRes.data) {
+        console.log(`[DEBUG] Timeline récupérée : ${timelineRes.data.length} matchs.`);
+      }
+
+      if (timelineRes.error) {
+        console.error('[ERROR] Erreur RPC get_full_timeline:', timelineRes.error);
+      }
+
+      // Extraction sécurisée des données
+      setTimeline(timelineRes.data || []);
+      setAllPlayerNames(profilesRes.data?.map(p => p.nom).filter(Boolean) || []);
+
       setLoading(false);
     }
     getStats();
@@ -411,7 +442,19 @@ export default function StatsPage() {
         {/* ONGLET RECORDS & TROPHÉES */}
         {activeTab === 'évolution' && (
           <div className="flex flex-col min-w-0 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in zoom-in-95 duration-300">
-            <span className="text-orange-500 items-center text-4xl">e-Coucou ... développement en cours</span>
+            <p className="text-zinc-400 font-bold text-sm uppercase tracking-[0.5em] pl-1">
+              Progression historique — {nbYears} Saisons - {timeline.length} Matchs
+            </p>
+            {/* Container du Graphique */}
+            <div className="relative h-[70vh] w-full bg-zinc-900/10 rounded-[3rem] border border-white/5 p-6 backdrop-blur-3xl overflow-hidden">
+              {/* Effet de lueur en arrière-plan */}
+              <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-red-600/5 blur-[120px] pointer-events-none" />
+              
+              <GlobalProgressionChart 
+                timeline={timeline} 
+                allPlayerNames={allPlayerNames} 
+              />
+            </div>
           </div>
         )}
       </main>
