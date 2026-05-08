@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Trophy, Users, Video, Swords, Zap, ChevronRight, Info, BarChart3, ShieldCheck, UserCircle } from 'lucide-react';
+import { Trophy, Users, Video, Swords, Zap, ChevronRight, Info, BarChart3, ShieldCheck, UserCircle, Gauge } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 
@@ -118,13 +118,6 @@ export default function Home() {
 
         {/* GRILLE DE NAVIGATION PRINCIPALE */}
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto px-4">
-          <Link href="/classement" className="group relative bg-zinc-800/50 border border-white/10 p-8 rounded-3xl hover:bg-red-900 hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
-            <div className="bg-zinc-700 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
-              <Trophy size={28} className="text-white" />
-            </div>
-            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white opacity-90 mb-2">Classement</h3>
-            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Performance ELO</p>
-          </Link>
 
           <Link href="/tournois" className="group relative bg-zinc-800/50 border border-white/10 p-8 rounded-3xl hover:bg-red-900  hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
             <div className="bg-zinc-700 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
@@ -141,6 +134,23 @@ export default function Home() {
             <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-2">Vidéos</h3>
             <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Zone Membres</p>
           </Link>
+
+          <Link href="/classement" className="group relative bg-zinc-800/50 border border-white/10 p-8 rounded-3xl hover:bg-red-900 hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
+            <div className="bg-zinc-700 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
+              <Trophy size={28} className="text-white" />
+            </div>
+            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white opacity-90 mb-2">Classement</h3>
+            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Performance ELO</p>
+          </Link>
+
+          <Link href="/stats" className="group relative bg-zinc-800/50 border border-white/10 p-8 rounded-3xl hover:bg-red-900 hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
+            <div className="bg-zinc-700 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">
+              <Gauge size={28} className="text-white" />
+            </div>
+            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white opacity-90 mb-2">Statistiques</h3>
+            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Les Tournois vue du coté des chiffres</p>
+          </Link>          
+            
         </div>
       </header>
 

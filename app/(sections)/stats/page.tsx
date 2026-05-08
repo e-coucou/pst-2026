@@ -207,7 +207,7 @@ export default function StatsPage() {
           </button>
         </div>
         <div className="flex gap-4 mt-6 overflow-x-auto pb-2 no-scrollbar">
-          {['global', 'scores', 'joueurs', 'records'].map((tab) => (
+          {['global', 'scores', 'joueurs', 'records','évolution'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -408,7 +408,12 @@ export default function StatsPage() {
 
           </div>
         )}
-
+        {/* ONGLET RECORDS & TROPHÉES */}
+        {activeTab === 'évolution' && (
+          <div className="flex flex-col min-w-0 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in zoom-in-95 duration-300">
+            <span className="text-orange-500 items-center text-4xl">e-Coucou ... développement en cours</span>
+          </div>
+        )}
       </main>
     </div>
   );
