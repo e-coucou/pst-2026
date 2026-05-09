@@ -142,9 +142,10 @@ export default function Navbar() {
           {/* NAVIGATION DESKTOP */}
           <div className="hidden md:flex items-center gap-8">
             <NavLink href="/" icon={<Home size={16} />} label="Accueil" active={pathname === "/"} />
-            <NavLink href="/classement" icon={<BarChart3 size={16} />} label="Classement" active={pathname.startsWith("/classement") || pathname.startsWith("/joueurs")} />
             <NavLink href="/tournois" icon={<Swords size={16} />} label="Tournois" active={pathname.startsWith("/tournois")} />
             <NavLink href="/videos" icon={<Video size={16} />} label="Vidéos" active={pathname.startsWith("/videos")} />
+            <NavLink href="/classement" icon={<BarChart3 size={16} />} label="Classement" active={pathname.startsWith("/classement") || pathname.startsWith("/joueurs")} />
+            <NavLink href="/stats" icon={<BarChart3 size={16} />} label="Statistiques" active={pathname.startsWith("/stats")} />
           </div>
 
           {/* BOUTON BURGER (Mobile uniquement) */}
@@ -180,15 +181,16 @@ export default function Navbar() {
 
       {/* MENU MOBILE DÉROULANT */}
       {isOpen && (
-        <div className="md:hidden bg-black/95 border-b border-white/10 px-6 py-8 flex flex-col gap-6 animate-in slide-in-from-top duration-300">
+        <div className="md:hidden bg-black/95 border-b border-white/10 px-6 py-4 flex flex-col gap-4 animate-in slide-in-from-top duration-300">
           <MobileNavLink href="/" label="Accueil" active={pathname === "/"} onClick={closeMenu} />
-          <MobileNavLink href="/classement" label="Classement" active={pathname.startsWith("/classement")} onClick={closeMenu} />
           <MobileNavLink href="/tournois" label="Tournois" active={pathname.startsWith("/tournois")} onClick={closeMenu} />
           <MobileNavLink href="/videos" label="Vidéos" active={pathname.startsWith("/videos")} onClick={closeMenu} />
+          <MobileNavLink href="/classement" label="Classement" active={pathname.startsWith("/classement")} onClick={closeMenu} />
+          <MobileNavLink href="/stats" label="Statistiques" active={pathname.startsWith("/stats")} onClick={closeMenu} />
           {userRole && (
             <button 
               onClick={() => { handleAuthAction(); closeMenu(); }}
-              className="text-left text-red-600 text-2xl font-black uppercase italic"
+              className="text-left text-red-600 text-xl font-black uppercase italic"
             >
               Déconnexion
             </button>
@@ -231,7 +233,7 @@ function MobileNavLink({ href, label, active, onClick }: { href: string, label: 
     <Link 
       href={href} 
       onClick={onClick}
-      className={`text-3xl font-black uppercase italic tracking-tighter transition-all ${
+      className={`text-2xl font-black uppercase italic tracking-tighter transition-all ${
         active ? 'text-red-600' : 'text-white hover:text-red-500'
       }`}
     >

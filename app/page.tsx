@@ -104,7 +104,7 @@ export default function Home() {
         </h2>
         
         <p className="mt-6 text-gray-400 max-w-2xl mx-auto font-bold uppercase tracking-widest text-xs md:text-sm italic">
-          Le Tournoi Officiel de Pétanque - Résidence Paris St-Tropez<br className="hidden md:block" /> 
+          Le Tournoi Officiel de Pétanque • Résidence Paris St-Tropez •&nbsp;<br className="hidden md:block" /> 
           Archives Historiques • Vidéos Privées • Esprit du Tournoi
         </p>
 
