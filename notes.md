@@ -1,3 +1,59 @@
+version 1.8.11
+
+# 📓 Journal de Développement - Projet Pétanque PST
+
+## 🏗️ Architecture & Flux de Données
+
+### 🔄 Gestion des États (Stepper)
+- **Fichier :** `components/TournamentStepper.tsx`
+- **Concept :** Un composant de progression qui synchronise l'interface avec l'état réel du tournoi en base de données.
+- **Points clés :**
+    - Les étapes : `JOUEURS`, `EQUIPES`, `POULES`, `DEMI`, `FINALE`, `TERMINE`.
+    - **Sécurité :** Utilisation de `key={status}` lors de l'appel du composant pour forcer un re-montage propre et éviter les bugs d'affichage "undefined".
+    - **UI :** Animation de remplissage des barres de progression via Tailwind (`transition-all duration-1000`).
+
+### ⚡ Client vs Server Components (Hybridation)
+- **Page Profil Joueur :** Reste un **Server Component** (`async function`) pour la rapidité de récupération des données Supabase (ELO, Historique, Stats).
+- **Interactivité :** Extraction des éléments cliquables dans des fichiers séparés avec la directive `'use client';`.
+- **Exemple :** Le bouton de favoris a été isolé pour permettre le `onClick` sans casser le rendu serveur de la page.
+
+## ⭐️ Système de Favoris
+
+### 🛠️ Implémentation technique
+- **Composant :** `FavoriteButton.tsx`
+- **Mécanisme :** 1. Clic sur l'étoile -> Appel `supabase.from('site_users').update()`.
+    2. Si succès -> `router.refresh()` est appelé.
+    3. **Impact :** Le `router.refresh()` force Next.js à re-fetch les données sur le serveur, ce qui met à jour instantanément la liste de classement et déplace la vignette "favori" sans recharger la page.
+
+### 🔐 Sécurité & Base de données (RLS)
+- **Table :** `site_users`
+- **Policy UPDATE :** Indispensable pour permettre l'écriture.
+    - *Règle SQL :* `auth.uid() = id` (L'utilisateur ne peut modifier que sa propre ligne).
+- **Type de données :** Attention à la correspondance entre l'ID du joueur (`int8`) et le champ `favoris` dans la table users.
+
+## 📱 Optimisations UI / Responsive
+
+### 📏 Tailwind Breakpoints
+- **Masquage sélectif :** Utilisation de `hidden md:block` pour épurer l'affichage mobile.
+- **Exemple :** Les labels "ELO" sont masqués sur smartphone pour laisser plus de place aux chiffres, mais réapparaissent sur tablette/desktop.
+
+### 🎨 Design System (Codes Couleurs)
+- **Accent principal :** `red-600` (PST Brand).
+- **Fond :** `black` & `zinc-900`.
+- **Typo :** Italique, Black, Uppercase pour le look "Athlète Pro".
+
+## 🚩 Mémo Erreurs Résolues
+1. **Error: Event handlers cannot be passed to Client Component props**
+    - *Cause :* Tentative d'utiliser `onClick` dans un Server Component.
+    - *Solution :* Création d'un composant enfant avec `'use client';`.
+2. **Nom de composant en minuscule :**
+    - *Cause :* `<renderStepper />` n'était pas reconnu par React.
+    - *Solution :* Renommé en `<TournamentStepper />` (PascalCase).
+3. **Update réussie mais pas de changement en DB :**
+    - *Cause :* Manque de Policy `UPDATE` dans Supabase.
+    - *Solution :* Ajout de la règle RLS dans le SQL Editor.
+
+---
 version 1.8.4
 
 # 📝 PST-2026 : Notes de Session - Gestion Admin & Sécurité
