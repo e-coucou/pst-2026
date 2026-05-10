@@ -9,52 +9,49 @@ import { residenceData } from '@/data/residence';
 const { config } = residenceData.residence;
 
 function Apartment({ data }: { data: any }) {
-  // --- LOGIQUE DE POSITIONNEMENT (Basée sur tes formules JSON) ---
-  
-  // X : Horizontal (Colonnes)
-  const x = data.col * config.gridColWidth;
-  
-  // Y : Vertical (Étage)
-  // On calcule la base. Si c'est côté cour, on applique l'offset de pente (1.15m)
-  const isCour = data.face === 'cour';
-  const yBase = data.row * config.gridRowHeight;
-  const yOffset = isCour ? -config.slopeOffsetMeters : 0;
-  const y = yBase + yOffset + (data.rowSpan * config.gridRowHeight) / 2;
+  const { config, buildings } = residenceData.residence;
 
-  // Z : Profondeur (Rue <-> Cour)
-  let z = 0;
-  let depth = config.buildingDepth;
+  const buildingKey = data.building as keyof typeof buildings;
+  const b = buildings[buildingKey];
 
-  if (data.face === 'facade') {
-    depth = config.facadeDepth;
-    z = config.buildingDepth / 2 - depth / 2; // Positionné devant
-  } else if (data.face === 'cour') {
-    depth = config.courDepth;
-    z = -config.buildingDepth / 2 + depth / 2; // Positionné derrière
-  }
-  // Si 'both', la profondeur reste buildingDepth et z reste 0 (centré)
+  // Calcul du X universel
+  const x = b.startX + b.leftMargin + (data.col * b.colWidth);
 
-  return (
-    <group position={[x, y, z]}>
-      <mesh>
-        <boxGeometry args={[config.gridColWidth - 0.1, data.rowSpan * config.gridRowHeight - 0.1, depth - 0.1]} />
-        {/* Style : Semi-transparent pour voir la structure */}
+  // Fonction pour générer un bloc (Mesh)
+  const renderBlock = (faceType: 'facade' | 'cour', offsetZ: number, currentDepth: number, isLowered: boolean) => {
+    const yBase = data.row * config.gridRowHeight;
+    const yPos = isLowered ? yBase - config.slopeOffsetMeters : yBase;
+    // On centre le mesh verticalement par rapport à sa hauteur
+    const yFinal = yPos + (data.rowSpan * config.gridRowHeight) / 2;
+
+    return (
+      <mesh position={[x, yFinal, offsetZ]}>
+        <boxGeometry args={[b.colWidth - 0.2, data.rowSpan * config.gridRowHeight - 0.1, currentDepth]} />
         <meshStandardMaterial 
-          color={data.building === 'main' ? "#27272a" : "#3f3f46"} 
+          color={data.id === 13 ? "#dc2626" : "#27272a"} 
           transparent 
-          opacity={0.6} 
+          opacity={0.7} 
         />
-        {/* Contour néon pour le style PST */}
-        <Edges color={data.id === 13 ? "#dc2626" : "#52525b"} threshold={15} />
+        <Edges color="white" threshold={15} opacity={0.3} />
       </mesh>
+    );
+  };
 
-      {/* Petit texte flottant avec le numéro d'appartement */}
-      <Text
-        position={[0, 0, depth / 2 + 0.1]}
-        fontSize={0.4}
-        color="white"
-//        font="/fonts/Geist-Bold.ttf" // Si tu as une police, sinon retire cette ligne
-      >
+  // Logique de génération selon le type de face
+  return (
+    <group>
+      {/* BLOC FAÇADE : si 'facade' ou 'both' */}
+      {(data.face === 'facade' || data.face === 'both') && 
+        renderBlock('facade', config.buildingDepth / 4, config.facadeDepth, false)
+      }
+
+      {/* BLOC COUR : si 'cour' ou 'both' */}
+      {(data.face === 'cour' || data.face === 'both') && 
+        renderBlock('cour', -config.buildingDepth / 4, config.courDepth, true)
+      }
+      
+      {/* Optionnel : Ajout d'un numéro d'appartement flottant */}
+      <Text position={[x, (data.row * config.gridRowHeight) + 2, 8]} fontSize={0.5} color="white">
         {data.num}
       </Text>
     </group>
