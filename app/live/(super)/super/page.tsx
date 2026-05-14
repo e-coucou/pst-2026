@@ -101,6 +101,12 @@ export default function AdminControlPanel() {
           desc="Gestion des accès et rôles des Users"
           onClick={() => navTo('/live/users')}
         />
+         <AdminNavButton 
+          icon={<Users2 size={20} />} 
+          label="Plan résidence" 
+          desc="Plan du Batitment B"
+          onClick={() => navTo('/render')}
+        />
       </div>
 
       {/* SECTION 2 : CALCULS ELO (LOURD) */}
