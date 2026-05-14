@@ -15,14 +15,14 @@ export const residenceData = {
     ],
     "config": {
       "gridRowHeight": 1.15,
-      "gridColWidth": 5.2,
-      "buildingDepth": 14.0,
-      "facadeDepth": 5.5,
+      "gridColWidth": 10.2,
+      "buildingDepth": 213.0,
+      "facadeDepth": 5.8,
       "corridorDepth": 1.5,
-      "courDepth": 5.5,
+      "courDepth": 6.35,
       "slopeOffsetMeters": 1.15,
-      "courRowOffset": 1,
-      "avantOffset":1
+      "courRowOffset": 0,
+      "avantOffset":1.2
     },
     "building": {
       "id": "batiment_unique",
@@ -225,7 +225,7 @@ export const residenceData = {
       {
         "id": 18, "num": "18", "type": "studio", "corridorLevel": true,
         "occupant": "Benamou",
-        "section": "principale", "col": 9, "colSpan": 1.5, "row": 2, "rowSpan": 2, "face": "facade","extendRight": "oui"
+        "section": "principale", "col": 9, "colSpan": 1.5, "row": 2, "rowSpan": 2, "face": "facade","extendRight": "oui", "avant": "oui"
       },
       {
         "id": 19, "num": "19", "type": "studio", "corridorLevel": true,

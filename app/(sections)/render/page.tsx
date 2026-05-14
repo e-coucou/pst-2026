@@ -27,19 +27,31 @@ function Apartment({ data }: { data: any }) {
     const width = (data.colSpan || 1) * colWidth;
     const xPos = (s as any).startX + ((s as any).leftMargin || 0) + (data.col * colWidth) + (width / 2) - (isExtendLeft ? colWidth / 2 : 0);
 
-    const avantOffset = isAvant ? config.avantOffset : 0;
-//    const zPos = isCour ? 0 : config.courDepth +config.facadeDepth;
-      const zPos = isCour ? (-config.facadeDepth - avantOffset) : avantOffset;  //config.facadeDepth : +config.facadeDepth ;
     const depth = isCour ? config.courDepth : config.facadeDepth;
+    const offsetAvant = isAvant ? config.avantOffset : 0;
+
+    // 1. CALCUL DES FACES (BORDS) - Logique Linéaire
+    const faceAvantFacade = 0 + offsetAvant; // La façade commence ici
+    const ligneDeSoudure = faceAvantFacade - config.facadeDepth; // La façade finit ICI et la cour commence ICI
+    
+    // Pour les studios Cour qui coulissent vers l'ARRIÈRE (le jardin)
+    const offsetArriere = (isCour && isAvant) ? 2*config.avantOffset : 0;
+    const faceAvantCour = ligneDeSoudure - offsetArriere;
+
+    // 2. POSITIONNEMENT DU CENTRE (zPos)
+    // Three.js positionne le centre de l'objet. 
+    // Centre = FaceAvant - (Profondeur / 2)
+    let zPos = 0;
+    if (!isCour) {
+      zPos = faceAvantFacade - (depth / 2);
+    } else {
+      zPos = faceAvantCour - (depth / 2);
+    }
 
     return (
       <group position={[xPos, yFinal, zPos]}>
         <mesh>
-          <boxGeometry
-            args={[width - 0.1, height - 0.1, depth]}
-            attach="geometry"
-            onUpdate={(self) => self.translate(0, 0, - depth / 2)} // Décale l'origine au bord                    
-          />
+          <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
           <meshStandardMaterial 
             color={data.id === 46 ? "#dc2626" : "#27272a"} 
             transparent 
@@ -48,9 +60,8 @@ function Apartment({ data }: { data: any }) {
           <Edges color={data.id === 46 ? "#ffffff" : "#f2f2fb"} threshold={15} />
         </mesh>
 
-        {/* --- AJOUT DES NUMÉROS --- */}
         <Text
-          position={[0, 0, depth / 2 + 0.05]} // Placé juste devant la face du cube
+          position={[0, 0, depth / 2 + 0.05]} // Placé à la surface avant du bloc
           fontSize={0.5}
           color="white"
           anchorX="center"
