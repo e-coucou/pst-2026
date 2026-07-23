@@ -4,7 +4,7 @@
 	import { useRouter } from 'next/navigation'; // <-- AJOUT POUR LE ROUTING
 	import { createClient } from '@/utils/supabase/client';
 	import RenderStepper from '@/components/Stepper'
-	import { ArrowRight, ArrowLeft, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
+	import { ArrowRight, ArrowLeft, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
 
 	export default function LiveAdminWizard() {
 	 const supabase = createClient();
@@ -17,6 +17,8 @@
 	 // Étape 1 : Sélection
 	 const [selectedPointeurs, setSelectedPointeurs] = useState<any[]>([]);
 	 const [selectedTireurs, setSelectedTireurs] = useState<any[]>([]);
+	 // Cache des confirmations (paiement/présence), conservé même si le joueur est désélectionné puis resélectionné
+	 const [confirmedMap, setConfirmedMap] = useState<Record<number, boolean>>({});
 	 
 	 // Étape 2 : Draft (Les colonnes que tu vas manipuler)
 	 const [draftP, setDraftP] = useState<any[]>([]);
@@ -39,10 +41,15 @@
 	     await fetchPlayersWithElo();
 	     
 	     // 1. Tentative de récupération d'une sélection déjà existante en base
+	     // (inclut aussi les joueurs désélectionnés : role = null, mais confirmed conservé)
 	     const { data: existing } = await supabase.from('live_selected').select('*');
 	     if (existing && existing.length > 0) {
-	       const ps = existing.filter(x => x.role === 'Pointeur').map(x => ({ id: x.player_id, nom: x.nom, elo: x.elo_at_selection, modern: x.modern_at_selection }));
-	       const ts = existing.filter(x => x.role === 'Tireur').map(x => ({ id: x.player_id, nom: x.nom, elo: x.elo_at_selection, modern: x.modern_at_selection }));
+	       const map: Record<number, boolean> = {};
+	       existing.forEach(x => { map[x.player_id] = !!x.confirmed; });
+	       setConfirmedMap(map);
+
+	       const ps = existing.filter(x => x.role === 'Pointeur').map(x => ({ id: x.player_id, nom: x.nom, elo: x.elo_at_selection, modern: x.modern_at_selection, confirmed: !!x.confirmed }));
+	       const ts = existing.filter(x => x.role === 'Tireur').map(x => ({ id: x.player_id, nom: x.nom, elo: x.elo_at_selection, modern: x.modern_at_selection, confirmed: !!x.confirmed }));
 	       setSelectedPointeurs(ps);
 	       setSelectedTireurs(ts);
 
@@ -77,20 +84,32 @@
 	 };
 
 	 const saveOneToDatabase = async (player: any, role: string) => {
+	   // onConflict: player_id -> si le joueur a déjà une ligne (ex: désélectionné plus tôt),
+	   // on ne fait que ré-affecter son rôle. Comme 'confirmed' n'est pas dans le payload,
+	   // sa valeur existante en base n'est jamais écrasée.
 	   await supabase.from('live_selected').upsert({
 	     player_id: player.id,
 	     role: role,
 	     elo_at_selection: player.elo,
 	     modern_at_selection: player.modern,
 	     nom: player.nom
-	   });
+	   }, { onConflict: 'player_id' });
 	 };
 
 	 const removeOneFromDatabase = async (playerId: number) => {
-	   await supabase.from('live_selected').delete().eq('player_id', playerId);
+	   // On ne supprime plus la ligne : ça effacerait 'confirmed' (ex: joueur qui a déjà payé).
+	   // On libère seulement le rôle, le joueur redevient sélectionnable.
+	   await supabase.from('live_selected').update({ role: null }).eq('player_id', playerId);
 	 };
 
-	 
+	 const toggleConfirmed = async (playerId: number, list: any[], setList: any) => {
+	   const nextConfirmed = !confirmedMap[playerId];
+	   setConfirmedMap(prev => ({ ...prev, [playerId]: nextConfirmed }));
+	   setList(list.map(p => p.id === playerId ? { ...p, confirmed: nextConfirmed } : p));
+	   await supabase.from('live_selected').update({ confirmed: nextConfirmed }).eq('player_id', playerId);
+	 };
+
+
 
 	 // --- SAUVEGARDE EN TABLE ET PASSAGE ÉTAPE 2 ---
 	 const finalizeSelectionAndSave = async () => {
@@ -105,8 +124,8 @@
 
 	     // 2. On prépare l'insert
 	     const toInsert = [
-	       ...selectedPointeurs.map(p => ({ player_id: p.id, role: 'Pointeur', elo_at_selection: p.elo, modern_at_selection:p.modern, nom: p.nom })),
-	       ...selectedTireurs.map(t => ({ player_id: t.id, role: 'Tireur', elo_at_selection: t.elo, modern_at_selection:t.modern, nom: t.nom }))
+	       ...selectedPointeurs.map(p => ({ player_id: p.id, role: 'Pointeur', elo_at_selection: p.elo, modern_at_selection:p.modern, nom: p.nom, confirmed: !!p.confirmed })),
+	       ...selectedTireurs.map(t => ({ player_id: t.id, role: 'Tireur', elo_at_selection: t.elo, modern_at_selection:t.modern, nom: t.nom, confirmed: !!t.confirmed }))
 	     ];
 	     // mise à jour status du Tournois
 	     const { error } = await supabase.from('live_selected').insert(toInsert);
@@ -327,8 +346,8 @@
 	                     <div className="flex justify-between items-center">
 	                       <span className="font-bold text-sm uppercase">{p.nom} <span className="text-zinc-600 ml-2 text-[11px]">{p.elo.toFixed(0)} / {p.modern.toFixed(0)}</span></span>
 	                       <div className="flex gap-2">
-	                         <button onClick={async() =>{ setSelectedPointeurs(prev => [...prev, p]); await saveOneToDatabase(p, 'Pointeur');}} disabled={!!(isP || isT || selectedPointeurs.length >= 8)} className="bg-purple-600 text-sm font-black px-2 py-1 rounded-lg uppercase disabled:hidden">P</button>
-	                         <button onClick={async() =>{ setSelectedTireurs(prev => [...prev, p]); await saveOneToDatabase(p, 'Tireur');}} disabled={!!(isP || isT || selectedTireurs.length >= 8)} className="bg-orange-600 text-sm font-black px-2 py-1 rounded-lg uppercase disabled:hidden">T</button>
+	                         <button onClick={async() =>{ setSelectedPointeurs(prev => [...prev, { ...p, confirmed: !!confirmedMap[p.id] }]); await saveOneToDatabase(p, 'Pointeur');}} disabled={!!(isP || isT || selectedPointeurs.length >= 8)} className="bg-purple-600 text-sm font-black px-2 py-1 rounded-lg uppercase disabled:hidden">P</button>
+	                         <button onClick={async() =>{ setSelectedTireurs(prev => [...prev, { ...p, confirmed: !!confirmedMap[p.id] }]); await saveOneToDatabase(p, 'Tireur');}} disabled={!!(isP || isT || selectedTireurs.length >= 8)} className="bg-orange-600 text-sm font-black px-2 py-1 rounded-lg uppercase disabled:hidden">T</button>
 	                       </div>
 	                     </div>
 	                   </div>
@@ -341,8 +360,17 @@
 	             <h2 className="text-purple-500 text-center text-xs font-black uppercase mb-4 italic">Pointeurs ({selectedPointeurs.length}/8)</h2>
 	             <div className="space-y-2">
 	               {selectedPointeurs.map(p => (
-	                 <div key={p.id} className="p-3 bg-purple-600/20 border border-purple-500 rounded-2xl flex justify-between items-center">
-	                   <span className="text-xs font-bold uppercase">{p.nom}</span>
+	                 <div key={p.id} className="p-3 bg-purple-600/20 border border-purple-500 rounded-2xl flex justify-between items-center gap-2">
+	                   <button
+	                     onClick={() => toggleConfirmed(p.id, selectedPointeurs, setSelectedPointeurs)}
+	                     title={p.confirmed ? 'Présence confirmée' : 'Marquer comme confirmé'}
+	                     className="shrink-0"
+	                   >
+	                     {p.confirmed
+	                       ? <CheckCircle2 size={18} className="text-green-500" />
+	                       : <Circle size={18} className="text-zinc-600 hover:text-white transition-colors" />}
+	                   </button>
+	                   <span className="text-xs font-bold uppercase flex-1 truncate">{p.nom}</span>
 	                   <button onClick={async () =>{ setSelectedPointeurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); }} className="text-purple-500 font-black text-xm px-2">✕</button>
 	                 </div>
 	               ))}
@@ -353,8 +381,17 @@
 	             <h2 className="text-orange-500 text-center text-xs font-black uppercase mb-4 italic">Tireurs ({selectedTireurs.length}/8)</h2>
 	             <div className="space-y-2">
 	               {selectedTireurs.map(p => (
-	                 <div key={p.id} className="p-3 bg-orange-600/20 border border-orange-500 rounded-2xl flex justify-between items-center">
-	                   <span className="text-xs font-bold uppercase">{p.nom}</span>
+	                 <div key={p.id} className="p-3 bg-orange-600/20 border border-orange-500 rounded-2xl flex justify-between items-center gap-2">
+	                   <button
+	                     onClick={() => toggleConfirmed(p.id, selectedTireurs, setSelectedTireurs)}
+	                     title={p.confirmed ? 'Présence confirmée' : 'Marquer comme confirmé'}
+	                     className="shrink-0"
+	                   >
+	                     {p.confirmed
+	                       ? <CheckCircle2 size={18} className="text-green-500" />
+	                       : <Circle size={18} className="text-zinc-600 hover:text-white transition-colors" />}
+	                   </button>
+	                   <span className="text-xs font-bold uppercase flex-1 truncate">{p.nom}</span>
 	                   <button onClick={async () =>{ setSelectedTireurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); }} className="text-orange-500 font-black text-xm px-2">✕</button>
 	                 </div>
 	               ))}

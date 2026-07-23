@@ -12,7 +12,7 @@ export default async function ProgressionPage() {
   // On lance les deux requêtes en parallèle pour la performance
   const [timelineRes, profilesRes, seasons] = await Promise.all([
     supabase.rpc('get_full_live'),
-    supabase.from('live_selected').select('nom'),
+    supabase.from('live_selected').select('nom').not('role', 'is', null),
     supabase.from('seasons').select('year').eq('is_active',true),
 //    supabase.from('games').select('year') //
 //    {data: [{year: 2026}]}//.distinct() // Note: le support du .distinct() dépend de ta version de librairie.

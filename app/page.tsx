@@ -1,15 +1,19 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Trophy, Users, Video, Swords, Zap, ChevronRight, Info, BarChart3, ShieldCheck, UserCircle, Gauge } from 'lucide-react';
+import { Trophy, Users, Video, Swords, Zap, ChevronRight, Info, BarChart3, ShieldCheck, UserCircle, Gauge, AlertTriangle } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
+
+// Date du tournoi — le message d'annonce de la home s'adapte automatiquement autour de ce jour
+const EVENT_DATE = new Date(2026, 7, 4); // Mardi 4 Août 2026 (mois 0-indexé)
 
 export default function Home() {
   const [count, setCount] = useState<number | null>(null);
   const [user, setUser] = useState<any>(null);
   const [season, setSeason] = useState<any[]>([2026]); // Saison actuelle
   const [status, setStatus] = useState<string>('TERMINE');
+  const [confirmStats, setConfirmStats] = useState<{ total: number; confirmed: number } | null>(null);
 
   useEffect(() => {
     const fetchJoueurs = async () => {
@@ -34,6 +38,18 @@ export default function Home() {
 	    if (tournoi) {
 	      setStatus(tournoi?.status);
 	    }
+
+      // Le jour J uniquement : qui a validé sa présence ?
+      const isEventDay = new Date().toDateString() === EVENT_DATE.toDateString();
+      if (isEventDay) {
+        const { data: selected } = await supabase
+          .from('live_selected')
+          .select('confirmed')
+          .not('role', 'is', null);
+        if (selected) {
+          setConfirmStats({ total: selected.length, confirmed: selected.filter(s => s.confirmed).length });
+        }
+      }
 
     };
     fetchJoueurs();
@@ -82,7 +98,64 @@ export default function Home() {
                     Saison {season[0].year}
                   </span>
                 </div>
-                
+
+                {(() => {
+                  const now = new Date();
+                  const isEventDay = now.toDateString() === EVENT_DATE.toDateString();
+                  const isPastEvent = now.getTime() > EVENT_DATE.getTime() && !isEventDay;
+
+                  // Après le jour J : le message disparaît, place au statut live ci-dessous
+                  if (isPastEvent) return null;
+
+                  // Avant le jour J : annonce, avec la date bien mise en avant
+                  if (!isEventDay) {
+                    return (
+                      <div className="my-1 text-center">
+                        <div className="text-red-600 text-2xl md:text-3xl font-black uppercase italic tracking-tight leading-none">
+                          Mardi 4 Août
+                        </div>
+                        <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mt-1 max-w-[220px] sm:max-w-none mx-auto">
+                          Terrain de Boules • RDV 18h00 précises <span className="text-white">(Tirage des Équipes)</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Jour J, tout le monde n'a pas encore validé : rappel
+                  if (confirmStats && confirmStats.confirmed < confirmStats.total) {
+                    const manquants = confirmStats.total - confirmStats.confirmed;
+                    return (
+                      <div className="my-1 flex flex-col items-center gap-1 max-w-[240px] sm:max-w-none mx-auto">
+                        <div className="flex items-center gap-2 text-orange-500 text-xs font-black uppercase tracking-widest">
+                          <AlertTriangle size={14} className="animate-pulse" />
+                          {manquants} joueur{manquants > 1 ? 's' : ''} pas encore confirmé{manquants > 1 ? 's' : ''}
+                        </div>
+                        <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest text-center">
+                          Terrain de Boules • RDV 18h00 précises <span className="text-white">(Tirage des Équipes)</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Jour J, tout le monde a validé : programme (un peu) sérieux de la journée
+                  return (
+                    <div className="my-1 flex flex-col items-center gap-0.5 text-center max-w-[260px] sm:max-w-none mx-auto">
+                      <span className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
+                        Jusqu'à midi <span className="text-white">préparez-vous</span>
+                      </span>
+                      <span className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
+                        Midi – 14h <span className="text-white">repas léger et sobre</span> 😉
+                      </span>
+                      <span className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
+                        14h – 16h <span className="text-white">petite sieste...</span>
+                      </span>
+                      <span className="text-red-600 text-xs font-black uppercase tracking-widest mt-1">
+                        RDV 18h00 précises, terrain de boules !
+                      </span>
+                    </div>
+                  );
+                })()}
+
                 <div className="flex items-center">
                   <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">
                     EN DIRECT :&nbsp;

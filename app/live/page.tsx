@@ -94,7 +94,7 @@ export default function PodiumPage() {
 	          pointeurs: selectedData.filter(p => p.role === 'Pointeur'),
 	          tireurs: selectedData.filter(p => p.role === 'Tireur')
 	        });
-  const names = selectedData.map(p => p.nom).filter(Boolean);
+  const names = selectedData.filter(p => p.role).map(p => p.nom).filter(Boolean);
   setAllPlayerNames(names);
 	      }
  	  // On lance les deux requêtes en parallèle pour la performance

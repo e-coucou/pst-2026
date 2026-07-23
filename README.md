@@ -10,12 +10,17 @@ Application web privée de gestion de tournois de **pétanque** entre amis, sais
 
 | Section | Description |
 |---|---|
-| 🏆 **Classement ELO** | Ranking en temps réel de tous les joueurs inscrits |
-| ⚔️ **Tournois** | Archives des éditions passées, finales et résultats |
-| 📡 **Live** | Suivi des matchs en cours (tableau en temps réel) |
-| 🎬 **Vidéos** | Zone membres — replays et moments forts privés |
-| 📖 **Le Concept** | Organisation des poules et route vers la finale |
-| 📐 **L'Algorithme** | Explication du calcul ELO Classic vs Modern |
+| 🏆 **Classement ELO** | Ranking en temps réel de tous les joueurs, double méthode (Classic + Modern) |
+| 👤 **Fiche joueur** | Profil détaillé : courbe ELO, stats, historique saison par saison |
+| ⚔️ **Tournois** | Archives des éditions passées par année, poules, finales et résultats |
+| 📊 **Statistiques** | Tableaux de bord globaux (distribution des scores, tendances) |
+| 📡 **Live** | Suivi du tournoi en cours : poules → demies → finales → podium, en temps réel (Supabase Realtime) |
+| 🧠 **Prono IA** | Prédiction probabiliste du score d'un match à venir (modèle statistique local, pas de LLM) |
+| 🎬 **Vidéos** | Zone membres — replays YouTube et moments forts privés |
+| 📱 **Partage** | Page plein écran avec QR code d'invitation |
+| 📖 **Le Concept** | Organisation des poules, tirage au sort et route vers la finale |
+| 📐 **L'Algorithme** | Explication pédagogique du calcul ELO Classic vs Modern |
+| 🔧 **Panel Admin / Super** | Pilotage du tournoi live, gestion des joueurs/équipes, réglages ELO, recalcul d'historique (accès par rôle) |
 
 ---
 
@@ -25,6 +30,7 @@ Application web privée de gestion de tournois de **pétanque** entre amis, sais
 - **Backend / Auth / Storage** : [Supabase](https://supabase.com/) (PostgreSQL, Auth, Storage)
 - **Style** : Tailwind CSS v4
 - **Graphiques** : Recharts
+- **3D** : Three.js / React Three Fiber (modélisation de la résidence — voir `documents/architecture.md`)
 - **Icônes** : Lucide React
 - **Langage** : TypeScript
 
@@ -92,43 +98,64 @@ Ouvrir [http://localhost:3000](http://localhost:3000)
 ```
 pst-2026/
 ├── app/
-│   ├── page.tsx              # Page d'accueil
-│   ├── classement/           # Leaderboard ELO
-│   ├── tournois/             # Archives par année
-│   ├── live/                 # Suivi des matchs en direct
-│   ├── joueurs/              # Fiches joueurs
-│   ├── videos/               # Zone membres (vidéos)
-│   ├── concept/              # Règlement & format
-│   ├── regles-elo/           # Explication algorithme
-│   ├── login/ signup/        # Authentification
-│   └── api/                  # Routes API Next.js
-├── components/
-│   ├── EloChart.tsx          # Graphique évolution ELO
-│   ├── GlobalProgressionChart.tsx
-│   ├── SeasonHistory.tsx     # Historique par saison
-│   └── Navbar.tsx
+│   ├── page.tsx                 # Page d'accueil
+│   ├── (acces)/                 # Login / Signup / Logout
+│   ├── (sections)/              # Pages publiques : classement, tournois,
+│   │                             # stats, concept, regles-elo, videos, share, render
+│   ├── joueurs/[id]/            # Fiche joueur détaillée
+│   ├── live/                    # Espace tournoi en direct
+│   │   ├── (admin)/              # Pilotage tournoi (rôle admin/super)
+│   │   └── (super)/              # Administration système (rôle super)
+│   └── api/                     # Routes API (recalcul ELO, lecture .md)
+├── components/                  # Navbar, Footer, EloChart, Stepper,
+│                                 # PredictionModal, SeasonHistory, ...
 ├── lib/
-│   ├── elo-engine.ts         # Moteur de calcul ELO
+│   ├── elo-engine.ts             # Moteur de calcul ELO (2 méthodes)
+│   ├── auth-actions.ts           # Code d'invitation, vérif. rôle admin
 │   └── supabase.ts
-├── scripts/
-│   └── recompute-elo.ts      # Recalcul ELO global
-└── utils/supabase/           # Clients Supabase (SSR + client)
+├── utils/
+│   ├── elo-logic.ts              # Orchestration du calcul ELO par match
+│   ├── live-stats.ts             # Agrégation des deltas ELO live
+│   └── supabase/                 # Clients Supabase (SSR + navigateur)
+├── data/residence.ts             # Modèle paramétrique du bâtiment (rendu 3D)
+├── documents/                    # Documentation approfondie (voir ci-dessous)
+├── proxy.ts                      # Middleware Next.js 16 (auth/session)
+└── scripts/                      # Scripts CLI (recompute-elo, live-elo)
 ```
+
+---
+
+## 📚 Documentation approfondie
+
+- [`documents/architecture.md`](./documents/architecture.md) — routes, modèle de données Supabase, moteur ELO, machine à états du live, module de prédiction, dette technique connue
+- [`documents/design-system.md`](./documents/design-system.md) — palette, typographie, composants UI, écarts avec `charte.md`
+- [`charte.md`](./charte.md) — charte graphique narrative d'origine (consultable dans l'app via `/live/charte`)
 
 ---
 
 ## 🔧 Scripts utilitaires
 
 ```bash
-# Recalculer l'ensemble des scores ELO depuis l'historique
+# Recalculer l'ensemble des scores ELO depuis l'historique (toutes saisons)
 npx tsx scripts/recompute-elo.ts
+
+# Recalculer l'historique ELO du tournoi live en cours uniquement
+npx tsx scripts/live-elo.ts
 ```
+
+Ces scripts CLI ont un équivalent accessible depuis l'app (rôle super) via les routes `/api/admin/recompute-elo` et `/api/admin/live-elo`.
 
 ---
 
 ## 🔐 Accès & authentification
 
-L'application est réservée aux membres inscrits. Certaines sections (vidéos, espace live admin) nécessitent des droits spécifiques gérés côté Supabase (RLS + rôles).
+L'application est réservée aux membres inscrits (inscription protégée par un code d'invitation). Un middleware (`proxy.ts`) redirige tout visiteur non connecté vers `/login`. Trois niveaux de rôle, vérifiés côté serveur via des fonctions RPC Supabase (`get_my_role`, `is_super`) :
+
+| Rôle | Accès |
+|---|---|
+| **membre** | Classement, tournois, stats, fiche joueur, vidéos, live (lecture) |
+| **admin** | + Pilotage du tournoi en direct (`/live/(admin)`) : saisie des scores, poules, demies, finales |
+| **super** | + Administration système (`/live/(super)`) : gestion des comptes, joueurs, équipes, réglages ELO, reset |
 
 ---
 
