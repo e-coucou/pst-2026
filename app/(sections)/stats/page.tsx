@@ -6,14 +6,36 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, LineChart, Line
 } from 'recharts';
-import { 
-  Trophy, Users, Target, Activity, 
+import {
+  Trophy, Users, Target, Activity,
   TrendingUp, BarChart3, ChevronRight, Zap, X,
-  Flame, Skull, HeartPulse, Crosshair, Crown
+  Flame, Skull, HeartPulse, Crosshair, Crown,
+  Eye, ArrowUpRight
 } from 'lucide-react';
 import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { logActivity } from '@/utils/log-activity';
+
+// Traduit un chemin brut en libellé lisible (même logique que /live/activity)
+function prettyPath(pathname: string): string {
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length === 0) return 'Accueil';
+
+  const BASE_LABELS: Record<string, string> = {
+    tournois: 'Tournois',
+    live: 'Live',
+    classement: 'Classement',
+    joueurs: 'Joueurs',
+    videos: 'Vidéos',
+    render: 'Résidence',
+    stats: 'Statistiques',
+  };
+
+  const base = BASE_LABELS[segments[0]] || segments[0];
+  const rest = segments.slice(1).join(' · ');
+  return rest ? `${base} · ${rest}` : base;
+}
 
 //pour le graphique de progression historique, on peut réutiliser le même composant que dans la section classement/progression, en lui passant les données nécessaires (timeline complète et liste des joueurs)
 //export const dynamic = 'force-dynamic';
@@ -29,6 +51,8 @@ export default function StatsPage() {
   const [timeline, setTimeline] = useState<any[]>([]);
   const [allPlayerNames, setAllPlayerNames] = useState<string[]>([]);
   const [nbYears, setNbYears] = useState(0);
+  const [pageViews, setPageViews] = useState<{ path: string }[]>([]);
+  const [playerNamesMap, setPlayerNamesMap] = useState<Record<number, string>>({});
 
   useEffect(() => {
     logActivity(supabase, 'PAGE_VIEW', { path: '/stats', tab: activeTab });
@@ -43,13 +67,21 @@ export default function StatsPage() {
       if (eloData) setEloHistory(eloData);
 
       // On lance les deux requêtes en parallèle pour la performance
-      const [timelineRes, profilesRes, seasons] = await Promise.all([
+      const [timelineRes, profilesRes, seasons, pageViewsRes] = await Promise.all([
         supabase.rpc('get_full_timeline'),
-        supabase.from('profiles').select('nom'),
-        supabase.from('games').select('year') //.distinct() // Note: le support du .distinct() dépend de ta version de librairie.
+        supabase.from('profiles').select('id, nom'),
+        supabase.from('games').select('year'), //.distinct() // Note: le support du .distinct() dépend de ta version de librairie.
+        supabase.from('activity_logs').select('metadata').eq('action_type', 'PAGE_VIEW').limit(5000)
       ]);
 
       setNbYears(seasons.data ? new Set(seasons.data.map(g => g.year)).size : 0);
+
+      const pMap: Record<number, string> = {};
+      profilesRes.data?.forEach(p => { pMap[p.id] = p.nom; });
+      setPlayerNamesMap(pMap);
+
+      // RLS réserve la lecture de activity_logs aux admin/super : vide pour les autres, c'est attendu.
+      setPageViews((pageViewsRes.data || []).map(r => ({ path: (r.metadata as any)?.path || '' })).filter(r => r.path));
 
       // Debug : Vérification du nombre de matchs récupérés (dans ta console terminal)
       if (timelineRes.data) {
@@ -204,6 +236,43 @@ export default function StatsPage() {
 
   }, [eloHistory]);
 
+  // --- POPULARITÉ (basé sur les PAGE_VIEW enregistrés dans activity_logs) ---
+  const popularity = useMemo(() => {
+    const pageCounts: Record<string, number> = {};
+    const playerCounts: Record<number, number> = {};
+    const tournamentCounts: Record<string, number> = {};
+
+    pageViews.forEach(({ path }) => {
+      const [pathname] = path.split('?');
+      if (!pathname) return;
+      pageCounts[pathname] = (pageCounts[pathname] || 0) + 1;
+
+      const segments = pathname.split('/').filter(Boolean);
+      if (segments[0] === 'joueurs' && segments[1]) {
+        const id = parseInt(segments[1], 10);
+        if (!isNaN(id)) playerCounts[id] = (playerCounts[id] || 0) + 1;
+      }
+      if (segments[0] === 'tournois' && segments[1]) {
+        tournamentCounts[segments[1]] = (tournamentCounts[segments[1]] || 0) + 1;
+      }
+    });
+
+    const topPage = Object.entries(pageCounts).sort((a, b) => b[1] - a[1])[0];
+
+    const topPlayers = Object.entries(playerCounts)
+      .map(([id, count]) => ({ id: Number(id), nom: playerNamesMap[Number(id)] || `Joueur #${id}`, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+
+    const topTournamentEntry = Object.entries(tournamentCounts).sort((a, b) => b[1] - a[1])[0];
+
+    return {
+      topPage: topPage ? { path: topPage[0], count: topPage[1] } : null,
+      topPlayers,
+      topTournament: topTournamentEntry ? { year: topTournamentEntry[0], count: topTournamentEntry[1] } : null,
+    };
+  }, [pageViews, playerNamesMap]);
+
   const CustomBar = (props: any) => {
     const { x, y, width, height, payload } = props;
     
@@ -244,7 +313,7 @@ export default function StatsPage() {
           </button>
         </div>
         <div className="flex gap-4 mt-6 overflow-x-auto pb-2 no-scrollbar">
-          {['global', 'scores', 'joueurs', 'records','évolution'].map((tab) => (
+          {['global', 'scores', 'joueurs', 'records', 'évolution', 'popularité'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -456,11 +525,98 @@ export default function StatsPage() {
               {/* Effet de lueur en arrière-plan */}
               <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-red-600/5 blur-[120px] pointer-events-none" />
               
-              <GlobalProgressionChart 
-                timeline={timeline} 
-                allPlayerNames={allPlayerNames} 
+              <GlobalProgressionChart
+                timeline={timeline}
+                allPlayerNames={allPlayerNames}
               />
             </div>
+          </div>
+        )}
+
+        {/* ONGLET POPULARITÉ */}
+        {activeTab === 'popularité' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in zoom-in-95 duration-300">
+
+            {/* PAGE LA PLUS CONSULTÉE */}
+            <div className="bg-zinc-900/50 border border-white/5 p-6 rounded-[2.5rem] md:col-span-2">
+              <h3 className="text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+                <Eye className="text-red-600" size={18} />
+                Page la plus consultée
+              </h3>
+              {popularity.topPage ? (
+                <div className="flex items-end justify-between">
+                  <div className="text-2xl font-black italic uppercase tracking-tighter">
+                    {prettyPath(popularity.topPage.path)}
+                  </div>
+                  <div className="text-xl font-black text-red-600">
+                    {popularity.topPage.count} <span className="text-xs font-bold text-zinc-500 uppercase">vues</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
+              )}
+            </div>
+
+            {/* TOP 3 JOUEURS CONSULTÉS */}
+            <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] overflow-hidden">
+              <div className="p-6 border-b border-white/5">
+                <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                  <Users className="text-yellow-500" size={18} />
+                  Joueurs les plus consultés
+                </h3>
+              </div>
+              {popularity.topPlayers.length === 0 ? (
+                <p className="p-6 text-zinc-600 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
+              ) : (
+                <div className="divide-y divide-white/5">
+                  {popularity.topPlayers.map((p, idx) => (
+                    <Link
+                      key={p.id}
+                      href={`/joueurs/${p.id}`}
+                      className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`flex items-center justify-center w-7 h-7 rounded-full font-black text-black text-xs ${
+                          idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-zinc-300' : 'bg-amber-700'
+                        }`}>
+                          {idx + 1}
+                        </span>
+                        <span className="font-black italic uppercase text-sm">{p.nom}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-zinc-500 group-hover:text-red-600 transition-colors">
+                        <span className="text-sm font-bold">{p.count}</span>
+                        <ArrowUpRight size={14} />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* TOURNOI LE PLUS CONSULTÉ */}
+            <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-6 flex flex-col justify-between">
+              <h3 className="text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+                <Trophy className="text-red-600" size={18} />
+                Tournoi le plus consulté
+              </h3>
+              {popularity.topTournament ? (
+                <Link
+                  href={`/tournois/${popularity.topTournament.year}`}
+                  className="flex items-end justify-between group"
+                >
+                  <div className="text-2xl font-black italic uppercase tracking-tighter group-hover:text-red-600 transition-colors flex items-center gap-2">
+                    {popularity.topTournament.year}
+                    <ArrowUpRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <div className="text-xl font-black text-red-600">
+                    {popularity.topTournament.count} <span className="text-xs font-bold text-zinc-500 uppercase">vues</span>
+                  </div>
+                </Link>
+              ) : (
+                <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
+              )}
+            </div>
+
           </div>
         )}
       </main>
