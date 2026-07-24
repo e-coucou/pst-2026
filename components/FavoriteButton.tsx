@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Star, Loader2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client'; // On utilise le client ici
 import { useRouter } from 'next/navigation';
+import { logActivity } from '@/utils/log-activity';
 
 interface Props {
   playerId: number;
@@ -34,6 +35,7 @@ const toggleFavori = async () => {
   } else {
     console.log("Update réussi ! Nouveau favori :", newValue);
       setIsFavori(!isFavori);
+      logActivity(supabase, newValue ? 'FAVORITE_SET' : 'FAVORITE_UNSET', { player_id: playerId });
       router.refresh();
   }
   setLoading(false);

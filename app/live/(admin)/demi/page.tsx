@@ -7,6 +7,7 @@ import RenderStepper from '@/components/Stepper';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
 import PredictionModal from '@/components/PredictionModal';
 import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, LayoutGrid } from 'lucide-react';
+import { logActivity } from '@/utils/log-activity';
 
 export default function LiveDemiPage() {
   const supabase = createClient();
@@ -128,6 +129,7 @@ export default function LiveDemiPage() {
 	    // Mise à jour de l'état local (identique pour toutes les pages)
 	    setMatches(prev => prev.map(m => m.id === matchId ? updatedMatch : m));
 	    executeAction('/api/admin/live-elo');
+	    logActivity(supabase, 'ADMIN_SAVE_SCORE', { match_id: matchId, score_team1: scores.s1, score_team2: scores.s2 });
 
 	  } catch (error: any) {
 	    console.error(error);
@@ -140,7 +142,10 @@ export default function LiveDemiPage() {
   const unlockMatch = async (matchId: number) => {
     setSavingMatch(matchId);
     const { error } = await supabase.from('live_matches').update({ status: 'EN_COURS' }).eq('id', matchId);
-    if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'EN_COURS' } : m));
+    if (!error) {
+      setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'EN_COURS' } : m));
+      logActivity(supabase, 'ADMIN_UNLOCK_MATCH', { match_id: matchId });
+    }
     setSavingMatch(null);
   };
 
@@ -324,8 +329,9 @@ export default function LiveDemiPage() {
     // 3. Insertion dans Supabase et mise à jour du statut du tournoi
     const { error: matchError } = await supabase.from('live_matches').insert(finalMatches);
     const { error: statusError } = await supabase.from('live_tournament').update({ status: 'FINALE' }).eq('id', 1);
-  
+
     if (!matchError && !statusError) {
+      logActivity(supabase, 'ADMIN_GENERATE_FINALS');
       router.push('/live/finale'); // Redirection vers la nouvelle page
     } else {
       console.error("Erreur génération finales:", matchError, statusError);

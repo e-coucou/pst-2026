@@ -7,6 +7,7 @@ import RenderStepper from '@/components/Stepper';
 import PredictionModal from '@/components/PredictionModal';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
 import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Swords, CheckCircle2 } from 'lucide-react';
+import { logActivity } from '@/utils/log-activity';
 
 export default function LiveDemiPage() {
   const supabase = createClient();
@@ -79,6 +80,7 @@ export default function LiveDemiPage() {
       .eq('id', 1);
 
     if (!error) {
+      logActivity(supabase, 'ADMIN_COMPLETE_TOURNAMENT');
       // 2. On redirige vers la page du podium / palmarès
       router.push('/live/podium');
     } else {
@@ -146,6 +148,7 @@ export default function LiveDemiPage() {
 	    // Mise à jour de l'état local (identique pour toutes les pages)
 	    setMatches(prev => prev.map(m => m.id === matchId ? updatedMatch : m));
 	    executeAction('/api/admin/live-elo');
+	    logActivity(supabase, 'ADMIN_SAVE_SCORE', { match_id: matchId, score_team1: scores.s1, score_team2: scores.s2 });
 
 	  } catch (error: any) {
 	    console.error(error);
@@ -158,7 +161,10 @@ export default function LiveDemiPage() {
   const unlockMatch = async (matchId: number) => {
     setSavingMatch(matchId);
     const { error } = await supabase.from('live_matches').update({ status: 'EN_COURS' }).eq('id', matchId);
-    if (!error) setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'EN_COURS' } : m));
+    if (!error) {
+      setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'EN_COURS' } : m));
+      logActivity(supabase, 'ADMIN_UNLOCK_MATCH', { match_id: matchId });
+    }
     setSavingMatch(null);
   };
 

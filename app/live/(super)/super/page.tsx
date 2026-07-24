@@ -11,7 +11,7 @@ import {
   AlertTriangle, 
   Loader2,
   ChevronRight,
-  Fingerprint, BookOpen, ListTodo, BarChart3, Gauge, Users2
+  Fingerprint, BookOpen, ListTodo, BarChart3, Gauge, Users2, Activity
 } from 'lucide-react';
 
 export default function AdminControlPanel() {
@@ -101,11 +101,17 @@ export default function AdminControlPanel() {
           desc="Gestion des accès et rôles des Users"
           onClick={() => navTo('/live/users')}
         />
-         <AdminNavButton 
-          icon={<Users2 size={20} />} 
-          label="Plan résidence" 
+         <AdminNavButton
+          icon={<Users2 size={20} />}
+          label="Plan résidence"
           desc="Plan du Batitment B"
           onClick={() => navTo('/render')}
+        />
+         <AdminNavButton
+          icon={<Activity size={20} />}
+          label="Journal d'activité"
+          desc="Actions admin & membres tracées"
+          onClick={() => navTo('/live/activity')}
         />
       </div>
 

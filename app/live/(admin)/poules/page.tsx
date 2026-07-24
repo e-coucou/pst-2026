@@ -7,6 +7,7 @@ import RenderStepper from '@/components/Stepper';
 import PredictionModal from '@/components/PredictionModal';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
 import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2 } from 'lucide-react';
+import { logActivity } from '@/utils/log-activity';
 
 export default function LivePoulesPage() {
   const supabase = createClient();
@@ -110,6 +111,7 @@ export default function LivePoulesPage() {
 	    // Mise à jour de l'état local (identique pour toutes les pages)
 	    setMatches(prev => prev.map(m => m.id === matchId ? updatedMatch : m));
 	    executeAction('/api/admin/live-elo');
+	    logActivity(supabase, 'ADMIN_SAVE_SCORE', { match_id: matchId, score_team1: scores.s1, score_team2: scores.s2 });
 
 	  } catch (error: any) {
 	    console.error(error);
@@ -128,6 +130,7 @@ export default function LivePoulesPage() {
 
     if (!error) {
       setMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'EN_COURS' } : m));
+      logActivity(supabase, 'ADMIN_UNLOCK_MATCH', { match_id: matchId });
     }
     setSavingMatch(null);
   };
@@ -204,7 +207,8 @@ export default function LivePoulesPage() {
   
       // 4. Update du statut du tournoi
       await supabase.from('live_tournament').update({ status: 'DEMI' }).eq('id', 1);
-  
+      logActivity(supabase, 'ADMIN_GENERATE_DEMIS');
+
       // 5. Redirection
       router.push('/live/demi');
     } catch (err) {

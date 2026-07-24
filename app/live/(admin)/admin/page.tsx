@@ -5,6 +5,7 @@
 	import { createClient } from '@/utils/supabase/client';
 	import RenderStepper from '@/components/Stepper'
 	import { ArrowRight, ArrowLeft, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
+	 import { logActivity } from '@/utils/log-activity';
 
 	export default function LiveAdminWizard() {
 	 const supabase = createClient();
@@ -109,12 +110,14 @@
 	     modern_at_selection: player.modern,
 	     nom: player.nom
 	   }, { onConflict: 'player_id' });
+	   logActivity(supabase, 'ADMIN_SELECT_PLAYER', { player_id: player.id, nom: player.nom, role });
 	 };
 
 	 const removeOneFromDatabase = async (playerId: number) => {
 	   // On ne supprime plus la ligne : ça effacerait 'confirmed' (ex: joueur qui a déjà payé).
 	   // On libère seulement le rôle, le joueur redevient sélectionnable.
 	   await supabase.from('live_selected').update({ role: null }).eq('player_id', playerId);
+	   logActivity(supabase, 'ADMIN_REMOVE_PLAYER', { player_id: playerId });
 	 };
 
 	 const toggleConfirmed = async (playerId: number, list: any[], setList: any) => {
@@ -122,6 +125,7 @@
 	   setConfirmedMap(prev => ({ ...prev, [playerId]: nextConfirmed }));
 	   setList(list.map(p => p.id === playerId ? { ...p, confirmed: nextConfirmed } : p));
 	   await supabase.from('live_selected').update({ confirmed: nextConfirmed }).eq('player_id', playerId);
+	   logActivity(supabase, 'ADMIN_TOGGLE_CONFIRMED', { player_id: playerId, confirmed: nextConfirmed });
 	 };
 
 
@@ -165,6 +169,7 @@
 
 	     // CRUCIAL : On enregistre immédiatement en base pour que le refresh fonctionne
 	     await syncTeamsToDatabase(newP, newT);
+	  logActivity(supabase, 'ADMIN_FINALIZE_TEAMS', { nb_pointeurs: selectedPointeurs.length, nb_tireurs: selectedTireurs.length });
 	  setStep(2);
 	  
 	} catch (err: any) {
@@ -204,6 +209,7 @@
 	 
 	 // Sauvegarde immédiate en base
 	 await syncTeamsToDatabase(newP, newT);
+	 logActivity(supabase, 'ADMIN_SHUFFLE_TEAMS');
 	};
 
 
@@ -283,6 +289,7 @@
 	     // 4. Envoi en base
 	     await supabase.from('live_matches').insert(pouleMatches);
 	     await supabase.from('live_tournament').update({ status: 'POULES' }).eq('id', 1);
+	     logActivity(supabase, 'ADMIN_START_TOURNAMENT');
 
 	//      alert("🔥 C'est parti ! Le tournoi est en ligne.");
 	     router.push('/live/poules');
