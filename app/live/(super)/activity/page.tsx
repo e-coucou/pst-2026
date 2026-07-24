@@ -28,13 +28,68 @@ const ACTION_LABELS: Record<string, string> = {
   ADMIN_COMPLETE_TOURNAMENT: 'Fin du tournoi',
   FAVORITE_SET: 'Ajout favori',
   FAVORITE_UNSET: 'Retrait favori',
-  PAGE_VIEW: 'Page consultée',
 };
+
+// Les 6 sections du site proposées comme filtres. Une entrée y appartient soit
+// par son type d'action (ADMIN_* -> live, FAVORITE_* -> classement), soit,
+// pour une simple vue de page, par le préfixe de son chemin.
+const SECTIONS: { key: string; label: string; pathPrefixes: string[] }[] = [
+  { key: 'tournois', label: 'Tournois', pathPrefixes: ['/tournois'] },
+  { key: 'live', label: 'Live', pathPrefixes: ['/live'] },
+  { key: 'classement', label: 'Classement', pathPrefixes: ['/classement', '/joueurs'] },
+  { key: 'videos', label: 'Vidéos', pathPrefixes: ['/videos'] },
+  { key: 'residence', label: 'Résidence', pathPrefixes: ['/render'] },
+  { key: 'statistiques', label: 'Statistiques', pathPrefixes: ['/stats'] },
+];
+
+function getSection(log: ActivityLog): string | null {
+  if (log.action_type.startsWith('ADMIN_')) return 'live';
+  if (log.action_type.startsWith('FAVORITE_')) return 'classement';
+  if (log.action_type === 'PAGE_VIEW') {
+    const path = (log.metadata?.path as string) || '';
+    const section = SECTIONS.find(s => s.pathPrefixes.some(p => path.startsWith(p)));
+    return section?.key ?? null;
+  }
+  return null;
+}
+
+// Décrit la page consultée en langage lisible (nom du joueur au lieu de son id, etc.)
+function describePageView(path: string | undefined, playersMap: Record<number, string>): string {
+  if (!path) return '';
+  const [pathname] = path.split('?');
+  const segments = pathname.split('/').filter(Boolean);
+
+  if (segments.length === 0) return 'Accueil';
+
+  if (segments[0] === 'joueurs' && segments[1]) {
+    const id = parseInt(segments[1], 10);
+    const nom = playersMap[id];
+    return nom ? `Joueur : ${nom}` : `Joueur #${segments[1]}`;
+  }
+
+  if (segments[0] === 'tournois' && segments[1]) {
+    return `Tournois ${segments[1]}`;
+  }
+
+  const BASE_LABELS: Record<string, string> = {
+    tournois: 'Tournois',
+    live: 'Live',
+    classement: 'Classement',
+    videos: 'Vidéos',
+    render: 'Résidence',
+    stats: 'Statistiques',
+  };
+
+  const base = BASE_LABELS[segments[0]] || segments[0];
+  const rest = segments.slice(1).join(' · ');
+  return rest ? `${base} · ${rest}` : base;
+}
 
 export default function ActivityLogsPage() {
   const supabase = createClient();
   const router = useRouter();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
 
@@ -44,17 +99,26 @@ export default function ActivityLogsPage() {
 
   const fetchLogs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('activity_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(200);
-    if (!error && data) setLogs(data);
+    const [logsRes, profilesRes] = await Promise.all([
+      supabase
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200),
+      supabase.from('profiles').select('id, nom'),
+    ]);
+
+    if (!logsRes.error && logsRes.data) setLogs(logsRes.data);
+
+    if (profilesRes.data) {
+      const map: Record<number, string> = {};
+      profilesRes.data.forEach(p => { map[p.id] = p.nom; });
+      setPlayersMap(map);
+    }
     setLoading(false);
   };
 
-  const actionTypes = Array.from(new Set(logs.map(l => l.action_type))).sort();
-  const filteredLogs = filter === 'all' ? logs : logs.filter(l => l.action_type === filter);
+  const filteredLogs = filter === 'all' ? logs : logs.filter(l => getSection(l) === filter);
 
   if (loading) {
     return (
@@ -86,8 +150,8 @@ export default function ActivityLogsPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
           <FilterChip label="Tout" active={filter === 'all'} onClick={() => setFilter('all')} />
-          {actionTypes.map(t => (
-            <FilterChip key={t} label={ACTION_LABELS[t] || t} active={filter === t} onClick={() => setFilter(t)} />
+          {SECTIONS.map(s => (
+            <FilterChip key={s.key} label={s.label} active={filter === s.key} onClick={() => setFilter(s.key)} />
           ))}
         </div>
 
@@ -97,31 +161,43 @@ export default function ActivityLogsPage() {
               Aucune activité
             </div>
           ) : (
-            filteredLogs.map(log => (
-              <div key={log.id} className="flex items-center justify-between gap-4 p-4 hover:bg-white/[0.02] transition-colors">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-zinc-800 border border-white/10 flex items-center justify-center shrink-0">
-                    <Activity size={14} className="text-red-600" />
+            filteredLogs.map(log => {
+              const isPageView = log.action_type === 'PAGE_VIEW';
+              const title = isPageView ? (log.nickname || 'Inconnu') : (ACTION_LABELS[log.action_type] || log.action_type);
+              const subtitle = isPageView
+                ? describePageView(log.metadata?.path as string | undefined, playersMap)
+                : (
+                  <>
+                    {log.nickname || 'Inconnu'}
+                    {log.metadata && Object.keys(log.metadata).length > 0 && (
+                      <span className="text-zinc-700 normal-case font-mono ml-2">
+                        {Object.entries(log.metadata).map(([k, v]) => `${k}=${v}`).join(' · ')}
+                      </span>
+                    )}
+                  </>
+                );
+
+              return (
+                <div key={log.id} className="flex items-center justify-between gap-4 p-4 hover:bg-white/[0.02] transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-800 border border-white/10 flex items-center justify-center shrink-0">
+                      <Activity size={14} className="text-red-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm uppercase italic truncate">
+                        {title}
+                      </div>
+                      <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wide truncate">
+                        {subtitle}
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm uppercase italic truncate">
-                      {ACTION_LABELS[log.action_type] || log.action_type}
-                    </div>
-                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wide truncate">
-                      {log.nickname || 'Inconnu'}
-                      {log.metadata && Object.keys(log.metadata).length > 0 && (
-                        <span className="text-zinc-700 normal-case font-mono ml-2">
-                          {Object.entries(log.metadata).map(([k, v]) => `${k}=${v}`).join(' · ')}
-                        </span>
-                      )}
-                    </div>
+                  <div className="text-[10px] text-zinc-600 font-mono shrink-0 text-right">
+                    {new Date(log.created_at).toLocaleString('fr-FR')}
                   </div>
                 </div>
-                <div className="text-[10px] text-zinc-600 font-mono shrink-0 text-right">
-                  {new Date(log.created_at).toLocaleString('fr-FR')}
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
