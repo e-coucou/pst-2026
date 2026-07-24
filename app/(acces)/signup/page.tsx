@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { UserPlus, ArrowRight } from 'lucide-react'; // On enlève Chrome ici
 
 // Petit composant SVG pour le logo Google (plus propre que Lucide pour du branding)
@@ -15,13 +15,20 @@ const GoogleLogo = () => (
   </svg>
 );
 
-export default function SignupPage() {
+function SignupForm() {
   const [formData, setFormData] = useState({ nickname: '', password: '', invitation: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'invite_required') {
+      setError("Ce compte Google n'a pas de code d'invitation valide : inscris-toi d'abord avec le code ci-dessous.");
+    }
+  }, [searchParams]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,15 +85,14 @@ const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
 
       if (rpcError || !isValid) throw new Error("Code d'invitation incorrect !");
 
-      // 2. ASTUCE : On stocke le code dans le localStorage du navigateur
-      // car on va quitter la page pour aller chez Google.
-      localStorage.setItem('pending_invitation_code', invitationValue);
-
-      // 3. On lance l'auth Google (SANS le champ 'data' qui causait l'erreur)
+      // 2. On lance l'auth Google, en passant le code par l'URL de retour :
+      // c'est /auth/callback (côté serveur) qui le revérifiera avant de
+      // valider la création du compte. Le localStorage n'est pas lisible
+      // par le Route Handler, il ne protégeait donc rien.
       const { error: googleErr } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?invite=${encodeURIComponent(invitationValue)}`,
           queryParams: {
             access_type: 'offline',
             prompt: 'select_account',
@@ -171,5 +177,13 @@ const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white animate-pulse uppercase text-[10px] font-black tracking-widest">Initialisation...</div>}>
+      <SignupForm />
+    </Suspense>
   );
 }

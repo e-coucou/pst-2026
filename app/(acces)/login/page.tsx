@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LockKeyhole, Zap, Loader2 } from 'lucide-react';
@@ -26,6 +26,15 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
+
+  useEffect(() => {
+    const authError = searchParams.get('error');
+    if (authError === 'auth_failed') {
+      setError("La connexion a échoué. Réessaie.");
+    } else if (authError === 'invite_required') {
+      setError("Ce compte Google n'a pas encore de code d'invitation validé : inscris-toi via la page d'inscription.");
+    }
+  }, [searchParams]);
 
   const logActivity = async (action: string, details: string, userId?: string) => {
     try {
