@@ -33,8 +33,19 @@ export async function GET(request: Request) {
 
         if (!isValid) {
           // Compte créé (par Google) sans code d'invitation valide : on annule.
+          // On nettoie d'abord toutes les tables qui référencent auth.users(id)
+          // par clé étrangère (ex: session_logs, alimentée par un trigger dès la
+          // création du compte) : sinon deleteUser échoue en 23503, le compte
+          // orphelin reste en base, et sa prochaine tentative de connexion aurait
+          // created_at !== last_sign_in_at -> serait alors traitée comme un
+          // utilisateur existant, contournant le contrôle du code.
+          await admin.from('session_logs').delete().eq('user_id', data.user.id);
+          await admin.from('activity_logs').delete().eq('user_id', data.user.id);
           await admin.from('site_users').delete().eq('id', data.user.id);
-          await admin.auth.admin.deleteUser(data.user.id);
+          const { error: deleteError } = await admin.auth.admin.deleteUser(data.user.id);
+          if (deleteError) {
+            console.error('Échec suppression compte non autorisé:', deleteError.message);
+          }
           await supabase.auth.signOut();
           return NextResponse.redirect(`${origin}/signup?error=invite_required`);
         }
