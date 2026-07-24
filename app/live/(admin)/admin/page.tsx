@@ -19,6 +19,21 @@
 	 const [selectedTireurs, setSelectedTireurs] = useState<any[]>([]);
 	 // Cache des confirmations (paiement/présence), conservé même si le joueur est désélectionné puis resélectionné
 	 const [confirmedMap, setConfirmedMap] = useState<Record<number, boolean>>({});
+	 // Clés d'actions en cours (ex: "P-12", "conf-7") -> désactive le bouton concerné le temps de l'appel Supabase
+	 const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
+
+	 const withPending = async (key: string, fn: () => Promise<void>) => {
+	   setPendingKeys(prev => new Set(prev).add(key));
+	   try {
+	     await fn();
+	   } finally {
+	     setPendingKeys(prev => {
+	       const next = new Set(prev);
+	       next.delete(key);
+	       return next;
+	     });
+	   }
+	 };
 	 
 	 // Étape 2 : Draft (Les colonnes que tu vas manipuler)
 	 const [draftP, setDraftP] = useState<any[]>([]);
@@ -341,13 +356,37 @@
 	               {allProfiles.map(p => {
 	                 const isP = selectedPointeurs.find(x => x.id === p.id);
 	                 const isT = selectedTireurs.find(x => x.id === p.id);
+	                 const unavailableP = !!(isP || isT || selectedPointeurs.length >= 8);
+	                 const unavailableT = !!(isP || isT || selectedTireurs.length >= 8);
+	                 const keyP = `P-${p.id}`;
+	                 const keyT = `T-${p.id}`;
+	                 const pendingP = pendingKeys.has(keyP);
+	                 const pendingT = pendingKeys.has(keyT);
 	                 return (
 	                   <div key={p.id} className={`p-3 rounded-2xl border transition-all ${isP || isT ? 'opacity-20 bg-black' : 'bg-zinc-900 border-white/5 hover:border-red-600'}`}>
 	                     <div className="flex justify-between items-center">
 	                       <span className="font-bold text-sm uppercase">{p.nom} <span className="text-zinc-600 ml-2 text-[11px]">{p.elo.toFixed(0)} / {p.modern.toFixed(0)}</span></span>
 	                       <div className="flex gap-2">
-	                         <button onClick={async() =>{ setSelectedPointeurs(prev => [...prev, { ...p, confirmed: !!confirmedMap[p.id] }]); await saveOneToDatabase(p, 'Pointeur');}} disabled={!!(isP || isT || selectedPointeurs.length >= 8)} className="bg-purple-600 text-sm font-black px-2 py-1 rounded-lg uppercase disabled:hidden">P</button>
-	                         <button onClick={async() =>{ setSelectedTireurs(prev => [...prev, { ...p, confirmed: !!confirmedMap[p.id] }]); await saveOneToDatabase(p, 'Tireur');}} disabled={!!(isP || isT || selectedTireurs.length >= 8)} className="bg-orange-600 text-sm font-black px-2 py-1 rounded-lg uppercase disabled:hidden">T</button>
+	                         <button
+	                           onClick={() => withPending(keyP, async () => {
+	                             setSelectedPointeurs(prev => [...prev, { ...p, confirmed: !!confirmedMap[p.id] }]);
+	                             await saveOneToDatabase(p, 'Pointeur');
+	                           })}
+	                           disabled={unavailableP || pendingP}
+	                           className={`bg-purple-600 text-sm font-black px-2 py-1 rounded-lg uppercase w-7 flex items-center justify-center disabled:opacity-40 ${unavailableP ? 'hidden' : ''}`}
+	                         >
+	                           {pendingP ? <Loader2 size={12} className="animate-spin" /> : 'P'}
+	                         </button>
+	                         <button
+	                           onClick={() => withPending(keyT, async () => {
+	                             setSelectedTireurs(prev => [...prev, { ...p, confirmed: !!confirmedMap[p.id] }]);
+	                             await saveOneToDatabase(p, 'Tireur');
+	                           })}
+	                           disabled={unavailableT || pendingT}
+	                           className={`bg-orange-600 text-sm font-black px-2 py-1 rounded-lg uppercase w-7 flex items-center justify-center disabled:opacity-40 ${unavailableT ? 'hidden' : ''}`}
+	                         >
+	                           {pendingT ? <Loader2 size={12} className="animate-spin" /> : 'T'}
+	                         </button>
 	                       </div>
 	                     </div>
 	                   </div>
@@ -359,42 +398,72 @@
 	           <div className="bg-purple-900/5 border border-purple-500/50 p-6 rounded-[2.5rem]">
 	             <h2 className="text-purple-500 text-center text-xs font-black uppercase mb-4 italic">Pointeurs ({selectedPointeurs.length}/8)</h2>
 	             <div className="space-y-2">
-	               {selectedPointeurs.map(p => (
+	               {selectedPointeurs.map(p => {
+	                 const confKey = `conf-${p.id}`;
+	                 const rmKey = `rm-${p.id}`;
+	                 const pendingConf = pendingKeys.has(confKey);
+	                 const pendingRm = pendingKeys.has(rmKey);
+	                 return (
 	                 <div key={p.id} className="p-3 bg-purple-600/20 border border-purple-500 rounded-2xl flex justify-between items-center gap-2">
 	                   <button
-	                     onClick={() => toggleConfirmed(p.id, selectedPointeurs, setSelectedPointeurs)}
+	                     onClick={() => withPending(confKey, () => toggleConfirmed(p.id, selectedPointeurs, setSelectedPointeurs))}
+	                     disabled={pendingConf}
 	                     title={p.confirmed ? 'Présence confirmée' : 'Marquer comme confirmé'}
-	                     className="shrink-0"
+	                     className="shrink-0 disabled:opacity-40"
 	                   >
-	                     {p.confirmed
+	                     {pendingConf
+	                       ? <Loader2 size={18} className="animate-spin text-zinc-400" />
+	                       : p.confirmed
 	                       ? <CheckCircle2 size={18} className="text-green-500" />
 	                       : <Circle size={18} className="text-zinc-600 hover:text-white transition-colors" />}
 	                   </button>
 	                   <span className="text-xs font-bold uppercase flex-1 truncate">{p.nom}</span>
-	                   <button onClick={async () =>{ setSelectedPointeurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); }} className="text-purple-500 font-black text-xm px-2">✕</button>
+	                   <button
+	                     onClick={() => withPending(rmKey, async () => { setSelectedPointeurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); })}
+	                     disabled={pendingRm}
+	                     className="text-purple-500 font-black text-xm px-2 disabled:opacity-40"
+	                   >
+	                     {pendingRm ? <Loader2 size={12} className="animate-spin inline" /> : '✕'}
+	                   </button>
 	                 </div>
-	               ))}
+	                 );
+	               })}
 	             </div>
 	           </div>
 
 	           <div className="bg-orange-900/5 border border-orange-500/50 p-6 rounded-[2.5rem]">
 	             <h2 className="text-orange-500 text-center text-xs font-black uppercase mb-4 italic">Tireurs ({selectedTireurs.length}/8)</h2>
 	             <div className="space-y-2">
-	               {selectedTireurs.map(p => (
+	               {selectedTireurs.map(p => {
+	                 const confKey = `conf-${p.id}`;
+	                 const rmKey = `rm-${p.id}`;
+	                 const pendingConf = pendingKeys.has(confKey);
+	                 const pendingRm = pendingKeys.has(rmKey);
+	                 return (
 	                 <div key={p.id} className="p-3 bg-orange-600/20 border border-orange-500 rounded-2xl flex justify-between items-center gap-2">
 	                   <button
-	                     onClick={() => toggleConfirmed(p.id, selectedTireurs, setSelectedTireurs)}
+	                     onClick={() => withPending(confKey, () => toggleConfirmed(p.id, selectedTireurs, setSelectedTireurs))}
+	                     disabled={pendingConf}
 	                     title={p.confirmed ? 'Présence confirmée' : 'Marquer comme confirmé'}
-	                     className="shrink-0"
+	                     className="shrink-0 disabled:opacity-40"
 	                   >
-	                     {p.confirmed
+	                     {pendingConf
+	                       ? <Loader2 size={18} className="animate-spin text-zinc-400" />
+	                       : p.confirmed
 	                       ? <CheckCircle2 size={18} className="text-green-500" />
 	                       : <Circle size={18} className="text-zinc-600 hover:text-white transition-colors" />}
 	                   </button>
 	                   <span className="text-xs font-bold uppercase flex-1 truncate">{p.nom}</span>
-	                   <button onClick={async () =>{ setSelectedTireurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); }} className="text-orange-500 font-black text-xm px-2">✕</button>
+	                   <button
+	                     onClick={() => withPending(rmKey, async () => { setSelectedTireurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); })}
+	                     disabled={pendingRm}
+	                     className="text-orange-500 font-black text-xm px-2 disabled:opacity-40"
+	                   >
+	                     {pendingRm ? <Loader2 size={12} className="animate-spin inline" /> : '✕'}
+	                   </button>
 	                 </div>
-	               ))}
+	                 );
+	               })}
 	             </div>
 	           </div>
 

@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import GlobalLoadingBar from "@/components/GlobalLoadingBar";
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -56,6 +57,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+		<GlobalLoadingBar />
 		<Navbar /> {/* La Navbar sera au-dessus de tout */}
 		<main className="w-full flex-grow">
           {children} {/* C'est ici que tes pages (tournois, etc.) s'afficheront */}

@@ -30,7 +30,24 @@ body {
 /* Optionnel : Une petite animation fluide pour les transitions de couleurs */
 * {
   border-color: rgba(255, 255, 255, 0.1);
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+/* Feedback tactile immédiat (mobile & desktop) sur tous les éléments cliquables.
+   Spécificité volontairement basse : toute classe active:* déjà présente sur un
+   composant (ex. active:scale-95) prend le dessus sans conflit. */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active, a:active, [role="button"]:active {
+  transform: scale(0.96);
+}
+
+/* Barre de chargement globale (voir components/GlobalLoadingBar.tsx) */
+@keyframes loading-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
 }
