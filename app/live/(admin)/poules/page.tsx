@@ -303,8 +303,8 @@ export default function LivePoulesPage() {
  
                   <div className="flex shrink-0">
                     {isTermine ? (
-                      <button onClick={() => unlockMatch(m.id)} className="text-red-500 p-1 hover:text-white transition-colors">
-                        <Edit2 size={20} className="md:w-6 md:h-6" />
+                      <button onClick={() => unlockMatch(m.id)} disabled={savingMatch === m.id} className="text-red-500 p-1 hover:text-white transition-colors disabled:opacity-40">
+                        {savingMatch === m.id ? <Loader2 size={20} className="animate-spin" /> : <Edit2 size={20} className="md:w-6 md:h-6" />}
                       </button>
                     ) : (
                       <button 
@@ -384,11 +384,12 @@ export default function LivePoulesPage() {
               <h3 className="text-2xl font-black uppercase italic text-white leading-none mb-2">Terminé !</h3>
               <p className="text-red-100 font-bold text-sm">Le classement est définitif. Prêt pour les demi-finales ?</p>
             </div>
-            <button 
+            <button
               onClick={generateDemis}
-              className="w-full md:w-auto bg-black text-white px-10 py-4 rounded-2xl font-black uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all active:scale-95"
+              disabled={loading}
+              className="w-full md:w-auto bg-black text-white px-10 py-4 rounded-2xl font-black uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all active:scale-95 disabled:opacity-50"
             >
-              <Trophy size={20} />
+              {loading ? <Loader2 size={20} className="animate-spin" /> : <Trophy size={20} />}
               Générer Demi-Finales
             </button>
           </div>

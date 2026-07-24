@@ -19,6 +19,7 @@ export default function ManagePlayersPage() {
   // États de chargement et formulaire
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [newName, setNewName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -151,13 +152,18 @@ export default function ManagePlayersPage() {
 
     if (!confirm(`Supprimer définitivement le profil de ${name} ?`)) return;
 
+    setDeletingId(id);
     try {
       if (photoPath) {
         await supabase.storage.from('joueurs_photos').remove([photoPath]);
       }
       const { error } = await supabase.from('profiles').delete().eq('id', id);
       if (error) throw error; fetchData();
-    } catch (err: any) { alert("Erreur suppression: " + err.message); }
+    } catch (err: any) {
+      alert("Erreur suppression: " + err.message);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
 
@@ -252,9 +258,10 @@ export default function ManagePlayersPage() {
                     ) : (
                       <button
                         onClick={() => handleDeletePlayer(player.id, player.nom, player.photo_url)}
-                        className="text-zinc-700 hover:text-red-500 p-2 transition-all hover:bg-red-500/10 rounded-lg"
+                        disabled={deletingId === player.id}
+                        className="text-zinc-700 hover:text-red-500 p-2 transition-all hover:bg-red-500/10 rounded-lg disabled:opacity-40"
                       >
-                        <Trash2 size={20} />
+                        {deletingId === player.id ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}
                       </button>
                     )}
                     {isLive != false ? (

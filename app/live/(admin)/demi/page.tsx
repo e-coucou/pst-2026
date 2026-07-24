@@ -233,8 +233,8 @@ export default function LiveDemiPage() {
 				  </div>
                   <div className="flex shrink-0 group">
                     {isTermine ? (
-                      <button onClick={() => unlockMatch(m.id)} className="text-red-500 p-1 hover:text-white transition-colors group-hover:scale-[1.3]">
-                        <Edit2 size={20} className="md:w-6 md:h-6" />
+                      <button onClick={() => unlockMatch(m.id)} disabled={savingMatch === m.id} className="text-red-500 p-1 hover:text-white transition-colors group-hover:scale-[1.3] disabled:opacity-40">
+                        {savingMatch === m.id ? <Loader2 size={20} className="animate-spin" /> : <Edit2 size={20} className="md:w-6 md:h-6" />}
                       </button>
                     ) : (
                       <button onClick={() => saveMatchResult(m.id)} disabled={savingMatch === m.id} className={'p-2 rounded-lg text-white transition-all bg-purple-500 active:bg-purple-700 group-hover:scale-[1.3]'}>
@@ -358,9 +358,10 @@ export default function LiveDemiPage() {
 		      <h3 className="text-xl font-black uppercase italic text-white leading-none mb-1">Qualifiés connus !</h3>
 		      <p className="text-red-100 font-bold text-xs uppercase">Prêt pour le choc final ?</p>
 		    </div>
-		    <button 
+		    <button
 		      onClick={generateFinals} // <-- Ajout de l'appel ici
-		      className="w-full md:w-auto bg-black text-white px-8 py-3 rounded-xl font-black uppercase text-sm tracking-tighter hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2"
+		      disabled={loading}
+		      className="w-full md:w-auto bg-black text-white px-8 py-3 rounded-xl font-black uppercase text-sm tracking-tighter hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 disabled:opacity-50"
 		    >
 		      {loading ? <Loader2 size={18} className="animate-spin" /> : "Générer les Finales"}
 		    </button>

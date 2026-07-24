@@ -271,8 +271,8 @@ export default function LiveDemiPage() {
 				  </div>
                   <div className="flex shrink-0 group">
                     {isTermine ? (
-                      <button onClick={() => unlockMatch(m.id)} className="text-red-500 p-1 hover:text-white transition-colors group-hover:scale-[1.3]">
-                        <Edit2 size={20} className="md:w-6 md:h-6" />
+                      <button onClick={() => unlockMatch(m.id)} disabled={savingMatch === m.id} className="text-red-500 p-1 hover:text-white transition-colors group-hover:scale-[1.3] disabled:opacity-40">
+                        {savingMatch === m.id ? <Loader2 size={20} className="animate-spin" /> : <Edit2 size={20} className="md:w-6 md:h-6" />}
                       </button>
                     ) : (
                       <button onClick={() => saveMatchResult(m.id)} disabled={savingMatch === m.id} className={'p-2 rounded-lg text-white transition-all bg-purple-500 active:bg-purple-700 group-hover:scale-[1.3]'}>
