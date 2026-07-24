@@ -15,14 +15,18 @@ export const residenceData = {
     ],
     "config": {
       "gridRowHeight": 1.15,
-      "gridColWidth": 10.2,
+      "gridColWidth": 1.2,
       "buildingDepth": 213.0,
       "facadeDepth": 5.8,
-      "corridorDepth": 1.5,
+      "corridorDepth": 1.3,
+      "stepDepth": 1.77,
+      "stepWidth": 0.85,
       "courDepth": 6.35,
       "slopeOffsetMeters": 1.15,
-      "courRowOffset": 0,
-      "avantOffset":1.2
+      "courRowOffset": 1.3,
+      "avantOffset": 1.3,
+      "studioFacadeDepth": 4.3,
+      "studioCourDepth": 5.8+1.3
     },
     "building": {
       "id": "batiment_unique",
@@ -275,71 +279,71 @@ export const residenceData = {
       },
       {
         "id": 30, "num": "30", "occupant": "RochedePins", "occupantCour": "Pipige",
-        "section": "sectionB", "col": 1, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both"
+        "section": "sectionB", "col": 1, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both", "up": "oui"
       },
       {
         "id": 31, "num": "31", "occupant": "Wissler",
-        "section": "sectionB", "col": 2, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both"
+        "section": "sectionB", "col": 2, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both", "up": "oui"
       },
       {
         "id": 32, "num": "32", "occupant": "Schumacher",
-        "section": "sectionB", "col": 3, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both"
+        "section": "sectionB", "col": 3, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both", "up": "oui"
       },
       {
         "id": 33, "num": "33", "occupant": "Smadja",
-        "section": "sectionB", "col": 4, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both"
+        "section": "sectionB", "col": 4, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both", "up": "oui"
       },
       {
-        "id": 34, "num": "34", "occupant": "Montezin",
-        "section": "principale", "col": 1, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non"
+        "id": 34, "num": "34", "occupant": "Montezin","pos":"haute",
+        "section": "principale", "col": 1, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
-        "id": 35, "num": "35", "occupant": "Prevot Arquin",
-        "section": "principale", "col": 2, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non"
+        "id": 35, "num": "35", "occupant": "Prevot Arquin","pos":"haute",
+        "section": "principale", "col": 2, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non","step": "left"
       },
       {
-        "id": 36, "num": "36", "occupant": "Donville",
-        "section": "principale", "col": 3, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non"
+        "id": 36, "num": "36", "occupant": "Donville","pos":"haute",
+        "section": "principale", "col": 3, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
-        "id": 37, "num": "37", "occupant": "Berthet",
-        "section": "principale", "col": 4, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non"
+        "id": 37, "num": "37", "occupant": "Berthet","pos":"haute",
+        "section": "principale", "col": 4, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non","step": "left"
       },
       {
-        "id": 38, "num": "38", "occupant": "Benamou",
-        "section": "principale", "col": 5, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non"
+        "id": 38, "num": "38", "occupant": "Benamou","pos":"haute",
+        "section": "principale", "col": 5, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
-        "id": 39, "num": "39", "occupant": "Bresson",
-        "section": "principale", "col": 6, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non"
+        "id": 39, "num": "39", "occupant": "Bresson","pos":"haute",
+        "section": "principale", "col": 6, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non","step": "left"
       },
       {
-        "id": 40, "num": "40", "occupant": "Marcet",
-        "section": "principale", "col": 7, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non"
+        "id": 40, "num": "40", "occupant": "Marcet","pos":"haute",
+        "section": "principale", "col": 7, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
-        "id": 41, "num": "41", "occupant": "Souchon",
-        "section": "principale", "col": 8, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non"
+        "id": 41, "num": "41", "occupant": "Souchon","pos":"haute",
+        "section": "principale", "col": 8, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non","step": "left"
       },
       {
-        "id": 42, "num": "42", "occupant": "Dumont-Maur",
-        "section": "principale", "col": 9, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non"
+        "id": 42, "num": "42", "occupant": "Dumont-Maur","pos":"haute",
+        "section": "principale", "col": 9, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
-        "id": 43, "num": "43", "occupant": "Onfray",
-        "section": "sectionB", "col": 1, "colSpan": 1.5, "row": 5, "rowSpan": 2, "face": "both", "up": "oui","extendLeft": "oui",
+        "id": 43, "num": "43", "occupant": "Onfray","pos":"haute",
+        "section": "sectionB", "col": 1, "colSpan": 1.5, "colSpanCour": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui","extendLeft": "oui","step": "right"
       },
       {
-        "id": 44, "num": "44", "occupant": "Jenny-Staub", "occupantCour": "Daniel",
-        "section": "sectionB", "col": 2, "colSpan": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui"
+        "id": 44, "num": "44", "occupant": "Jenny-Staub", "occupantCour": "Daniel","pos":"haute",
+        "section": "sectionB", "col": 2, "colSpan": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui", 'step': "left",
       },
       {
-        "id": 45, "num": "45", "occupant": "Griffoul",
-        "section": "sectionB", "col": 3, "colSpan": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui"
+        "id": 45, "num": "45", "occupant": "Griffoul","pos":"haute",
+        "section": "sectionB", "col": 3, "colSpan": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui", "step": "right"
       },
       {
-        "id": 46, "num": "46", "occupant": "Tristan", "type" : "cour",
-        "section": "sectionB", "col": 4, "colSpan": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui"
+        "id": 46, "num": "46", "occupant": "Tristan", "type" : "cour","pos":"haute",
+        "section": "sectionB", "col": 4, "colSpan": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui", "step":"left"
       },
       {
         "id": 47, "num": "47", "type": "studio", "corridorLevel": true,
@@ -364,7 +368,7 @@ export const residenceData = {
       {
         "id": 51, "num": "51", "type": "studio", "corridorLevel": true,
         "occupant": "xxxx",
-        "section": "principale", "col": 9, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "cour", "avant": "oui",
+        "section": "principale", "col": 9, "colSpan": 1, "colSpanCour": 1.5, "row": 6, "rowSpan": 2, "face": "cour", "avant": "oui",
         "comment": "Occupant non renseigné"
       },
       {
@@ -380,56 +384,56 @@ export const residenceData = {
         "comment": "2 blocs de large selon plan, démarre à la col 3.5"
       },
       {
-        "id": 54, "num": "54", "occupant": "Bellemin-Noel",
-        "section": "principale", "col": 1, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both"
+        "id": 54, "num": "54", "occupant": "Bellemin-Noel","pos":"haute",
+        "section": "principale", "col": 1, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up": "oui","step":"right"
       },
       {
-        "id": 55, "num": "55", "occupant": "Barat",
-        "section": "principale", "col": 2, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both"
+        "id": 55, "num": "55", "occupant": "Barat","pos":"haute",
+        "section": "principale", "col": 2, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"left"
       },
       {
-        "id": 56, "num": "56", "occupant": "Innebel",
-        "section": "principale", "col": 3, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both"
+        "id": 56, "num": "56", "occupant": "Innebel","pos":"haute",
+        "section": "principale", "col": 3, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"right"
       },
       {
-        "id": 57, "num": "57", "occupant": "Consorts",
-        "section": "principale", "col": 4, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both"
+        "id": 57, "num": "57", "occupant": "Consorts","pos":"haute",
+        "section": "principale", "col": 4, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"left"
       },
       {
-        "id": 58, "num": "58", "occupant": "Frealle",
-        "section": "principale", "col": 5, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both"
+        "id": 58, "num": "58", "occupant": "Frealle","pos":"haute",
+        "section": "principale", "col": 5, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"right"
       },
       {
-        "id": 59, "num": "59", "occupant": "Autin",
-        "section": "principale", "col": 6, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both"
+        "id": 59, "num": "59", "occupant": "Autin","pos":"haute",
+        "section": "principale", "col": 6, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"left"
       },
       {
-        "id": 60, "num": "60", "occupant": "Lepersonne",
-        "section": "principale", "col": 7, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both"
+        "id": 60, "num": "60", "occupant": "Lepersonne","pos":"haute",
+        "section": "principale", "col": 7, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"right"
       },
       {
-        "id": 61, "num": "61", "occupant": "Mitsou Coste",
-        "section": "principale", "col": 8, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both"
+        "id": 61, "num": "61", "occupant": "Mitsou Coste","pos":"haute",
+        "section": "principale", "col": 8, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"left"
       },
       {
-        "id": 62, "num": "62", "occupant": "Griffoul",
-        "section": "principale", "col": 9, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both"
+        "id": 62, "num": "62", "occupant": "Griffoul","pos":"haute",
+        "section": "principale", "col": 9, "colSpan": 1, "colSpanCour": 1.5, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"right"
       },
       {
-        "id": 63, "num": "63", "occupant": "Peyron",
-        "section": "sectionB", "col": 1, "colSpan": 1.5, "row": 9, "rowSpan": 2, "face": "both","up": "non","extendLeft": "oui"
+        "id": 63, "num": "63", "occupant": "Peyron","pos":"haute",
+        "section": "sectionB", "col": 1, "colSpan": 1.5, "colSpanCour": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non","extendLeft": "oui","step":"right"
       },
       {
-        "id": 64, "num": "64", "occupant": "Morello",
-        "section": "sectionB", "col": 2, "colSpan": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non"
+        "id": 64, "num": "64", "occupant": "Morello","pos":"haute",
+        "section": "sectionB", "col": 2, "colSpan": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non","step":"left"
       },
       {
-        "id": 65, "num": "65", "occupant": "Borgialli",
-        "section": "sectionB", "col": 3, "colSpan": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non"
+        "id": 65, "num": "65", "occupant": "Borgialli","pos":"haute",
+        "section": "sectionB", "col": 3, "colSpan": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non", "step":"right"
       },
       {
-        "id": 66, "num": "66", "occupant": "Charpin", "occupantCour": "Olivier",
-        "section": "sectionB", "col": 4, "colSpan": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non"
+        "id": 66, "num": "66", "occupant": "Charpin", "occupantCour": "Olivier","pos":"haute",
+        "section": "sectionB", "col": 4, "colSpan": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non", 'step': "left"
       }
     ],
     "derivedFormulas": {
