@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Grid, Text, Edges } from '@react-three/drei';
+import { OrbitControls, Grid, Text, Edges, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { Suspense, useMemo, useState } from 'react';
 import { residenceData } from '@/data/residence';
 
@@ -19,7 +19,9 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
     const isExtendLeft = data.extendLeft === "oui";   
     const isExtendRight = data.extendRight === "oui";   
     const yBase = data.row * config.gridRowHeight;
-    const yOffset = isCour ? (isUp ? 1 : -1) *config.slopeOffsetMeters : 0;
+    // courNoSlope : le pan cour reste au même niveau que la façade (annexe de plain-pied,
+    // ex: studio qui absorbe un couloir attenant), sans le décalage demi-étage habituel.
+    const yOffset = (isCour && !data.courNoSlope) ? (isUp ? 1 : -1) * config.slopeOffsetMeters : 0;
     const height = data.rowSpan * config.gridRowHeight;
     const yFinal = yBase + yOffset + height / 2;
 
@@ -29,18 +31,28 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
     // de surcharger la largeur uniquement côté cour, sans toucher à la façade.
     const hasCourOverride = isCour && data.colSpanCour !== undefined;
     const sideColSpan = hasCourOverride ? data.colSpanCour : (data.colSpan || 1);
-    const width = sideColSpan * colWidth;
-    const xPos = (s as any).startX + ((s as any).leftMargin || 0) + (data.col * colWidth) + (width / 2) - ((isExtendLeft && !hasCourOverride) ? colWidth / 2 : 0);
+    // Léger débordement vers l'extérieur côté cour (en mètres, indépendant de la grille de colonnes)
+    const courExtraWidth = isCour ? (data.courExtraWidth || 0) : 0;
+    const width = sideColSpan * colWidth + courExtraWidth;
+    // colCour permet d'ancrer le pan cour sur une autre colonne que la façade
+    // (ex: studio dont seule la moitié OUEST a un pan cour, cf. colCour: colonne+1).
+    const sideCol = (isCour && data.colCour !== undefined) ? data.colCour : data.col;
+    const xPos = (s as any).startX + ((s as any).leftMargin || 0) + (sideCol * colWidth) + (width / 2) - ((isExtendLeft && !hasCourOverride) ? colWidth / 2 : 0);
 
-    const depth = isCour ? config.courDepth : config.facadeDepth;
+    // Certains "pans arrière" ne sont qu'un couloir (profondeur réduite), pas une vraie pièce côté cour.
+    // courDepthMeters permet une profondeur explicite (ex: 3m d'un couloir absorbé), prioritaire sur les deux autres cas.
+    const depth = isCour
+      ? (data.courDepthMeters ?? (data.corridorRear ? config.corridorDepth : config.courDepth))
+      : config.facadeDepth;
     const offsetAvant = isAvant ? config.avantOffset : 0;
 
     // 1. CALCUL DES FACES (BORDS) - Logique Linéaire
     const faceAvantFacade = 0 + offsetAvant; // La façade commence ici
     const ligneDeSoudure = faceAvantFacade - config.facadeDepth; // La façade finit ICI et la cour commence ICI
     
-    // Pour les studios Cour qui coulissent vers l'ARRIÈRE (le jardin)
-    const offsetArriere = (isCour && isAvant) ? 2*config.avantOffset : 0;
+    // Pour les studios Cour qui coulissent vers l'ARRIÈRE (le jardin) — ne s'applique pas
+    // à un couloir absorbé (isCorridor), qui doit rester collé à l'arrière de la façade.
+    const offsetArriere = (isCour && isAvant && !data.isCorridor) ? 2*config.avantOffset : 0;
     const faceAvantCour = ligneDeSoudure - offsetArriere;
 
     // 2. POSITIONNEMENT DU CENTRE (zPos)
@@ -95,6 +107,27 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
     </group>
   );
 }
+
+// --- BOUSSOLE ---
+// Repère fixe dans la scène : +Z = Nord (façade, vers la rue), -Z = Sud (cour, vers le jardin),
+// +X = Ouest, -X = Est. Fixe en coordonnées monde, donc tourne naturellement à l'écran avec l'orbite caméra.
+// Lettres posées à plat sur le sol (normale vers le haut) : la caméra étant toujours au-dessus,
+// on ne voit jamais leur "dos" (contrairement à des panneaux debout, inversés vus de l'arrière).
+function Compass() {
+  const r = 45;
+  const flat = [-Math.PI / 2, 0, 0] as const;
+  const labelProps = { fontSize: 3, rotation: flat, anchorX: 'center' as const, anchorY: 'middle' as const };
+
+  return (
+    <group position={[0, 0.15, 0]}>
+      <Text position={[0, 0, r]} color="#dc2626" {...labelProps}>N</Text>
+      <Text position={[0, 0, -r]} color="#a1a1aa" {...labelProps}>S</Text>
+      <Text position={[-r, 0, 0]} color="#a1a1aa" {...labelProps}>E</Text>
+      <Text position={[r, 0, 0]} color="#a1a1aa" {...labelProps}>O</Text>
+    </group>
+  );
+}
+
 // --- LA PAGE PRINCIPALE ---
 export default function RenderPage() {
   // Memoisation des appartements pour la performance
@@ -124,6 +157,14 @@ export default function RenderPage() {
           sectionColor="#dc2626"
           cellColor= "#ffffff"
         />
+
+        <Compass />
+
+        {/* Gizmo de navigation en bas à droite : +X=Ouest, +Y=Haut, +Z=Nord */}
+        <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
+          <GizmoViewport labels={['O', 'Haut', 'N']} axisColors={['#a1a1aa', '#52525b', '#dc2626']} labelColor="black" />
+        </GizmoHelper>
+
         <OrbitControls makeDefault />
       </Canvas>
 

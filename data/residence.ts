@@ -192,19 +192,19 @@ export const residenceData = {
       },
       {
         "id": 10, "num": "10", "occupant": "Mailian",
-        "section": "sectionB", "col": 1, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "facade"
+        "section": "sectionB", "col": 1, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "both", "up": "non", "corridorRear": true
       },
       {
         "id": 11, "num": "11", "occupant": "Mailian",
-        "section": "sectionB", "col": 2, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "facade"
+        "section": "sectionB", "col": 2, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "both", "up": "non", "corridorRear": true
       },
       {
         "id": 12, "num": "12", "occupant": "Casellas Bethuel",
-        "section": "sectionB", "col": 3, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "facade"
+        "section": "sectionB", "col": 3, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "both", "up": "non", "corridorRear": true
       },
       {
         "id": 13, "num": "13", "occupant": "Repetto Carboneschi",
-        "section": "sectionB", "col": 4, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "facade"
+        "section": "sectionB", "col": 4, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "both", "up": "non", "corridorRear": true
       },
       {
         "id": 14, "num": "14", "type": "studio", "corridorLevel": true,
@@ -239,7 +239,7 @@ export const residenceData = {
       {
         "id": 20, "num": "20", "type": "studio", "corridorLevel": true,
         "occupant": "Palombo",
-        "section": "sectionB", "col": 3, "colSpan": 2, "row": 1, "rowSpan": 2, "face": "cour", "avant": "oui"
+        "section": "sectionB", "col": 3, "colSpan": 2, "courExtraWidth": 0.8, "row": 1, "rowSpan": 2, "face": "cour", "avant": "oui"
       },
       {
         "id": 21, "num": "21", "occupant": "Hyams Wikler", "occupantCour": "Arthur",
@@ -291,7 +291,7 @@ export const residenceData = {
       },
       {
         "id": 33, "num": "33", "occupant": "Smadja",
-        "section": "sectionB", "col": 4, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both", "up": "oui"
+        "section": "sectionB", "col": 4, "colSpan": 1, "courExtraWidth": 0.8, "row": 3, "rowSpan": 2, "face": "both", "up": "oui"
       },
       {
         "id": 34, "num": "34", "occupant": "Montezin","pos":"haute",
@@ -343,7 +343,7 @@ export const residenceData = {
       },
       {
         "id": 46, "num": "46", "occupant": "Tristan", "type" : "cour","pos":"haute",
-        "section": "sectionB", "col": 4, "colSpan": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui", "step":"left"
+        "section": "sectionB", "col": 4, "colSpan": 1, "courExtraWidth": 0.8, "row": 5, "rowSpan": 2, "face": "both", "up": "oui", "step":"left"
       },
       {
         "id": 47, "num": "47", "type": "studio", "corridorLevel": true,
@@ -380,8 +380,9 @@ export const residenceData = {
       {
         "id": 53, "num": "53", "type": "studio", "corridorLevel": true,
         "occupant": "Trucchi",
-        "section": "sectionB", "col": 3, "colSpan": 2, "row": 7, "rowSpan": 2, "face": "facade","avant":"oui",
-        "comment": "2 blocs de large selon plan, démarre à la col 3.5"
+        "section": "sectionB", "col": 3, "colSpan": 2, "row": 7, "rowSpan": 2, "face": "both","avant":"oui",
+        "colSpanCour": 1, "colCour": 4, "courDepthMeters": 3, "courNoSlope": true, "isCorridor": true,
+        "comment": "2 blocs de large selon plan, démarre à la col 3.5. Absorbe le couloir intérieur sur sa moitié ouest (forme en L, 3m vers le sud, même niveau que la façade)"
       },
       {
         "id": 54, "num": "54", "occupant": "Bellemin-Noel","pos":"haute",
@@ -433,7 +434,7 @@ export const residenceData = {
       },
       {
         "id": 66, "num": "66", "occupant": "Charpin", "occupantCour": "Olivier","pos":"haute",
-        "section": "sectionB", "col": 4, "colSpan": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non", 'step': "left"
+        "section": "sectionB", "col": 4, "colSpan": 1, "courExtraWidth": 0.8, "row": 9, "rowSpan": 2, "face": "both","up": "non", 'step': "left"
       }
     ],
     "derivedFormulas": {
