@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Trophy, Swords, Home, BarChart3, Menu, X, Video,
+  Trophy, Swords, Home, BarChart3, TrendingUp, Video,
   User, Crown, Zap, Loader2, Fingerprint, Settings2, ShieldAlert, Skull, Building2} from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -13,7 +13,6 @@ export default function Navbar() {
   const router = useRouter();
   const supabase = createClient();
   
-  const [isOpen, setIsOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,8 +55,6 @@ export default function Navbar() {
 
     return () => authListener.subscription.unsubscribe();
   }, [supabase, router]);
-
-  const closeMenu = () => setIsOpen(false);
 
   const handleAuthAction = async () => {
     if (!userRole) {
@@ -133,7 +130,7 @@ export default function Navbar() {
     </button>
   </div>
 
-  <Link href="/" className="group font-black italic uppercase tracking-tighter text-lg leading-none hidden md:block ml-1" onClick={closeMenu}>
+  <Link href="/" className="group font-black italic uppercase tracking-tighter text-lg leading-none hidden md:block ml-1">
     <span className="text-white group-hover:text-red-600 transition-colors">Paris </span>
     <span className="text-red-600 group-hover:text-white transition-colors">Saint-Tropez</span>
   </Link>
@@ -149,20 +146,14 @@ export default function Navbar() {
             <NavLink href="/render" icon={<Building2 size={16} />} label="Résidence" active={pathname.startsWith("/render")} />
           </div>
 
-          {/* BOUTON BURGER (Mobile uniquement) */}
-          <div className="md:hidden flex items-center gap-4">
-            <div className="flex flex-col items-end group mr-2">
+          {/* LIVE (Mobile uniquement) */}
+          <div className="md:hidden flex items-center">
+            <div className="flex flex-col items-end group">
               <Link href="/live" className="flex flex-col items-end">
                 <span className="text-[8px] font-black text-red-500 uppercase tracking-widest leading-none group-hover:text-white group-active:text-white">Live </span>
                 <span className="text-[10px] font-bold italic text-white uppercase leading-none group-hover:text-red-500 group-active:text-red-500">2026</span>
               </Link>
             </div>
-            <button 
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-white p-2 hover:text-red-500 transition-colors"
-            >
-              {isOpen ? <X size={28} /> : <Menu size={28} />}
-            </button>
           </div>
 
           {/* ACCÈS ADMIN (Desktop uniquement) - Visible seulement si Admin ou Super */}
@@ -178,30 +169,17 @@ export default function Navbar() {
           </div>
 
         </div>
-      </div>
 
-      {/* MENU MOBILE DÉROULANT */}
-      {isOpen && (
-        <div className="md:hidden bg-black/95 border-b border-white/10 px-6 py-4 flex flex-col gap-4 animate-in slide-in-from-top duration-300">
-          <MobileNavLink href="/" label="Accueil" active={pathname === "/"} onClick={closeMenu} />
-          <MobileNavLink href="/tournois" label="Tournois" active={pathname.startsWith("/tournois")} onClick={closeMenu} />
-          <MobileNavLink href="/videos" label="Vidéos" active={pathname.startsWith("/videos")} onClick={closeMenu} />
-          <MobileNavLink href="/classement" label="Classement" active={pathname.startsWith("/classement")} onClick={closeMenu} />
-          <MobileNavLink href="/stats" label="Statistiques" active={pathname.startsWith("/stats")} onClick={closeMenu} />
-          <MobileNavLink href="/render" label="Résidence" active={pathname.startsWith("/render")} onClick={closeMenu} />
-          {userRole && (
-            <button 
-              onClick={() => { handleAuthAction(); closeMenu(); }}
-              className="text-left text-red-600 text-xl font-black uppercase italic"
-            >
-              Déconnexion
-            </button>
-          )}
-		  {userRole === 'super' && (
-		    <MobileNavLink href="/live/super" label="🚀 Super Admin" active={pathname === "/live/super"} onClick={closeMenu} />
-		  )}
+        {/* NAVIGATION ICONES (Mobile uniquement) */}
+        <div className="md:hidden flex items-center justify-between pb-3 -mt-1">
+          <MobileIconLink href="/" icon={<Home size={20} />} active={pathname === "/"} title="Accueil" />
+          <MobileIconLink href="/tournois" icon={<Swords size={20} />} active={pathname.startsWith("/tournois")} title="Tournois" />
+          <MobileIconLink href="/videos" icon={<Video size={20} />} active={pathname.startsWith("/videos")} title="Vidéos" />
+          <MobileIconLink href="/classement" icon={<BarChart3 size={20} />} active={pathname.startsWith("/classement") || pathname.startsWith("/joueurs")} title="Classement" />
+          <MobileIconLink href="/stats" icon={<TrendingUp size={20} />} active={pathname.startsWith("/stats")} title="Statistiques" />
+          <MobileIconLink href="/render" icon={<Building2 size={20} />} active={pathname.startsWith("/render")} title="Résidence" />
         </div>
-      )}
+      </div>
     </nav>
   );
 }
@@ -230,19 +208,16 @@ function NavLink({ href, icon, label, active }: { href: string, icon: React.Reac
   );
 }
 
-function MobileNavLink({ href, label, active, onClick }: { href: string, label: string, active: boolean, onClick: () => void }) {
+function MobileIconLink({ href, icon, active, title }: { href: string, icon: React.ReactNode, active: boolean, title: string }) {
   return (
-    <Link 
-      href={href} 
-      onClick={onClick}
-      className={`text-2xl font-black uppercase italic tracking-tighter transition-all ${
-        active ? 'text-red-600' : 'text-white hover:text-red-500'
+    <Link
+      href={href}
+      title={title}
+      className={`p-2 rounded-xl transition-all ${
+        active ? 'text-red-600 bg-red-600/10' : 'text-zinc-500 hover:text-red-500'
       }`}
     >
-      <div className="flex items-center justify-between">
-        {label}
-        {active && <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />}
-      </div>
+      {icon}
     </Link>
   );
 }
