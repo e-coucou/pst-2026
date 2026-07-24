@@ -80,9 +80,10 @@ export default function GlobalProgressionChart({
 
     const colorMap = new Map(configs.map(c => [c.name, c.color]));
     
-    // 2. Initialisation des scores (départ à 1000)
-    const lastKnownElo: Record<string, number> = {};
-    configs.forEach(c => lastKnownElo[c.name] = 1000);
+    // 2. Initialisation des scores : pas de valeur tant que le joueur n'a pas encore joué
+    // (évite un faux plateau qui écraserait l'échelle auto du graphique)
+    const lastKnownElo: Record<string, number | null> = {};
+    configs.forEach(c => lastKnownElo[c.name] = null);
 
     // 3. Transformation des 120 points de données
     const data = timeline.map((match: any, index: number) => {

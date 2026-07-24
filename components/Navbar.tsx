@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  Trophy, Swords, Home, BarChart3, Menu, X, Video, 
-  User, Crown, Zap, Loader2, Fingerprint, Settings2, ShieldAlert, Skull} from 'lucide-react';
+import {
+  Trophy, Swords, Home, BarChart3, Menu, X, Video,
+  User, Crown, Zap, Loader2, Fingerprint, Settings2, ShieldAlert, Skull, Building2} from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
 export default function Navbar() {
@@ -133,7 +133,7 @@ export default function Navbar() {
     </button>
   </div>
 
-  <Link href="/" className="group font-black italic uppercase tracking-tighter text-lg leading-none block ml-1" onClick={closeMenu}>
+  <Link href="/" className="group font-black italic uppercase tracking-tighter text-lg leading-none hidden md:block ml-1" onClick={closeMenu}>
     <span className="text-white group-hover:text-red-600 transition-colors">Paris </span>
     <span className="text-red-600 group-hover:text-white transition-colors">Saint-Tropez</span>
   </Link>
@@ -146,6 +146,7 @@ export default function Navbar() {
             <NavLink href="/videos" icon={<Video size={16} />} label="Vidéos" active={pathname.startsWith("/videos")} />
             <NavLink href="/classement" icon={<BarChart3 size={16} />} label="Classement" active={pathname.startsWith("/classement") || pathname.startsWith("/joueurs")} />
             <NavLink href="/stats" icon={<BarChart3 size={16} />} label="Statistiques" active={pathname.startsWith("/stats")} />
+            <NavLink href="/render" icon={<Building2 size={16} />} label="Résidence" active={pathname.startsWith("/render")} />
           </div>
 
           {/* BOUTON BURGER (Mobile uniquement) */}
@@ -187,6 +188,7 @@ export default function Navbar() {
           <MobileNavLink href="/videos" label="Vidéos" active={pathname.startsWith("/videos")} onClick={closeMenu} />
           <MobileNavLink href="/classement" label="Classement" active={pathname.startsWith("/classement")} onClick={closeMenu} />
           <MobileNavLink href="/stats" label="Statistiques" active={pathname.startsWith("/stats")} onClick={closeMenu} />
+          <MobileNavLink href="/render" label="Résidence" active={pathname.startsWith("/render")} onClick={closeMenu} />
           {userRole && (
             <button 
               onClick={() => { handleAuthAction(); closeMenu(); }}

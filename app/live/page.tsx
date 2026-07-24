@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
 import GlobalProgressionChart from '@/components/GlobalProgressionChart';
-import { Brain, Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List } from 'lucide-react';
+import { Brain, Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List, Calendar } from 'lucide-react';
 import PredictionModal from '@/components/PredictionModal';
 import { calculateTeamsStats } from '@/utils/live-stats';
+
+const EVENT_DATETIME = new Date(2026, 7, 4, 18, 0, 0); // Mardi 4 Août 2026, 18h00 (mois 0-indexé)
 
 const statusSteps = [
   { id: 'JOUEURS', label: 'Joueurs' },
@@ -307,13 +309,54 @@ export default function PodiumPage() {
       <div className="max-w-4xl mx-auto">
         
         <header className="mb-12 text-center">
-          <div className="flex justify-center mb-4">
-            <Trophy size={48} className="text-red-600" />
-          </div>
-          <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-2">
-            Palmarès <span className="text-red-600">Final</span>
-          </h1>
-          <p className="text-zinc-500 font-bold uppercase text-3xl md:text-4xl tracking-widest">• été {season[0].year} •</p>
+          {(() => {
+            const isDone = status === 'TERMINE';
+            const isLive = !isDone && new Date().getTime() >= EVENT_DATETIME.getTime();
+            const isUpcoming = !isDone && !isLive;
+
+            if (isUpcoming) {
+              return (
+                <>
+                  <div className="flex justify-center mb-4">
+                    <Calendar size={48} className="text-red-600" />
+                  </div>
+                  <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-2">
+                    Tournoi <span className="text-red-600">à venir</span>
+                  </h1>
+                  <p className="inline-block bg-red-600/10 border border-red-600/40 text-red-500 font-black uppercase text-2xl md:text-4xl tracking-widest px-6 py-2 rounded-2xl animate-pulse">
+                    Mardi 4 août 2026 — 18h00
+                  </p>
+                </>
+              );
+            }
+
+            if (isLive) {
+              return (
+                <>
+                  <div className="flex justify-center mb-4">
+                    <Swords size={48} className="text-red-600 animate-pulse" />
+                  </div>
+                  <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-2">
+                    Compétition <span className="text-red-600">Live</span>
+                  </h1>
+                  <p className="inline-flex items-center gap-2 bg-red-600/10 border border-red-600/40 text-red-500 font-black uppercase text-xl md:text-2xl tracking-widest px-6 py-2 rounded-2xl">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> En direct
+                  </p>
+                </>
+              );
+            }
+
+            return (
+              <>
+                <div className="flex justify-center mb-4">
+                  <Trophy size={48} className="text-red-600" />
+                </div>
+                <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-2">
+                  Palmarès <span className="text-red-600">Final</span>
+                </h1>
+              </>
+            );
+          })()}
         </header>
 
         <RenderStepper currentStatus = {status} />
