@@ -256,6 +256,10 @@ function Pool() {
         <meshStandardMaterial color="#7dd3fc" transparent opacity={0.85} />
         <Edges color="#bae6fd" threshold={15} />
       </mesh>
+
+      {swimmers.map((sw, i) => (
+        <Swimmer key={i} x={eastX + sw.dx} z={sw.dz} rotationY={sw.rot} color={sw.color} />
+      ))}
     </group>
   );
 }
