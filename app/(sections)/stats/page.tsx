@@ -37,6 +37,12 @@ function prettyPath(pathname: string): string {
   return rest ? `${base} · ${rest}` : base;
 }
 
+interface PopularityStats {
+  topPage: { path: string; count: number } | null;
+  topPlayers: { id: number; nom: string; count: number }[];
+  topTournament: { year: string; count: number } | null;
+}
+
 //pour le graphique de progression historique, on peut réutiliser le même composant que dans la section classement/progression, en lui passant les données nécessaires (timeline complète et liste des joueurs)
 //export const dynamic = 'force-dynamic';
 //export const revalidate = 0;
@@ -51,8 +57,7 @@ export default function StatsPage() {
   const [timeline, setTimeline] = useState<any[]>([]);
   const [allPlayerNames, setAllPlayerNames] = useState<string[]>([]);
   const [nbYears, setNbYears] = useState(0);
-  const [pageViews, setPageViews] = useState<{ path: string }[]>([]);
-  const [playerNamesMap, setPlayerNamesMap] = useState<Record<number, string>>({});
+  const [popularity, setPopularity] = useState<PopularityStats>({ topPage: null, topPlayers: [], topTournament: null });
 
   useEffect(() => {
     logActivity(supabase, 'PAGE_VIEW', { path: '/stats', tab: activeTab });
@@ -67,21 +72,25 @@ export default function StatsPage() {
       if (eloData) setEloHistory(eloData);
 
       // On lance les deux requêtes en parallèle pour la performance
-      const [timelineRes, profilesRes, seasons, pageViewsRes] = await Promise.all([
+      const [timelineRes, profilesRes, seasons, popularityRes] = await Promise.all([
         supabase.rpc('get_full_timeline'),
-        supabase.from('profiles').select('id, nom'),
+        supabase.from('profiles').select('nom'),
         supabase.from('games').select('year'), //.distinct() // Note: le support du .distinct() dépend de ta version de librairie.
-        supabase.from('activity_logs').select('metadata').eq('action_type', 'PAGE_VIEW').limit(5000)
+        supabase.rpc('get_popularity_stats')
       ]);
 
       setNbYears(seasons.data ? new Set(seasons.data.map(g => g.year)).size : 0);
 
-      const pMap: Record<number, string> = {};
-      profilesRes.data?.forEach(p => { pMap[p.id] = p.nom; });
-      setPlayerNamesMap(pMap);
-
-      // RLS réserve la lecture de activity_logs aux admin/super : vide pour les autres, c'est attendu.
-      setPageViews((pageViewsRes.data || []).map(r => ({ path: (r.metadata as any)?.path || '' })).filter(r => r.path));
+      if (popularityRes.data) {
+        setPopularity({
+          topPage: popularityRes.data.topPage ?? null,
+          topPlayers: popularityRes.data.topPlayers ?? [],
+          topTournament: popularityRes.data.topTournament ?? null,
+        });
+      }
+      if (popularityRes.error) {
+        console.error('[ERROR] RPC get_popularity_stats:', popularityRes.error);
+      }
 
       // Debug : Vérification du nombre de matchs récupérés (dans ta console terminal)
       if (timelineRes.data) {
@@ -235,43 +244,6 @@ export default function StatsPage() {
       .sort((a, b) => b.winrateNum - a.winrateNum || b.matches - a.matches);
 
   }, [eloHistory]);
-
-  // --- POPULARITÉ (basé sur les PAGE_VIEW enregistrés dans activity_logs) ---
-  const popularity = useMemo(() => {
-    const pageCounts: Record<string, number> = {};
-    const playerCounts: Record<number, number> = {};
-    const tournamentCounts: Record<string, number> = {};
-
-    pageViews.forEach(({ path }) => {
-      const [pathname] = path.split('?');
-      if (!pathname) return;
-      pageCounts[pathname] = (pageCounts[pathname] || 0) + 1;
-
-      const segments = pathname.split('/').filter(Boolean);
-      if (segments[0] === 'joueurs' && segments[1]) {
-        const id = parseInt(segments[1], 10);
-        if (!isNaN(id)) playerCounts[id] = (playerCounts[id] || 0) + 1;
-      }
-      if (segments[0] === 'tournois' && segments[1]) {
-        tournamentCounts[segments[1]] = (tournamentCounts[segments[1]] || 0) + 1;
-      }
-    });
-
-    const topPage = Object.entries(pageCounts).sort((a, b) => b[1] - a[1])[0];
-
-    const topPlayers = Object.entries(playerCounts)
-      .map(([id, count]) => ({ id: Number(id), nom: playerNamesMap[Number(id)] || `Joueur #${id}`, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
-
-    const topTournamentEntry = Object.entries(tournamentCounts).sort((a, b) => b[1] - a[1])[0];
-
-    return {
-      topPage: topPage ? { path: topPage[0], count: topPage[1] } : null,
-      topPlayers,
-      topTournament: topTournamentEntry ? { year: topTournamentEntry[0], count: topTournamentEntry[1] } : null,
-    };
-  }, [pageViews, playerNamesMap]);
 
   const CustomBar = (props: any) => {
     const { x, y, width, height, payload } = props;
