@@ -53,9 +53,11 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
 
     // Certains "pans arrière" ne sont qu'un couloir (profondeur réduite), pas une vraie pièce côté cour.
     // courDepthMeters permet une profondeur explicite (ex: 3m d'un couloir absorbé), prioritaire sur les deux autres cas.
+    // southCorridorExtra : allonge le bloc façade vers le Sud d'une profondeur de couloir (même
+    // bloc, le front reste fixé sur la rue — donc même niveau, pas de décalage vertical).
     const depth = isCour
       ? (data.courDepthMeters ?? (data.corridorRear ? config.corridorDepth : config.courDepth))
-      : config.facadeDepth;
+      : config.facadeDepth + (data.southCorridorExtra ? config.corridorDepth : 0);
 
     // 2. POSITIONNEMENT DU CENTRE (zPos)
     // Three.js positionne le centre de l'objet. 

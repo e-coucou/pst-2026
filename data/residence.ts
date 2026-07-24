@@ -156,39 +156,39 @@ export const residenceData = {
     "apartments": [
       {
         "id": 1, "num": "1", "occupant": "François Pozzo",
-        "section": "principale", "col": 1, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui"
+        "section": "principale", "col": 1, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true
       },
       {
         "id": 2, "num": "2", "occupant": "Perruzi",
-        "section": "principale", "col": 2, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui"
+        "section": "principale", "col": 2, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true
       },
       {
         "id": 3, "num": "3", "occupant": "Miniotte",
-        "section": "principale", "col": 3, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui"
+        "section": "principale", "col": 3, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true
       },
       {
         "id": 4, "num": "4", "occupant": "Millian-Perrin",
-        "section": "principale", "col": 4, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui"
+        "section": "principale", "col": 4, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true
       },
       {
         "id": 5, "num": "5", "occupant": "Bonhomme",
-        "section": "principale", "col": 5, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui"
+        "section": "principale", "col": 5, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true
       },
       {
         "id": 6, "num": "6", "occupant": "Bonhomme",
-        "section": "principale", "col": 6, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui"
+        "section": "principale", "col": 6, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true
       },
       {
         "id": 7, "num": "7", "occupant": "Chauvin",
-        "section": "principale", "col": 7, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui"
+        "section": "principale", "col": 7, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true
       },
       {
         "id": 8, "num": "8", "occupant": "Seguin",
-        "section": "principale", "col": 8, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui"
+        "section": "principale", "col": 8, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true
       },
       {
         "id": 9, "num": "9", "occupant": "Vahé",
-        "section": "principale", "col": 9, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui"
+        "section": "principale", "col": 9, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true
       },
       {
         "id": 10, "num": "10", "occupant": "Mailian",
