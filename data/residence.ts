@@ -239,7 +239,8 @@ export const residenceData = {
       {
         "id": 20, "num": "20", "type": "studio", "corridorLevel": true,
         "occupant": "Palombo",
-        "section": "sectionB", "col": 3, "colSpan": 2, "courExtraWidth": 0.8, "row": 1, "rowSpan": 2, "face": "cour", "avant": "oui"
+        "section": "sectionB", "col": 3, "colSpan": 2, "courExtraWidth": 0.8, "row": 1, "rowSpan": 2, "face": "cour", "avant": "oui",
+        "northCorridorWidthMeters": 3
       },
       {
         "id": 21, "num": "21", "occupant": "Hyams Wikler", "occupantCour": "Arthur",
@@ -381,7 +382,7 @@ export const residenceData = {
         "id": 53, "num": "53", "type": "studio", "corridorLevel": true,
         "occupant": "Trucchi",
         "section": "sectionB", "col": 3, "colSpan": 2, "row": 7, "rowSpan": 2, "face": "both","avant":"oui",
-        "colSpanCour": 1, "colCour": 4, "courDepthMeters": 3, "courNoSlope": true, "isCorridor": true,
+        "colSpanCour": 1, "colCour": 4, "courDepthMeters": 3, "courNoSlope": true,
         "comment": "2 blocs de large selon plan, démarre à la col 3.5. Absorbe le couloir intérieur sur sa moitié ouest (forme en L, 3m vers le sud, même niveau que la façade)"
       },
       {

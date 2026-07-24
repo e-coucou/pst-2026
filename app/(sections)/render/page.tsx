@@ -3,6 +3,7 @@
 import { Canvas, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Grid, Text, Edges, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { Suspense, useMemo, useState } from 'react';
+import * as THREE from 'three';
 import { residenceData } from '@/data/residence';
 
 function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: number | null; onSelect: (data: any) => void }) {
@@ -12,12 +13,24 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
 
   if (!s) return null;
 
+  const isAvant = data.avant === "oui";
+  const colWidth = (s as any).colWidth || config.gridColWidth;
+
+  // Repères de profondeur partagés (façade / cour) — calculés une fois pour être réutilisés
+  // aussi bien par renderBox que par une éventuelle extension "couloir nord" indépendante.
+  const offsetAvant = isAvant ? config.avantOffset : 0;
+  const faceAvantFacade = 0 + offsetAvant; // La façade commence ici
+  const ligneDeSoudure = faceAvantFacade - config.facadeDepth; // La façade finit ICI et la cour commence ICI
+  // Pour les studios Cour qui coulissent vers l'ARRIÈRE (le jardin) — ne s'applique pas
+  // à un pan attaché de plain-pied (courNoSlope), qui doit rester collé à l'arrière de la façade.
+  const offsetArriere = (isAvant && !data.courNoSlope) ? 2 * config.avantOffset : 0;
+  const faceAvantCour = ligneDeSoudure - offsetArriere;
+
   const renderBox = (type: 'facade' | 'cour') => {
     const isCour = type === 'cour';
     const isUp = data.up !== "non";
-    const isAvant = data.avant === "oui";
-    const isExtendLeft = data.extendLeft === "oui";   
-    const isExtendRight = data.extendRight === "oui";   
+    const isExtendLeft = data.extendLeft === "oui";
+    const isExtendRight = data.extendRight === "oui";
     const yBase = data.row * config.gridRowHeight;
     // courNoSlope : le pan cour reste au même niveau que la façade (annexe de plain-pied,
     // ex: studio qui absorbe un couloir attenant), sans le décalage demi-étage habituel.
@@ -25,7 +38,6 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
     const height = data.rowSpan * config.gridRowHeight;
     const yFinal = yBase + yOffset + height / 2;
 
-    const colWidth = (s as any).colWidth || config.gridColWidth;
     // Certains appartements ont un arrière (cour) de largeur standard alors que
     // leur façade est élargie (ex: colSpan 1.5 + extendLeft) — colSpanCour permet
     // de surcharger la largeur uniquement côté cour, sans toucher à la façade.
@@ -44,16 +56,6 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
     const depth = isCour
       ? (data.courDepthMeters ?? (data.corridorRear ? config.corridorDepth : config.courDepth))
       : config.facadeDepth;
-    const offsetAvant = isAvant ? config.avantOffset : 0;
-
-    // 1. CALCUL DES FACES (BORDS) - Logique Linéaire
-    const faceAvantFacade = 0 + offsetAvant; // La façade commence ici
-    const ligneDeSoudure = faceAvantFacade - config.facadeDepth; // La façade finit ICI et la cour commence ICI
-    
-    // Pour les studios Cour qui coulissent vers l'ARRIÈRE (le jardin) — ne s'applique pas
-    // à un couloir absorbé (isCorridor), qui doit rester collé à l'arrière de la façade.
-    const offsetArriere = (isCour && isAvant && !data.isCorridor) ? 2*config.avantOffset : 0;
-    const faceAvantCour = ligneDeSoudure - offsetArriere;
 
     // 2. POSITIONNEMENT DU CENTRE (zPos)
     // Three.js positionne le centre de l'objet. 
@@ -100,11 +102,110 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
     );
   };
 
+  // Extension "couloir nord" : pour un studio dont le corps principal est déjà côté cour
+  // (ex: studio 20), l'inverse du cas 53 — un petit pan étroit, ancré sur le flanc OUEST
+  // (largeur explicite en mètres, pas alignée sur la grille de colonnes) qui s'attache au
+  // bord nord du corps existant et remonte vers la façade sur une profondeur de couloir.
+  const renderNorthCorridor = () => {
+    if (data.northCorridorWidthMeters === undefined) return null;
+
+    const width = data.northCorridorWidthMeters;
+    const westEdgeCol = data.col + (data.colSpan || 1); // col croissant = vers l'ouest (sectionB)
+    // + courExtraWidth : le corps cour existant peut déjà déborder vers l'ouest (ex: 80cm) —
+    // on aligne le pan nord sur ce même bord réel, pas sur le bord "de grille" sans débordement.
+    const westEdgeX = (s as any).startX + ((s as any).leftMargin || 0) + westEdgeCol * colWidth + (data.courExtraWidth || 0);
+    const xPos = westEdgeX - width / 2;
+
+    const depth = data.northCorridorDepthMeters ?? config.corridorDepth;
+    const yBase = data.row * config.gridRowHeight;
+    const height = data.rowSpan * config.gridRowHeight;
+    // Même niveau vertical que le corps cour existant : on reprend exactement le même calcul
+    // de décalage (isUp / courNoSlope), sinon les deux pans se retrouvent décrochés l'un de l'autre.
+    const isUp = data.up !== "non";
+    const yOffset = data.courNoSlope ? 0 : (isUp ? 1 : -1) * config.slopeOffsetMeters;
+    const yFinal = yBase + yOffset + height / 2;
+
+    // Attaché au bord nord du corps cour existant (faceAvantCour), grandit vers +Z (Nord)
+    const zPos = faceAvantCour + depth / 2;
+
+    const isSelected = data.id === selectedId;
+
+    return (
+      <group position={[xPos, yFinal, zPos]}>
+        <mesh
+          onDoubleClick={(e: ThreeEvent<MouseEvent>) => {
+            e.stopPropagation();
+            onSelect(data);
+          }}
+        >
+          <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+          <meshStandardMaterial color={isSelected ? "#dc2626" : "#27272a"} transparent opacity={0.8} />
+          <Edges color={isSelected ? "#ffffff" : "#f2f2fb"} threshold={15} />
+        </mesh>
+
+        <Text position={[0, 0, depth / 2 + 0.05]} fontSize={0.5} color="white" anchorX="center" anchorY="middle">
+          {data.num}
+        </Text>
+      </group>
+    );
+  };
+
   return (
     <group>
       {(data.face === 'facade' || data.face === 'both') && renderBox('facade')}
       {(data.face === 'cour' || data.face === 'both') && renderBox('cour')}
+      {renderNorthCorridor()}
     </group>
+  );
+}
+
+// Calcule le mur OUEST (bord X le plus grand, façade uniquement) d'un appartement, dans le
+// même repère que les boîtes rendues — sert à aligner des éléments externes (ex: piscine)
+// sur un mur précis plutôt que sur une distance estimée.
+function getWestWallX(aptId: number) {
+  const { apartments, building, config } = residenceData.residence;
+  const apt: any = apartments.find((a: any) => a.id === aptId);
+  if (!apt) return 0;
+  const sec: any = (building.sections as any)[apt.section];
+  const colWidth = sec.colWidth || config.gridColWidth;
+  const width = (apt.colSpan || 1) * colWidth;
+  const isExtendLeft = apt.extendLeft === "oui";
+  const xPos = sec.startX + (sec.leftMargin || 0) + (apt.col * colWidth) + width / 2 - (isExtendLeft ? colWidth / 2 : 0);
+  return xPos + width / 2;
+}
+
+// --- PISCINE ---
+// Repère identique aux appartements (X=0 = mur Est du bâtiment, +X = Ouest, Z=0 = ligne de
+// façade, +Z = Nord). Placée au nord du bâtiment, à même le sol (dessus du bassin à Y=0).
+// Fond en pente (peu profond à l'Est, profond à l'Ouest) : profil 2D extrudé sur la largeur,
+// ce qui évite d'avoir à faire pivoter la forme (X local = longueur, Y local = profondeur,
+// Z local = largeur → correspond directement aux axes du monde, sans rotation).
+function Pool() {
+  const length = 32; // longueur (sens Est-Ouest), fixe
+  const shiftEast = 5; // décalage supplémentaire vers l'Est (donc -X)
+  const eastX = getWestWallX(9) - length - shiftEast;
+  const nearZ = 8.5; // bord sud (le plus proche du bâtiment) : 8.5m au nord de la façade
+  const width = 19; // largeur (sens Nord, vers l'extérieur)
+  const depthEast = 1.6; // profondeur côté Est (petit bain)
+  const depthWest = 3; // profondeur côté Ouest (grand bain)
+
+  const shape = useMemo(() => {
+    const s = new THREE.Shape();
+    s.moveTo(0, 0);
+    s.lineTo(0, -depthEast);
+    s.lineTo(length, -depthWest);
+    s.lineTo(length, 0);
+    s.lineTo(0, 0);
+    return s;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <mesh position={[eastX, 0, nearZ]}>
+      <extrudeGeometry args={[shape, { depth: width, bevelEnabled: false }]} />
+      <meshStandardMaterial color="#0ea5e9" transparent opacity={0.85} side={THREE.DoubleSide} />
+      <Edges color="#7dd3fc" threshold={15} />
+    </mesh>
   );
 }
 
@@ -148,6 +249,7 @@ export default function RenderPage() {
             {apartments.map((apt) => (
               <Apartment key={apt.id} data={apt} selectedId={selected?.id ?? null} onSelect={setSelected} />
             ))}
+            <Pool />
           </group>
         </Suspense>
 
