@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GlobalLoadingBar from "@/components/GlobalLoadingBar";
+import PageViewTracker from "@/components/PageViewTracker";
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -58,6 +59,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
 		<GlobalLoadingBar />
+		<PageViewTracker />
 		<Navbar /> {/* La Navbar sera au-dessus de tout */}
 		<main className="w-full flex-grow">
           {children} {/* C'est ici que tes pages (tournois, etc.) s'afficheront */}

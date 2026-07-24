@@ -28,6 +28,7 @@ const ACTION_LABELS: Record<string, string> = {
   ADMIN_COMPLETE_TOURNAMENT: 'Fin du tournoi',
   FAVORITE_SET: 'Ajout favori',
   FAVORITE_UNSET: 'Retrait favori',
+  PAGE_VIEW: 'Page consultée',
 };
 
 export default function ActivityLogsPage() {
