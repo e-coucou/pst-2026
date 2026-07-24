@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import { Activity, Loader2, X } from 'lucide-react';
+import { Activity, Loader2, X, RefreshCw } from 'lucide-react';
 
 interface ActivityLog {
   id: number;
@@ -53,8 +53,10 @@ function getSection(log: ActivityLog): string | null {
   return null;
 }
 
-// Décrit la page consultée en langage lisible (nom du joueur au lieu de son id, etc.)
-function describePageView(path: string | undefined, playersMap: Record<number, string>): string {
+// Décrit la page consultée en langage lisible (nom du joueur au lieu de son id,
+// onglet stats consulté, vidéo lue, etc.)
+function describePageView(metadata: Record<string, unknown> | null | undefined, playersMap: Record<number, string>): string {
+  const path = (metadata?.path as string) || '';
   if (!path) return '';
   const [pathname] = path.split('?');
   const segments = pathname.split('/').filter(Boolean);
@@ -81,8 +83,28 @@ function describePageView(path: string | undefined, playersMap: Record<number, s
   };
 
   const base = BASE_LABELS[segments[0]] || segments[0];
-  const rest = segments.slice(1).join(' · ');
+  const extra = (metadata?.tab as string) || (metadata?.video as string) || undefined;
+  const rest = extra ? [...segments.slice(1), extra].join(' · ') : segments.slice(1).join(' · ');
   return rest ? `${base} · ${rest}` : base;
+}
+
+// Formate le metadata d'une action : le player_id brut est remplacé par le nom
+// du joueur (sauf si un champ 'nom' est déjà présent, pour éviter le doublon).
+function formatMetadata(metadata: Record<string, unknown> | null, playersMap: Record<number, string>): string {
+  if (!metadata) return '';
+  const hasNom = 'nom' in metadata;
+  const entries: [string, unknown][] = [];
+
+  for (const [k, v] of Object.entries(metadata)) {
+    if (k === 'player_id') {
+      if (hasNom) continue;
+      entries.push(['joueur', playersMap[Number(v)] || `#${v}`]);
+      continue;
+    }
+    entries.push([k, v]);
+  }
+
+  return entries.map(([k, v]) => `${k}=${v}`).join(' · ');
 }
 
 export default function ActivityLogsPage() {
@@ -91,14 +113,15 @@ export default function ActivityLogsPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchLogs();
   }, []);
 
-  const fetchLogs = async () => {
-    setLoading(true);
+  const fetchLogs = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
     const [logsRes, profilesRes] = await Promise.all([
       supabase
         .from('activity_logs')
@@ -116,6 +139,7 @@ export default function ActivityLogsPage() {
       setPlayersMap(map);
     }
     setLoading(false);
+    setRefreshing(false);
   };
 
   const filteredLogs = filter === 'all' ? logs : logs.filter(l => getSection(l) === filter);
@@ -139,12 +163,22 @@ export default function ActivityLogsPage() {
             Panel Super-Admin — {logs.length} événements
           </p>
         </div>
-        <button
-          onClick={() => router.push('/live/super')}
-          className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors"
-        >
-          <X size={24} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchLogs(true)}
+            disabled={refreshing}
+            title="Actualiser"
+            className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={24} className={refreshing ? 'animate-spin' : ''} />
+          </button>
+          <button
+            onClick={() => router.push('/live/super')}
+            className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors"
+          >
+            <X size={24} />
+          </button>
+        </div>
       </div>
 
       <div className="max-w-4xl mx-auto space-y-6">
@@ -165,13 +199,13 @@ export default function ActivityLogsPage() {
               const isPageView = log.action_type === 'PAGE_VIEW';
               const title = isPageView ? (log.nickname || 'Inconnu') : (ACTION_LABELS[log.action_type] || log.action_type);
               const subtitle = isPageView
-                ? describePageView(log.metadata?.path as string | undefined, playersMap)
+                ? describePageView(log.metadata, playersMap)
                 : (
                   <>
                     {log.nickname || 'Inconnu'}
                     {log.metadata && Object.keys(log.metadata).length > 0 && (
                       <span className="text-zinc-700 normal-case font-mono ml-2">
-                        {Object.entries(log.metadata).map(([k, v]) => `${k}=${v}`).join(' · ')}
+                        {formatMetadata(log.metadata, playersMap)}
                       </span>
                     )}
                   </>

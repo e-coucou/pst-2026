@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import { useRouter } from 'next/navigation';
+import { logActivity } from '@/utils/log-activity';
 
 //pour le graphique de progression historique, on peut réutiliser le même composant que dans la section classement/progression, en lui passant les données nécessaires (timeline complète et liste des joueurs)
 //export const dynamic = 'force-dynamic';
@@ -28,6 +29,11 @@ export default function StatsPage() {
   const [timeline, setTimeline] = useState<any[]>([]);
   const [allPlayerNames, setAllPlayerNames] = useState<string[]>([]);
   const [nbYears, setNbYears] = useState(0);
+
+  useEffect(() => {
+    logActivity(supabase, 'PAGE_VIEW', { path: '/stats', tab: activeTab });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   useEffect(() => {
     async function getStats() {
