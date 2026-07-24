@@ -10,7 +10,8 @@ import {
   Trophy, Users, Target, Activity,
   TrendingUp, BarChart3, ChevronRight, Zap, X,
   Flame, Skull, HeartPulse, Crosshair, Crown,
-  Eye, ArrowUpRight
+  Eye, ArrowUpRight, Rocket, ShieldOff, Swords, Frown, Focus, Handshake,
+  Medal, ThumbsDown, Thermometer
 } from 'lucide-react';
 import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import { useRouter } from 'next/navigation';
@@ -157,8 +158,12 @@ export default function StatsPage() {
       const role = row.role ? row.role.toLowerCase() : '';
 
       const isWin = winVal === 1;
-      const isFannyGiven = scP === 13 && scC === 0;
-      const isFannyTaken = scP === 0 && scC === 13;
+      // Fanny = adversaire à 0, quel que soit le score final (matchs de poule limités dans le temps,
+      // pas toujours joués jusqu'à 13).
+      const isFannyGiven = scP > 0 && scC === 0;
+      const isFannyTaken = scC > 0 && scP === 0;
+      // Défaite sur le fil : 12-13 ou 11-13
+      const isCloseLoss = winVal === -1 && scC === 13 && (scP === 12 || scP === 11);
       const playerName = row.nom || `Joueur ${row.player_id}`;
 
       if (!playersMap.has(row.player_id)) {
@@ -167,10 +172,13 @@ export default function StatsPage() {
           name: playerName,
           matches: 0,
           wins: 0,
+          losses: 0,
+          draws: 0,
           pointsPour: 0,
           pointsContre: 0,
           fannyGiven: 0,
           fannyTaken: 0,
+          closeLosses: 0,
           // Nouvelles stats records :
           currentWinStreak: 0,
           maxWinStreak: 0,
@@ -195,9 +203,13 @@ export default function StatsPage() {
         p.currentLossStreak = 0; // Remise à zéro de la série de défaites
         if (p.currentWinStreak > p.maxWinStreak) p.maxWinStreak = p.currentWinStreak;
       } else if (winVal === -1) {
+        p.losses += 1;
         p.currentLossStreak += 1;
         p.currentWinStreak = 0; // Remise à zéro de la série de victoires
         if (p.currentLossStreak > p.maxLossStreak) p.maxLossStreak = p.currentLossStreak;
+      } else if (winVal === 0) {
+        p.draws += 1;
+        // Un nul ne casse pas une série en cours (comportement d'origine inchangé).
       }
 
       // --- POINTS & FANNYS ---
@@ -205,6 +217,7 @@ export default function StatsPage() {
       if (!isNaN(scC)) p.pointsContre += scC;
       if (isFannyGiven) p.fannyGiven += 1;
       if (isFannyTaken) p.fannyTaken += 1;
+      if (isCloseLoss) p.closeLosses += 1;
 
       // --- INDICE CLUTCH (Gagné 13-12) ---
       if (isWin && scP === 13 && scC === 12) {
@@ -442,25 +455,25 @@ export default function StatsPage() {
             <RecordCard 
               title="Série d'Invincibilité" 
               icon={<Flame className="text-orange-500" size={24} />}
-              data={playerStats.sort((a, b) => b.maxWinStreak - a.maxWinStreak)[0]}
+              data={[...playerStats].sort((a, b) => b.maxWinStreak - a.maxWinStreak)[0]}
               valueKey="maxWinStreak"
-              suffix="Victoires consécutives"
+              suffix="Matchs sans défaite"
               color="border-orange-500/30 bg-orange-500/5 text-orange-500"
             />
 
             <RecordCard 
               title="Le Chat Noir" 
               icon={<Skull className="text-zinc-500" size={24} />}
-              data={playerStats.sort((a, b) => b.maxLossStreak - a.maxLossStreak)[0]}
+              data={[...playerStats].sort((a, b) => b.maxLossStreak - a.maxLossStreak)[0]}
               valueKey="maxLossStreak"
-              suffix="Défaites consécutives"
+              suffix="Matchs sans victoire"
               color="border-zinc-700 bg-zinc-900 text-zinc-400"
             />
 
             <RecordCard 
               title="Nerfs d'Acier" 
               icon={<HeartPulse className="text-red-500" size={24} />}
-              data={playerStats.sort((a, b) => b.clutchWins - a.clutchWins)[0]}
+              data={[...playerStats].sort((a, b) => b.clutchWins - a.clutchWins)[0]}
               valueKey="clutchWins"
               suffix="Victoires sur le fil (13-12)"
               color="border-red-500/30 bg-red-500/5 text-red-500"
@@ -475,13 +488,103 @@ export default function StatsPage() {
               color="border-blue-500/30 bg-blue-500/5 text-blue-500"
             />
 
-            <RecordCard 
-              title="Le Sommet ELO" 
+            <RecordCard
+              title="Le Sommet ELO"
               icon={<Crown className="text-yellow-500" size={24} />}
-              data={playerStats.sort((a, b) => Number(b.peakElo) - Number(a.peakElo))[0]}
+              data={[...playerStats].sort((a, b) => Number(b.peakElo) - Number(a.peakElo))[0]}
               valueKey="peakElo"
               suffix="Record ELO absolu"
               color="border-yellow-500/30 bg-yellow-500/5 text-yellow-500"
+            />
+
+            <RecordCard
+              title="Le Rouleau Compresseur"
+              icon={<Rocket className="text-green-500" size={24} />}
+              data={[...playerStats].sort((a, b) => b.pointsPour - a.pointsPour)[0]}
+              valueKey="pointsPour"
+              suffix="Points marqués au total"
+              color="border-green-500/30 bg-green-500/5 text-green-500"
+            />
+
+            <RecordCard
+              title="Le Punching-Ball"
+              icon={<ShieldOff className="text-rose-500" size={24} />}
+              data={[...playerStats].sort((a, b) => b.pointsContre - a.pointsContre)[0]}
+              valueKey="pointsContre"
+              suffix="Points encaissés au total"
+              color="border-rose-500/30 bg-rose-500/5 text-rose-500"
+            />
+
+            <RecordCard
+              title="Le Bourreau"
+              icon={<Swords className="text-red-600" size={24} />}
+              data={[...playerStats].sort((a, b) => b.fannyGiven - a.fannyGiven)[0]}
+              valueKey="fannyGiven"
+              suffix="Fanny infligées (13-0)"
+              color="border-red-600/30 bg-red-600/5 text-red-600"
+            />
+
+            <RecordCard
+              title="Roi de la Fanny"
+              icon={<Frown className="text-slate-400" size={24} />}
+              data={[...playerStats].sort((a, b) => b.fannyTaken - a.fannyTaken)[0]}
+              valueKey="fannyTaken"
+              suffix="Fanny subies (0-13)"
+              color="border-slate-500/30 bg-slate-500/5 text-slate-400"
+            />
+
+            <RecordCard
+              title="Pointeur d'Élite"
+              icon={<Focus className="text-purple-500" size={24} />}
+              data={playerStats.filter(p => p.pointeurMatches >= 5).sort((a, b) => Number(b.pointeurWinrate) - Number(a.pointeurWinrate))[0]}
+              valueKey="pointeurWinrate"
+              suffix="% de victoire au pointage"
+              color="border-purple-500/30 bg-purple-500/5 text-purple-500"
+            />
+
+            <RecordCard
+              title="L'Increvable"
+              icon={<Activity className="text-white" size={24} />}
+              data={[...playerStats].sort((a, b) => b.matches - a.matches)[0]}
+              valueKey="matches"
+              suffix="Matchs joués au total"
+              color="border-white/10 bg-white/5 text-white"
+            />
+
+            <RecordCard
+              title="Le Diplomate"
+              icon={<Handshake className="text-cyan-400" size={24} />}
+              data={[...playerStats].sort((a, b) => b.draws - a.draws)[0]}
+              valueKey="draws"
+              suffix="Matchs nuls"
+              color="border-cyan-500/30 bg-cyan-500/5 text-cyan-400"
+            />
+
+            <RecordCard
+              title="Le Serial Vainqueur"
+              icon={<Medal className="text-amber-500" size={24} />}
+              data={[...playerStats].sort((a, b) => b.wins - a.wins)[0]}
+              valueKey="wins"
+              suffix="Victoires au total"
+              color="border-amber-500/30 bg-amber-500/5 text-amber-500"
+            />
+
+            <RecordCard
+              title="L'Abonné"
+              icon={<ThumbsDown className="text-red-400" size={24} />}
+              data={[...playerStats].sort((a, b) => b.losses - a.losses)[0]}
+              valueKey="losses"
+              suffix="Défaites au total"
+              color="border-red-900/30 bg-red-900/10 text-red-400"
+            />
+
+            <RecordCard
+              title="Le Fébrile"
+              icon={<Thermometer className="text-orange-500" size={24} />}
+              data={[...playerStats].sort((a, b) => b.closeLosses - a.closeLosses)[0]}
+              valueKey="closeLosses"
+              suffix="Défaites sur le fil (11 ou 12-13)"
+              color="border-orange-500/30 bg-orange-500/5 text-orange-500"
             />
 
           </div>
@@ -611,13 +714,23 @@ function StatCard({ label, value, icon, color }: any) {
 function RecordCard({ title, icon, data, valueKey, suffix, color }: any) {
   if (!data) return null; // Sécurité si aucune donnée
 
+  // Déduit la couleur de la vague de lumière à partir de la classe text-{couleur}-{nuance}
+  // déjà passée dans `color`, pour rester dans le ton de chaque vignette.
+  const shadeMatch = color.match(/text-([a-z]+)-(\d{2,3})\b/);
+  const glowColor = shadeMatch
+    ? `var(--color-${shadeMatch[1]}-${shadeMatch[2]})`
+    : /text-white\b/.test(color) ? '#ffffff' : 'transparent';
+
   return (
-    <div className={`p-6 rounded-3xl border ${color} flex flex-col justify-between min-h-[160px]`}>
+    <div
+      className={`record-card-wave p-6 rounded-3xl border ${color} flex flex-col justify-between min-h-[160px]`}
+      style={{ '--glow-color': glowColor } as React.CSSProperties}
+    >
       <div className="flex items-center gap-3 mb-4">
         {icon}
         <h3 className="text-sm font-black uppercase tracking-widest">{title}</h3>
       </div>
-      
+
       <div>
         <div className="text-3xl font-black italic tracking-tighter text-white uppercase">
           {data.name}

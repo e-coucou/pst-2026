@@ -51,3 +51,27 @@ button:active, a:active, [role="button"]:active {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(400%); }
 }
+
+/* Vague de lumière douce qui balaie les vignettes records (voir RecordCard dans stats/page.tsx).
+   La couleur vient de --glow-color, posée en style inline par carte. */
+@keyframes record-wave {
+  0%, 15% { transform: translateX(-120%) skewX(-20deg); opacity: 0; }
+  35% { opacity: 0.35; }
+  55% { opacity: 0.35; }
+  75%, 100% { transform: translateX(220%) skewX(-20deg); opacity: 0; }
+}
+.record-card-wave {
+  position: relative;
+  overflow: hidden;
+}
+.record-card-wave::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: 0;
+  width: 35%;
+  height: 140%;
+  background: linear-gradient(90deg, transparent, var(--glow-color, transparent), transparent);
+  animation: record-wave 6s ease-in-out infinite;
+  pointer-events: none;
+}
