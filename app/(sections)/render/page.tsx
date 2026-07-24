@@ -227,6 +227,14 @@ function Pool() {
   const pataugeoireX = poolWestX - pataugeoireLength / 2;
   const pataugeoireZ = poolFarZ - pataugeoireWidth / 2;
 
+  // Nageurs : quelques silhouettes dispersées dans le grand bassin (loin de l'encoche/pataugeoire)
+  const swimmers = [
+    { dx: 6, dz: nearZ + 4, rot: 0.3, color: '#facc15' },
+    { dx: 12, dz: nearZ + 12, rot: -0.6, color: '#ef4444' },
+    { dx: 18, dz: nearZ + 7, rot: 1.4, color: '#22d3ee' },
+    { dx: 8, dz: nearZ + 15, rot: -1.1, color: '#f97316' },
+  ];
+
   return (
     <group>
       {/* Bloc principal : toute la largeur, mais s'arrête avant l'encoche (côté ouest) */}
@@ -274,20 +282,63 @@ function TerrainDeBoules() {
 }
 
 // --- PÉTANQUEURS ---
-// Petits bonhommes stylisés (cylindre + tête), dispersés sur le terrain de boules.
-function Player({ x, z, rotationY, shirtColor }: { x: number; z: number; rotationY: number; shirtColor: string }) {
-  const legHeight = 0.9;
-  const headRadius = 0.12;
+// Bonhommes stylisés (jambes, torse, bras, tête — + une boule en main en pose "tir"),
+// dispersés sur le terrain de boules.
+const SKIN_COLOR = "#e0ac69";
+
+function Player({ x, z, rotationY, shirtColor, throwing = false }: {
+  x: number; z: number; rotationY: number; shirtColor: string; throwing?: boolean;
+}) {
+  const legH = 0.45;
+  const torsoH = 0.5;
+  const headR = 0.13;
+  const hipY = legH;
+  const shoulderY = legH + torsoH * 0.85;
 
   return (
-    <group position={[x, 0.02, z]} rotation={[0, rotationY, 0]}>
-      <mesh position={[0, legHeight / 2, 0]}>
-        <cylinderGeometry args={[0.14, 0.18, legHeight, 8]} />
+    <group position={[x, 0, z]} rotation={[0, rotationY, 0]}>
+      {/* Jambes */}
+      <mesh position={[-0.08, legH / 2, 0]}>
+        <cylinderGeometry args={[0.055, 0.065, legH, 6]} />
+        <meshStandardMaterial color="#27272a" />
+      </mesh>
+      <mesh position={[0.08, legH / 2, 0]}>
+        <cylinderGeometry args={[0.055, 0.065, legH, 6]} />
+        <meshStandardMaterial color="#27272a" />
+      </mesh>
+
+      {/* Torse (légèrement conique) */}
+      <mesh position={[0, hipY + torsoH / 2, 0]}>
+        <cylinderGeometry args={[0.16, 0.14, torsoH, 8]} />
         <meshStandardMaterial color={shirtColor} />
       </mesh>
-      <mesh position={[0, legHeight + headRadius, 0]}>
-        <sphereGeometry args={[headRadius, 12, 12]} />
-        <meshStandardMaterial color="#e0ac69" />
+
+      {/* Bras droit — tendu vers l'avant/bas en pose de tir, sinon le long du corps */}
+      <group position={[0.2, shoulderY, 0]} rotation={[throwing ? -1.3 : -0.15, 0, 0.15]}>
+        <mesh position={[0, -0.2, 0]}>
+          <cylinderGeometry args={[0.045, 0.05, 0.4, 6]} />
+          <meshStandardMaterial color={shirtColor} />
+        </mesh>
+        {throwing && (
+          <mesh position={[0, -0.42, 0]}>
+            <sphereGeometry args={[0.07, 10, 10]} />
+            <meshStandardMaterial color="#a1a1aa" metalness={0.6} roughness={0.3} />
+          </mesh>
+        )}
+      </group>
+
+      {/* Bras gauche */}
+      <group position={[-0.2, shoulderY, 0]} rotation={[0.1, 0, -0.15]}>
+        <mesh position={[0, -0.2, 0]}>
+          <cylinderGeometry args={[0.045, 0.05, 0.4, 6]} />
+          <meshStandardMaterial color={shirtColor} />
+        </mesh>
+      </group>
+
+      {/* Tête */}
+      <mesh position={[0, hipY + torsoH + headR + 0.02, 0]}>
+        <sphereGeometry args={[headR, 12, 12]} />
+        <meshStandardMaterial color={SKIN_COLOR} />
       </mesh>
     </group>
   );
@@ -295,20 +346,37 @@ function Player({ x, z, rotationY, shirtColor }: { x: number; z: number; rotatio
 
 function Petanqueurs({ centerX, centerZ }: { centerX: number; centerZ: number }) {
   const players = [
-    { dx: -4, dz: 3, rot: 0.4, color: '#dc2626' },
-    { dx: -2.2, dz: 4, rot: 0.6, color: '#a855f7' },
-    { dx: 3, dz: -2, rot: -2.4, color: '#f97316' },
-    { dx: 4.2, dz: -3.5, rot: -2.6, color: '#22c55e' },
-    { dx: -0.3, dz: -0.5, rot: 1.2, color: '#3b82f6' },
-    { dx: -3.4, dz: -3.8, rot: -1.1, color: '#eab308' },
+    { dx: -4, dz: 3, rot: 0.4, color: '#dc2626', throwing: true },
+    { dx: -2.2, dz: 4, rot: 0.6, color: '#a855f7', throwing: false },
+    { dx: 3, dz: -2, rot: -2.4, color: '#f97316', throwing: true },
+    { dx: 4.2, dz: -3.5, rot: -2.6, color: '#22c55e', throwing: false },
+    { dx: -0.3, dz: -0.5, rot: 1.2, color: '#3b82f6', throwing: false },
+    { dx: -3.4, dz: -3.8, rot: -1.1, color: '#eab308', throwing: false },
   ];
 
   return (
     <>
       {players.map((p, i) => (
-        <Player key={i} x={centerX + p.dx} z={centerZ + p.dz} rotationY={p.rot} shirtColor={p.color} />
+        <Player key={i} x={centerX + p.dx} z={centerZ + p.dz} rotationY={p.rot} shirtColor={p.color} throwing={p.throwing} />
       ))}
     </>
+  );
+}
+
+// --- NAGEURS ---
+// Silhouette allongée (capsule) flottant à la surface de l'eau (Y≈0), tête à une extrémité.
+function Swimmer({ x, z, rotationY, color }: { x: number; z: number; rotationY: number; color: string }) {
+  return (
+    <group position={[x, -0.12, z]} rotation={[0, rotationY, 0]}>
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <capsuleGeometry args={[0.15, 0.85, 4, 8]} />
+        <meshStandardMaterial color={color} />
+      </mesh>
+      <mesh position={[0.55, 0, 0]}>
+        <sphereGeometry args={[0.13, 10, 10]} />
+        <meshStandardMaterial color={SKIN_COLOR} />
+      </mesh>
+    </group>
   );
 }
 
