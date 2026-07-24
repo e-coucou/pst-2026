@@ -180,6 +180,23 @@ function getWestWallX(aptId: number) {
 // Fond en pente (peu profond à l'Est, profond à l'Ouest) : profil 2D extrudé sur la largeur,
 // ce qui évite d'avoir à faire pivoter la forme (X local = longueur, Y local = profondeur,
 // Z local = largeur → correspond directement aux axes du monde, sans rotation).
+// Profondeur théorique à une distance X donnée depuis le bord Est, sur la pente globale du bassin.
+function depthAtX(x: number, length: number, depthEast: number, depthWest: number) {
+  return depthEast + (depthWest - depthEast) * (x / length);
+}
+
+// Profil 2D (longueur × profondeur) d'un morceau de bassin, avec profondeur de départ et de fin
+// explicites — évite de refaire une interpolation fausse quand le morceau ne part pas de X=0.
+function trapezoidShape(sectionLength: number, depthStart: number, depthEnd: number) {
+  const s = new THREE.Shape();
+  s.moveTo(0, 0);
+  s.lineTo(0, -depthStart);
+  s.lineTo(sectionLength, -depthEnd);
+  s.lineTo(sectionLength, 0);
+  s.lineTo(0, 0);
+  return s;
+}
+
 function Pool() {
   const length = 32; // longueur (sens Est-Ouest), fixe
   const shiftEast = 5; // décalage supplémentaire vers l'Est (donc -X)
@@ -189,23 +206,109 @@ function Pool() {
   const depthEast = 1.6; // profondeur côté Est (petit bain)
   const depthWest = 3; // profondeur côté Ouest (grand bain)
 
-  const shape = useMemo(() => {
-    const s = new THREE.Shape();
-    s.moveTo(0, 0);
-    s.lineTo(0, -depthEast);
-    s.lineTo(length, -depthWest);
-    s.lineTo(length, 0);
-    s.lineTo(0, 0);
-    return s;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Encoche à l'emplacement de la pataugeoire (angle Nord-Ouest du bassin) : 9m (Est-Ouest) ×
+  // 5m (Nord-Sud) — un peu plus grande que la pataugeoire (6,5×3,2) pour laisser une plage
+  // tout autour, comme sur la photo. À confirmer : "5m x 9m" interprété ainsi faute d'axe précisé.
+  const notchLength = 9; // dimension Est-Ouest de l'encoche
+  const notchWidth = 5; // dimension Nord-Sud de l'encoche
+
+  const mainSectionLength = length - notchLength; // portion Est, pleine largeur
+  const depthAtNotch = depthAtX(mainSectionLength, length, depthEast, depthWest);
+  const mainShape = trapezoidShape(mainSectionLength, depthEast, depthAtNotch);
+  const westStripShape = trapezoidShape(notchLength, depthAtNotch, depthWest);
+
+  // Pataugeoire : mesurée sur la photo (repère des 19,34m) — ~6,6m × 3,2m, calée à
+  // l'extrémité OUEST du bassin, flush avec le bord NORD, profondeur 50cm (demandée).
+  const pataugeoireLength = 6.5;
+  const pataugeoireWidth = 3.2;
+  const pataugeoireDepth = 0.5;
+  const poolWestX = eastX + length;
+  const poolFarZ = nearZ + width;
+  const pataugeoireX = poolWestX - pataugeoireLength / 2;
+  const pataugeoireZ = poolFarZ - pataugeoireWidth / 2;
 
   return (
-    <mesh position={[eastX, 0, nearZ]}>
-      <extrudeGeometry args={[shape, { depth: width, bevelEnabled: false }]} />
-      <meshStandardMaterial color="#0ea5e9" transparent opacity={0.85} side={THREE.DoubleSide} />
-      <Edges color="#7dd3fc" threshold={15} />
-    </mesh>
+    <group>
+      {/* Bloc principal : toute la largeur, mais s'arrête avant l'encoche (côté ouest) */}
+      <mesh position={[eastX, 0, nearZ]}>
+        <extrudeGeometry args={[mainShape, { depth: width, bevelEnabled: false }]} />
+        <meshStandardMaterial color="#0ea5e9" transparent opacity={0.85} side={THREE.DoubleSide} />
+        <Edges color="#7dd3fc" threshold={15} />
+      </mesh>
+
+      {/* Bande ouest, seulement sur la partie sud (sous l'encoche) */}
+      <mesh position={[eastX + mainSectionLength, 0, nearZ]}>
+        <extrudeGeometry args={[westStripShape, { depth: width - notchWidth, bevelEnabled: false }]} />
+        <meshStandardMaterial color="#0ea5e9" transparent opacity={0.85} side={THREE.DoubleSide} />
+        <Edges color="#7dd3fc" threshold={15} />
+      </mesh>
+
+      <mesh position={[pataugeoireX, -pataugeoireDepth / 2, pataugeoireZ]}>
+        <boxGeometry args={[pataugeoireLength, pataugeoireDepth, pataugeoireWidth]} />
+        <meshStandardMaterial color="#7dd3fc" transparent opacity={0.85} />
+        <Edges color="#bae6fd" threshold={15} />
+      </mesh>
+    </group>
+  );
+}
+
+// --- TERRAIN DE BOULES ---
+// Carré ocre/brun, hauteur 2cm, parfaitement aligné sur l'axe du bâtiment (pas de rotation),
+// à ~35m au nord de la façade.
+function TerrainDeBoules() {
+  const size = 15;
+  const height = 0.02;
+  const centerX = 55; // position Est-Ouest approximative (poussé de 25m vers l'Ouest, à ajuster si besoin)
+  const centerZ = 40; // ~40m au nord de la façade (35 + 5m vers le Nord)
+
+  return (
+    <group>
+      <mesh position={[centerX, height / 2, centerZ]}>
+        <boxGeometry args={[size, height, size]} />
+        <meshStandardMaterial color="#92400e" />
+        <Edges color="#c2843d" threshold={15} />
+      </mesh>
+      <Petanqueurs centerX={centerX} centerZ={centerZ} />
+    </group>
+  );
+}
+
+// --- PÉTANQUEURS ---
+// Petits bonhommes stylisés (cylindre + tête), dispersés sur le terrain de boules.
+function Player({ x, z, rotationY, shirtColor }: { x: number; z: number; rotationY: number; shirtColor: string }) {
+  const legHeight = 0.9;
+  const headRadius = 0.12;
+
+  return (
+    <group position={[x, 0.02, z]} rotation={[0, rotationY, 0]}>
+      <mesh position={[0, legHeight / 2, 0]}>
+        <cylinderGeometry args={[0.14, 0.18, legHeight, 8]} />
+        <meshStandardMaterial color={shirtColor} />
+      </mesh>
+      <mesh position={[0, legHeight + headRadius, 0]}>
+        <sphereGeometry args={[headRadius, 12, 12]} />
+        <meshStandardMaterial color="#e0ac69" />
+      </mesh>
+    </group>
+  );
+}
+
+function Petanqueurs({ centerX, centerZ }: { centerX: number; centerZ: number }) {
+  const players = [
+    { dx: -4, dz: 3, rot: 0.4, color: '#dc2626' },
+    { dx: -2.2, dz: 4, rot: 0.6, color: '#a855f7' },
+    { dx: 3, dz: -2, rot: -2.4, color: '#f97316' },
+    { dx: 4.2, dz: -3.5, rot: -2.6, color: '#22c55e' },
+    { dx: -0.3, dz: -0.5, rot: 1.2, color: '#3b82f6' },
+    { dx: -3.4, dz: -3.8, rot: -1.1, color: '#eab308' },
+  ];
+
+  return (
+    <>
+      {players.map((p, i) => (
+        <Player key={i} x={centerX + p.dx} z={centerZ + p.dz} rotationY={p.rot} shirtColor={p.color} />
+      ))}
+    </>
   );
 }
 
@@ -250,6 +353,7 @@ export default function RenderPage() {
               <Apartment key={apt.id} data={apt} selectedId={selected?.id ?? null} onSelect={setSelected} />
             ))}
             <Pool />
+            <TerrainDeBoules />
           </group>
         </Suspense>
 

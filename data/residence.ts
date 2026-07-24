@@ -369,7 +369,7 @@ export const residenceData = {
       {
         "id": 51, "num": "51", "type": "studio", "corridorLevel": true,
         "occupant": "xxxx",
-        "section": "principale", "col": 9, "colSpan": 1, "colSpanCour": 1.5, "row": 6, "rowSpan": 2, "face": "cour", "avant": "oui",
+        "section": "principale", "col": 9, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "cour", "avant": "oui",
         "comment": "Occupant non renseigné"
       },
       {
