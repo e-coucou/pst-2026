@@ -38,6 +38,16 @@ function prettyPath(pathname: string): string {
   return rest ? `${base} · ${rest}` : base;
 }
 
+// Classe une liste de joueurs par une métrique de record ; en cas d'égalité,
+// privilégie les pointeurs (plus de matchs joués en pointeur qu'en tireur).
+function topByMetric(list: any[], metric: (p: any) => number): any {
+  return [...list].sort((a, b) => {
+    const diff = metric(b) - metric(a);
+    if (diff !== 0) return diff;
+    return (b.pointeurMatches - b.tireurMatches) - (a.pointeurMatches - a.tireurMatches);
+  })[0];
+}
+
 interface PopularityStats {
   topPage: { path: string; count: number } | null;
   topPlayers: { id: number; nom: string; count: number }[];
@@ -455,7 +465,7 @@ export default function StatsPage() {
             <RecordCard 
               title="Série d'Invincibilité" 
               icon={<Flame className="text-orange-500" size={24} />}
-              data={[...playerStats].sort((a, b) => b.maxWinStreak - a.maxWinStreak)[0]}
+              data={topByMetric(playerStats, p => p.maxWinStreak)}
               valueKey="maxWinStreak"
               suffix="Matchs sans défaite"
               color="border-orange-500/30 bg-orange-500/5 text-orange-500"
@@ -464,7 +474,7 @@ export default function StatsPage() {
             <RecordCard 
               title="Le Chat Noir" 
               icon={<Skull className="text-zinc-500" size={24} />}
-              data={[...playerStats].sort((a, b) => b.maxLossStreak - a.maxLossStreak)[0]}
+              data={topByMetric(playerStats, p => p.maxLossStreak)}
               valueKey="maxLossStreak"
               suffix="Matchs sans victoire"
               color="border-zinc-700 bg-zinc-900 text-zinc-400"
@@ -473,7 +483,7 @@ export default function StatsPage() {
             <RecordCard 
               title="Nerfs d'Acier" 
               icon={<HeartPulse className="text-red-500" size={24} />}
-              data={[...playerStats].sort((a, b) => b.clutchWins - a.clutchWins)[0]}
+              data={topByMetric(playerStats, p => p.clutchWins)}
               valueKey="clutchWins"
               suffix="Victoires sur le fil (13-12)"
               color="border-red-500/30 bg-red-500/5 text-red-500"
@@ -491,7 +501,7 @@ export default function StatsPage() {
             <RecordCard
               title="Le Sommet ELO"
               icon={<Crown className="text-yellow-500" size={24} />}
-              data={[...playerStats].sort((a, b) => Number(b.peakElo) - Number(a.peakElo))[0]}
+              data={topByMetric(playerStats, p => Number(p.peakElo))}
               valueKey="peakElo"
               suffix="Record ELO absolu"
               color="border-yellow-500/30 bg-yellow-500/5 text-yellow-500"
@@ -500,7 +510,7 @@ export default function StatsPage() {
             <RecordCard
               title="Le Rouleau Compresseur"
               icon={<Rocket className="text-green-500" size={24} />}
-              data={[...playerStats].sort((a, b) => b.pointsPour - a.pointsPour)[0]}
+              data={topByMetric(playerStats, p => p.pointsPour)}
               valueKey="pointsPour"
               suffix="Points marqués au total"
               color="border-green-500/30 bg-green-500/5 text-green-500"
@@ -509,7 +519,7 @@ export default function StatsPage() {
             <RecordCard
               title="Le Punching-Ball"
               icon={<ShieldOff className="text-rose-500" size={24} />}
-              data={[...playerStats].sort((a, b) => b.pointsContre - a.pointsContre)[0]}
+              data={topByMetric(playerStats, p => p.pointsContre)}
               valueKey="pointsContre"
               suffix="Points encaissés au total"
               color="border-rose-500/30 bg-rose-500/5 text-rose-500"
@@ -518,7 +528,7 @@ export default function StatsPage() {
             <RecordCard
               title="Le Bourreau"
               icon={<Swords className="text-red-600" size={24} />}
-              data={[...playerStats].sort((a, b) => b.fannyGiven - a.fannyGiven)[0]}
+              data={topByMetric(playerStats, p => p.fannyGiven)}
               valueKey="fannyGiven"
               suffix="Fanny infligées (13-0)"
               color="border-red-600/30 bg-red-600/5 text-red-600"
@@ -527,7 +537,7 @@ export default function StatsPage() {
             <RecordCard
               title="Roi de la Fanny"
               icon={<Frown className="text-slate-400" size={24} />}
-              data={[...playerStats].sort((a, b) => b.fannyTaken - a.fannyTaken)[0]}
+              data={topByMetric(playerStats, p => p.fannyTaken)}
               valueKey="fannyTaken"
               suffix="Fanny subies (0-13)"
               color="border-slate-500/30 bg-slate-500/5 text-slate-400"
@@ -545,7 +555,7 @@ export default function StatsPage() {
             <RecordCard
               title="L'Increvable"
               icon={<Activity className="text-white" size={24} />}
-              data={[...playerStats].sort((a, b) => b.matches - a.matches)[0]}
+              data={topByMetric(playerStats, p => p.matches)}
               valueKey="matches"
               suffix="Matchs joués au total"
               color="border-white/10 bg-white/5 text-white"
@@ -554,7 +564,7 @@ export default function StatsPage() {
             <RecordCard
               title="Le Diplomate"
               icon={<Handshake className="text-cyan-400" size={24} />}
-              data={[...playerStats].sort((a, b) => b.draws - a.draws)[0]}
+              data={topByMetric(playerStats, p => p.draws)}
               valueKey="draws"
               suffix="Matchs nuls"
               color="border-cyan-500/30 bg-cyan-500/5 text-cyan-400"
@@ -563,7 +573,7 @@ export default function StatsPage() {
             <RecordCard
               title="Le Serial Vainqueur"
               icon={<Medal className="text-amber-500" size={24} />}
-              data={[...playerStats].sort((a, b) => b.wins - a.wins)[0]}
+              data={topByMetric(playerStats, p => p.wins)}
               valueKey="wins"
               suffix="Victoires au total"
               color="border-amber-500/30 bg-amber-500/5 text-amber-500"
@@ -572,7 +582,7 @@ export default function StatsPage() {
             <RecordCard
               title="L'Abonné"
               icon={<ThumbsDown className="text-red-400" size={24} />}
-              data={[...playerStats].sort((a, b) => b.losses - a.losses)[0]}
+              data={topByMetric(playerStats, p => p.losses)}
               valueKey="losses"
               suffix="Défaites au total"
               color="border-red-900/30 bg-red-900/10 text-red-400"
@@ -581,7 +591,7 @@ export default function StatsPage() {
             <RecordCard
               title="Le Fébrile"
               icon={<Thermometer className="text-orange-500" size={24} />}
-              data={[...playerStats].sort((a, b) => b.closeLosses - a.closeLosses)[0]}
+              data={topByMetric(playerStats, p => p.closeLosses)}
               valueKey="closeLosses"
               suffix="Défaites sur le fil (11 ou 12-13)"
               color="border-orange-500/30 bg-orange-500/5 text-orange-500"
