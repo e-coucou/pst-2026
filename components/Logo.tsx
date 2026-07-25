@@ -9,8 +9,8 @@ export const Logo = ({ className = "h-12" }: { className?: string }) => {
         xmlns="http://www.w3.org/2000/svg"
         className="h-full w-auto rounded-xl shadow-md"
       >
-        {/* Fond rouge Saint-Tropez */}
-        <rect width="512" height="512" fill="#444460" />
+        {/* Fond rouge Saint-Tropez (aligné sur app/icon.png et le theme_color du manifest) */}
+        <rect width="512" height="512" fill="#e31e24" />
 
         {/* Groupe avec translation ajustée pour un centrage parfait à l'échelle 1.3 */}
         <g transform="translate(-45, -125) scale(1.5)">
@@ -40,20 +40,39 @@ export const Logo = ({ className = "h-12" }: { className?: string }) => {
             <path d="M140 360 Q180 320 220 300" />
           </g>
 
-          {/* Cochonnet (Orange Tailwind 500) */}
-          <circle cx="300" cy="360" r="18" fill="#f97316" />
-          <ellipse cx="320" cy="370" rx="12" ry="6" fill="#f97316" />
+          {/* Cochonnet — clin d'œil "petit cochon" (comme sur apple-icon.png), orange Tailwind 500 */}
+          <g fill="#f97316">
+            {/* Corps */}
+            <ellipse cx="306" cy="360" rx="26" ry="15" />
+            {/* Tête */}
+            <circle cx="280" cy="352" r="13" />
+            {/* Groin */}
+            <ellipse cx="266" cy="354" rx="6" ry="4" />
+            {/* Oreille */}
+            <path d="M283 340 L276 328 L292 338 Z" />
+            {/* Pattes */}
+            <rect x="292" y="372" width="6" height="12" rx="2" />
+            <rect x="314" y="372" width="6" height="12" rx="2" />
+          </g>
+          {/* Queue en tire-bouchon */}
+          <path
+            d="M330 356 Q340 350 334 342 Q330 337 336 333"
+            stroke="#f97316"
+            strokeWidth="4"
+            fill="none"
+            strokeLinecap="round"
+          />
 
           {/* Ligne de sol */}
-          <line x1="260" y1="340" x2="300" y2="340" stroke="#ffffff" strokeWidth="12" />
+          <line x1="260" y1="340" x2="272" y2="340" stroke="#ffffff" strokeWidth="12" />
         </g>
       </svg>
 
       <div className="flex flex-col leading-tight">
-        <span className="text-xl font-black tracking-tighter text-slate-500 dark:text-white">
+        <span className="text-xl font-black tracking-tighter text-white">
           PST <span className="text-[#e31e24]">2026</span>
         </span>
-        <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+        <span className="text-[10px] uppercase tracking-widest text-zinc-300 font-bold">
           Paris — St-Tropez
         </span>
       </div>
