@@ -55,9 +55,10 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
     // courDepthMeters permet une profondeur explicite (ex: 3m d'un couloir absorbé), prioritaire sur les deux autres cas.
     // southCorridorExtra : allonge le bloc façade vers le Sud d'une profondeur de couloir (même
     // bloc, le front reste fixé sur la rue — donc même niveau, pas de décalage vertical).
+    // extraSouthDepth : allongement supplémentaire vers le Sud, même principe (même niveau).
     const depth = isCour
       ? (data.courDepthMeters ?? (data.corridorRear ? config.corridorDepth : config.courDepth))
-      : config.facadeDepth + (data.southCorridorExtra ? config.corridorDepth : 0);
+      : config.facadeDepth + (data.southCorridorExtra ? config.corridorDepth : 0) + (data.extraSouthDepth || 0);
 
     // 2. POSITIONNEMENT DU CENTRE (zPos)
     // Three.js positionne le centre de l'objet. 
@@ -152,11 +153,56 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
     );
   };
 
+  // Extension arrière (appartements 21-29) : bloc plein calé sur la même emprise (largeur/X)
+  // que le pan cour, de hauteur un demi étage (slopeOffsetMeters), juste EN DESSOUS du pan
+  // cour (son sommet touche le bas du pan cour). Sa face nord est alignée avec la face nord
+  // du pan cour (même faceAvantCour) : il occupe une tranche de la même profondeur, pas au-delà.
+  const renderRearExtension = () => {
+    if (data.rearExtensionDepth === undefined) return null;
+
+    const isUp = data.up !== "non";
+    const isExtendLeft = data.extendLeft === "oui";
+    const yBase = data.row * config.gridRowHeight;
+    const yOffsetCour = data.courNoSlope ? 0 : (isUp ? 1 : -1) * config.slopeOffsetMeters;
+    const height = config.slopeOffsetMeters; // demi étage
+    const yFinal = yBase + yOffsetCour - height / 2; // sommet du bloc = bas du pan cour
+
+    const hasCourOverride = data.colSpanCour !== undefined;
+    const sideColSpan = hasCourOverride ? data.colSpanCour : (data.colSpan || 1);
+    const courExtraWidth = data.courExtraWidth || 0;
+    const width = sideColSpan * colWidth + courExtraWidth;
+    const sideCol = data.colCour !== undefined ? data.colCour : data.col;
+    const xPos = (s as any).startX + ((s as any).leftMargin || 0) + (sideCol * colWidth) + (width / 2) - ((isExtendLeft && !hasCourOverride) ? colWidth / 2 : 0);
+
+    const depth = data.rearExtensionDepth;
+    // Face nord alignée avec la face nord du pan cour : le bloc s'étend vers le Sud à partir
+    // de cette même limite (pas au-delà, vers la façade).
+    const zPos = faceAvantCour - depth / 2;
+
+    const isSelected = data.id === selectedId;
+
+    return (
+      <group position={[xPos, yFinal, zPos]}>
+        <mesh
+          onDoubleClick={(e: ThreeEvent<MouseEvent>) => {
+            e.stopPropagation();
+            onSelect(data);
+          }}
+        >
+          <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+          <meshStandardMaterial color={isSelected ? "#dc2626" : "#27272a"} transparent opacity={0.8} />
+          <Edges color={isSelected ? "#ffffff" : "#f2f2fb"} threshold={15} />
+        </mesh>
+      </group>
+    );
+  };
+
   return (
     <group>
       {(data.face === 'facade' || data.face === 'both') && renderBox('facade')}
       {(data.face === 'cour' || data.face === 'both') && renderBox('cour')}
       {renderNorthCorridor()}
+      {renderRearExtension()}
     </group>
   );
 }
@@ -174,6 +220,423 @@ function getWestWallX(aptId: number) {
   const isExtendLeft = apt.extendLeft === "oui";
   const xPos = sec.startX + (sec.leftMargin || 0) + (apt.col * colWidth) + width / 2 - (isExtendLeft ? colWidth / 2 : 0);
   return xPos + width / 2;
+}
+
+// --- CHAMBRES DE BONNE (CdB 1 à 18), sous les cours des appartements 21 à 29 ---
+// 18 chambres, 2 par appartement (CdB1-2 sous le 21, CdB3-4 sous le 22, ... CdB17-18 sous le
+// 29). Largeur = 1/18 de la somme des largeurs des 9 appartements = moitié de la largeur d'un
+// appartement (tous égaux). Hauteur = 1 étage (2 * gridRowHeight, comme un appartement
+// standard). Profondeur Nord-Sud = profondeur du pan cour - 1.5m - un couloir, calée sur la
+// face SUD du pan cour (donc en retrait vers le Nord de cette même quantité par rapport à la
+// face sud).
+function ChambresDeBonne21a29() {
+  const { config, building, apartments } = residenceData.residence;
+  const s = building.sections.principale;
+  const colWidth = s.colWidth || config.gridColWidth;
+
+  const parentIds = [21, 22, 23, 24, 25, 26, 27, 28, 29];
+  const roomWidth = colWidth / 2;
+  const height = 2 * config.gridRowHeight; // 1 étage
+  const roomDepth = config.courDepth - 1.5 - config.corridorDepth;
+
+  // Aucun des appartements 21-29 n'a "avant" : même faceAvantCour / face sud du pan cour pour tous.
+  const faceAvantCour = 0 - config.facadeDepth;
+  const faceSudCour = faceAvantCour - config.courDepth;
+  const zCenter = faceSudCour + roomDepth / 2;
+
+  const rooms: { id: number; xCenter: number; yFinal: number }[] = [];
+  parentIds.forEach((aptId) => {
+    const apt: any = apartments.find((a: any) => a.id === aptId);
+    const yBase = apt.row * config.gridRowHeight;
+    const isUp = apt.up !== "non";
+    const yOffsetCour = (isUp ? 1 : -1) * config.slopeOffsetMeters;
+    const yFinal = yBase + yOffsetCour - height / 2;
+
+    const aptXStart = s.startX + (s.leftMargin || 0) + apt.col * colWidth;
+    [0, 1].forEach((half) => {
+      rooms.push({
+        id: (aptId - 21) * 2 + half + 1,
+        xCenter: aptXStart + roomWidth * half + roomWidth / 2,
+        yFinal,
+      });
+    });
+  });
+
+  return (
+    <>
+      {rooms.map((room) => (
+        <group key={room.id} position={[room.xCenter, room.yFinal, zCenter]}>
+          <mesh>
+            <boxGeometry args={[roomWidth - 0.1, height - 0.1, roomDepth]} />
+            <meshStandardMaterial color="#27272a" transparent opacity={0.8} />
+            <Edges color="#f2f2fb" threshold={15} />
+          </mesh>
+          <Text
+            position={[0, 0, -(roomDepth / 2 + 0.05)]}
+            rotation={[0, Math.PI, 0]}
+            fontSize={0.35}
+            color="white"
+            anchorX="center"
+            anchorY="middle"
+          >
+            {`CdB${room.id}`}
+          </Text>
+        </group>
+      ))}
+    </>
+  );
+}
+
+// --- CHAMBRES DE BONNE (CdB 19 à 26), sous les studios 19 et 20 (sectionB) ---
+// 8 chambres, 4 par studio (19-22 sous le 19, 23-26 sous le 20) — chaque studio fait colSpan
+// 2, divisé en 4 : largeur = colWidth/2 = 2.6m, identique aux autres CdB. Hauteur et profondeur
+// également identiques aux autres CdB (1 étage ; courDepth - 1.5 - corridorDepth). Face SUD
+// calée sur la face sud des appartements 30-33 (leur pan cour, sans "avant" donc même formule
+// que pour les CdB 1-18 : -facadeDepth-courDepth), plutôt que dérivée de la profondeur propre
+// des studios 19-20.
+function ChambresDeBonne19a26() {
+  const { config, building, apartments } = residenceData.residence;
+  const s = building.sections.sectionB;
+  const colWidth = s.colWidth || config.gridColWidth;
+
+  const parentIds = [19, 20];
+  const roomsPerParent = 4;
+  const roomWidth = colWidth / 2; // identique aux autres CdB
+  const height = 2 * config.gridRowHeight; // identique aux autres CdB (1 étage)
+  const roomDepth = config.courDepth - 1.5 - config.corridorDepth; // identique aux autres CdB
+
+  // Face sud des appartements 30-33 (pas de "avant" → même formule que pour les CdB 1-18)
+  const faceAvantCour3033 = 0 - config.facadeDepth;
+  const faceSud3033 = faceAvantCour3033 - config.courDepth;
+  const zCenter = faceSud3033 + roomDepth / 2;
+
+  const rooms: { id: number; xCenter: number; yFinal: number }[] = [];
+  parentIds.forEach((aptId, parentIndex) => {
+    const apt: any = apartments.find((a: any) => a.id === aptId);
+    const yBase = apt.row * config.gridRowHeight;
+    const isUp = apt.up !== "non";
+    const yOffsetCour = (isUp ? 1 : -1) * config.slopeOffsetMeters;
+    const yFinal = yBase + yOffsetCour - height / 2;
+
+    const aptXStart = s.startX + (s.leftMargin || 0) + apt.col * colWidth;
+    for (let k = 0; k < roomsPerParent; k++) {
+      rooms.push({
+        id: 19 + parentIndex * roomsPerParent + k,
+        xCenter: aptXStart + roomWidth * k + roomWidth / 2,
+        yFinal,
+      });
+    }
+  });
+
+  return (
+    <>
+      {rooms.map((room) => (
+        <group key={room.id} position={[room.xCenter, room.yFinal, zCenter]}>
+          <mesh>
+            <boxGeometry args={[roomWidth - 0.1, height - 0.1, roomDepth]} />
+            <meshStandardMaterial color="#27272a" transparent opacity={0.8} />
+            <Edges color="#f2f2fb" threshold={15} />
+          </mesh>
+          <Text
+            position={[0, 0, -(roomDepth / 2 + 0.05)]}
+            rotation={[0, Math.PI, 0]}
+            fontSize={0.35}
+            color="white"
+            anchorX="center"
+            anchorY="middle"
+          >
+            {`CdB${room.id}`}
+          </Text>
+        </group>
+      ))}
+    </>
+  );
+}
+
+// --- GARAGES (G1 à G18), sous les chambres de bonne (CdB 1-18) ---
+// Même emprise en X que les CdB correspondantes (G{n} directement sous CdB{n}). Hauteur =
+// 1 étage (2 * gridRowHeight, comme les CdB et un appartement standard).
+// Face sud identique à celle des CdB (= face sud du pan cour des appartements 21-29). Face
+// nord calée contre (touche) la face sud des studios 1-9 (façade + southCorridorExtra +
+// extraSouthDepth) — la profondeur en découle, ce n'est pas une valeur fixée arbitrairement.
+function Garages21a29() {
+  const { config, building, apartments } = residenceData.residence;
+  const s = building.sections.principale;
+  const colWidth = s.colWidth || config.gridColWidth;
+
+  const parentIds = [21, 22, 23, 24, 25, 26, 27, 28, 29];
+  const roomWidth = colWidth / 2;
+  const cdbHeight = 2 * config.gridRowHeight; // hauteur des CdB, pour caler le dessus des garages juste dessous
+  const height = 2 * config.gridRowHeight; // 1 étage
+
+  // Face nord = face sud des studios 1-9 (avant + facadeDepth + corridorDepth du southCorridorExtra + extraSouthDepth)
+  const faceAvantStudios = 0 + config.avantOffset;
+  const depthStudios = config.facadeDepth + config.corridorDepth + 1.5;
+  const faceNord = faceAvantStudios - depthStudios;
+
+  // Face sud = face sud du pan cour (identique aux CdB)
+  const faceAvantCour = 0 - config.facadeDepth;
+  const faceSud = faceAvantCour - config.courDepth;
+
+  const depth = faceNord - faceSud;
+  const zCenter = faceSud + depth / 2;
+
+  const garages: { id: number; xCenter: number; yFinal: number }[] = [];
+  parentIds.forEach((aptId) => {
+    const apt: any = apartments.find((a: any) => a.id === aptId);
+    const yBase = apt.row * config.gridRowHeight;
+    const isUp = apt.up !== "non";
+    const yOffsetCour = (isUp ? 1 : -1) * config.slopeOffsetMeters;
+    const cdbBottom = yBase + yOffsetCour - cdbHeight; // base des CdB = sommet des garages
+    const yFinal = cdbBottom - height / 2;
+
+    const aptXStart = s.startX + (s.leftMargin || 0) + apt.col * colWidth;
+    [0, 1].forEach((half) => {
+      garages.push({
+        id: (aptId - 21) * 2 + half + 1,
+        xCenter: aptXStart + roomWidth * half + roomWidth / 2,
+        yFinal,
+      });
+    });
+  });
+
+  return (
+    <>
+      {garages.map((g) => (
+        <group key={g.id} position={[g.xCenter, g.yFinal, zCenter]}>
+          <mesh>
+            <boxGeometry args={[roomWidth - 0.1, height - 0.1, depth]} />
+            <meshStandardMaterial color="#27272a" transparent opacity={0.8} />
+            <Edges color="#f2f2fb" threshold={15} />
+          </mesh>
+          <Text
+            position={[0, 0, -(depth / 2 + 0.05)]}
+            rotation={[0, Math.PI, 0]}
+            fontSize={0.35}
+            color="white"
+            anchorX="center"
+            anchorY="middle"
+          >
+            {`G${g.id}`}
+          </Text>
+        </group>
+      ))}
+    </>
+  );
+}
+
+// --- COULOIR INTÉRIEUR (studios 47 à 51) ---
+// Parallélépipède bleu matérialisant le couloir : même niveau (Y) que les studios 47-51,
+// hauteur 1 étage, profondeur = largeur couloir standard (corridorDepth), flush contre la
+// face nord du bloc cour de ces studios (même principe que renderNorthCorridor / l'extension
+// arrière 21-29), sur toute la longueur cumulée des studios 47 à 51 (bord ouest du 47 au bord
+// est du 51).
+function CouloirStudios47a51() {
+  const { config, building } = residenceData.residence;
+  const s = building.sections.principale;
+  const colWidth = s.colWidth || config.gridColWidth;
+
+  const xWestEdge47 = s.startX + (s.leftMargin || 0) + 1 * colWidth; // bord ouest du 47 (col1)
+  const xEastEdge51 = s.startX + (s.leftMargin || 0) + (9 + 1) * colWidth; // bord est du 51 (col9 + colSpan1)
+  const width = xEastEdge51 - xWestEdge47;
+  const xCenter = xWestEdge47 + width / 2;
+
+  const row = 6;
+  const yBase = row * config.gridRowHeight;
+  const height = 2 * config.gridRowHeight; // 1 étage, même hauteur que les studios 47-51
+  // avant="oui", pas de "up" (donc isUp=true par défaut), pas de courNoSlope — même niveau que les studios
+  const yFinal = yBase + config.slopeOffsetMeters + height / 2;
+
+  const depth = config.corridorDepth;
+  // Face nord du bloc cour des studios 47-51 (avant="oui" → double offsetArriere)
+  const faceAvantFacade = config.avantOffset;
+  const ligneDeSoudure = faceAvantFacade - config.facadeDepth;
+  const faceAvantCour = ligneDeSoudure - 2 * config.avantOffset;
+  const zPos = faceAvantCour + depth / 2;
+
+  return (
+    <mesh position={[xCenter, yFinal, zPos]}>
+      <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+      <meshStandardMaterial color="#3b82f6" transparent opacity={0.8} />
+      <Edges color="#93c5fd" threshold={15} />
+    </mesh>
+  );
+}
+
+// --- COULOIR INTÉRIEUR (studios 14 à 18) ---
+// Identique au couloir des studios 47-51 (même largeur/profondeur=corridorDepth, même hauteur
+// =1 étage, même longueur=46.8m sur les mêmes X). Seuls changent : le niveau (row2 au lieu de
+// row6, studios "façade" donc pas d'offset cour) et le sens d'accroche — ces studios n'ayant
+// qu'un bloc façade (pas de bloc cour), le couloir est flush contre la face SUD de ce bloc
+// façade (la ligne de soudure) et s'étend encore vers le Sud, plutôt que flush contre une face
+// nord de bloc cour en s'étendant vers le Nord.
+function CouloirStudios14a18() {
+  const { config, building } = residenceData.residence;
+  const s = building.sections.principale;
+  const colWidth = s.colWidth || config.gridColWidth;
+
+  const xWestEdge14 = s.startX + (s.leftMargin || 0) + 1 * colWidth; // bord ouest du 14 (col1)
+  const xEastEdge = s.startX + (s.leftMargin || 0) + (9 + 1) * colWidth; // même longueur que le couloir 47-51
+  const width = xEastEdge - xWestEdge14;
+  const xCenter = xWestEdge14 + width / 2;
+
+  const row = 2;
+  const yBase = row * config.gridRowHeight;
+  const height = 2 * config.gridRowHeight; // 1 étage, identique au couloir 47-51
+  // face="facade" : pas d'offset (le slope/décalage ne s'applique qu'au pan cour)
+  const yFinal = yBase + height / 2;
+
+  const depth = config.corridorDepth; // identique au couloir 47-51
+  // Face sud du bloc façade des studios 14-18 (avant="oui" → faceAvantFacade = avantOffset)
+  const faceAvantFacade = config.avantOffset;
+  const ligneDeSoudure = faceAvantFacade - config.facadeDepth;
+  const zPos = ligneDeSoudure - depth / 2;
+
+  return (
+    <mesh position={[xCenter, yFinal, zPos]}>
+      <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+      <meshStandardMaterial color="#3b82f6" transparent opacity={0.8} />
+      <Edges color="#93c5fd" threshold={15} />
+    </mesh>
+  );
+}
+
+// --- COULOIR INTÉRIEUR (niveau des CdB, appartements 21-29) ---
+// Identique aux deux précédents (largeur/profondeur=corridorDepth, hauteur=1 étage,
+// longueur=46.8m sur les mêmes X que les CdB/l'extension arrière). Positionné au niveau des
+// CdB (même yFinal/hauteur qu'elles). En Z, comble exactement l'espace laissé vacant entre
+// l'extension arrière (1.5m, flush face nord du pan cour) et les CdB (flush face sud du pan
+// cour) — c'est ce même "couloir" déjà comptabilisé dans le calcul de leur profondeur
+// (courDepth - 1.5 - corridorDepth), ici enfin matérialisé.
+function CouloirCdB21a29() {
+  const { config, building } = residenceData.residence;
+  const s = building.sections.principale;
+  const colWidth = s.colWidth || config.gridColWidth;
+
+  const xWestEdge21 = s.startX + (s.leftMargin || 0) + 1 * colWidth; // bord ouest du 21 (col1)
+  const xEastEdge = s.startX + (s.leftMargin || 0) + (9 + 1) * colWidth; // même longueur que les couloirs précédents
+  const width = xEastEdge - xWestEdge21;
+  const xCenter = xWestEdge21 + width / 2;
+
+  const row = 4;
+  const yBase = row * config.gridRowHeight;
+  const height = 2 * config.gridRowHeight; // 1 étage, identique aux précédents et aux CdB
+  const yOffsetCour = -config.slopeOffsetMeters; // up="non" pour les appartements 21-29
+  const yFinal = yBase + yOffsetCour - height / 2; // même niveau que les CdB
+
+  const depth = config.corridorDepth; // identique aux précédents
+  // Face nord du pan cour des appartements 21-29, puis face sud de l'extension arrière (1.5m)
+  const faceAvantCour = 0 - config.facadeDepth;
+  const rearExtensionSouthFace = faceAvantCour - 1.5;
+  const zPos = rearExtensionSouthFace - depth / 2;
+
+  return (
+    <mesh position={[xCenter, yFinal, zPos]}>
+      <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+      <meshStandardMaterial color="#3b82f6" transparent opacity={0.8} />
+      <Edges color="#93c5fd" threshold={15} />
+    </mesh>
+  );
+}
+
+// --- COULOIR INTÉRIEUR (studios 52 et 53) ---
+// Même principe que CouloirStudios14a18 (studios façade, couloir flush contre la face SUD du
+// bloc façade, même hauteur 1 étage, même profondeur=corridorDepth). Bord Est = bord Est du 52
+// (col1, colSpan2.5, extendLeft). Bord Ouest : NE VA PAS jusqu'au bout du 53 — il bute sur
+// l'extension en L du studio 53 (son pan cour à colCour=4, qui absorbe le couloir sur la
+// moitié Ouest du 53, cf. courNoSlope+courDepthMeters:3 dans les données). Le couloir s'arrête
+// donc au bord Est de cette extension (col4), pas au bord Ouest du 53 (qui irait jusqu'à col5).
+function CouloirStudios52a53() {
+  const { config, building } = residenceData.residence;
+  const s = building.sections.sectionB;
+  const colWidth = s.colWidth || config.gridColWidth;
+
+  const xEastEdge = s.startX + (s.leftMargin || 0) + 1 * colWidth - colWidth / 2; // bord Est du 52 (extendLeft)
+  const xWestEdge = s.startX + (s.leftMargin || 0) + 4 * colWidth; // bute ici sur l'extension en L du 53
+  const width = xWestEdge - xEastEdge;
+  const xCenter = xEastEdge + width / 2;
+
+  const row = 7;
+  const yBase = row * config.gridRowHeight;
+  const height = 2 * config.gridRowHeight; // 1 étage
+  const yFinal = yBase + height / 2; // façade : pas d'offset
+
+  const depth = config.corridorDepth;
+  const ligneDeSoudure = config.avantOffset - config.facadeDepth; // face sud du bloc façade (avant="oui")
+  const zPos = ligneDeSoudure - depth / 2;
+
+  return (
+    <mesh position={[xCenter, yFinal, zPos]}>
+      <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+      <meshStandardMaterial color="#3b82f6" transparent opacity={0.8} />
+      <Edges color="#93c5fd" threshold={15} />
+    </mesh>
+  );
+}
+
+// --- CAGE D'ESCALIER (1ère partie) ---
+// Volume de la cage d'escalier principale (section cageEscalier, X 48.2-50.9). En hauteur : du
+// bas de l'appartement 9 (row0, y=0) au bas du studio 18 (row2, y=2.3) — soit 1 étage. En
+// profondeur : de la ligne "avant" (comme les appartements 9/18, tous deux avant="oui") à la
+// façade sud du studio 18 (ligne de soudure) — soit la profondeur façade standard.
+function CageEscalierPartie1() {
+  const { config, building } = residenceData.residence;
+  const cage: any = building.sections.cageEscalier;
+
+  const xCenter = cage.startX + cage.width / 2;
+  const width = cage.width;
+
+  const yBottom = 0 * config.gridRowHeight; // bas de l'appartement 9 (row0)
+  const yTop = 2 * config.gridRowHeight; // bas du studio 18 (row2)
+  const height = yTop - yBottom;
+  const yFinal = yBottom + height / 2;
+
+  const zNord = config.avantOffset; // ligne "avant" (appartement 9 / studio 18)
+  const zSud = config.avantOffset - config.facadeDepth; // façade sud du studio 18
+  const depth = zNord - zSud;
+  const zPos = zNord - depth / 2;
+
+  return (
+    <mesh position={[xCenter, yFinal, zPos]}>
+      <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+      <meshStandardMaterial color="#27272a" transparent opacity={0.8} />
+      <Edges color="#f2f2fb" threshold={15} />
+    </mesh>
+  );
+}
+
+// --- COULOIR INTÉRIEUR (niveau des CdB, côté Ouest : CdB 19-26 sous les studios 19-20) ---
+// Continuation vers l'Ouest de CouloirCdB21a29 : mêmes Y/Z/hauteur/profondeur (même niveau
+// des CdB, même espace comblé entre l'extension arrière et les CdB), mais sur l'emprise en X
+// des studios 19-20 (sectionB) pour desservir les CdB 19-26.
+function CouloirCdB19a26() {
+  const { config, building } = residenceData.residence;
+  const s = building.sections.sectionB;
+  const colWidth = s.colWidth || config.gridColWidth;
+
+  const xEastEdge = s.startX + (s.leftMargin || 0) + 1 * colWidth; // bord est (col1, studio 19)
+  const xWestEdge = s.startX + (s.leftMargin || 0) + (3 + 2) * colWidth; // bord ouest (col3+colSpan2, studio 20)
+  const width = xWestEdge - xEastEdge;
+  const xCenter = xEastEdge + width / 2;
+
+  const row = 1; // row des studios 19-20
+  const yBase = row * config.gridRowHeight;
+  const height = 2 * config.gridRowHeight; // identique aux autres couloirs
+  const yOffsetCour = config.slopeOffsetMeters; // pas de "up: non" sur les studios 19-20
+  const yFinal = yBase + yOffsetCour - height / 2; // même niveau que les CdB 19-26
+
+  const depth = config.corridorDepth; // identique aux autres couloirs
+  const faceAvantCour = 0 - config.facadeDepth;
+  const rearExtensionSouthFace = faceAvantCour - 1.5;
+  const zPos = rearExtensionSouthFace - depth / 2;
+
+  return (
+    <mesh position={[xCenter, yFinal, zPos]}>
+      <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+      <meshStandardMaterial color="#3b82f6" transparent opacity={0.8} />
+      <Edges color="#93c5fd" threshold={15} />
+    </mesh>
+  );
 }
 
 // --- PISCINE ---
@@ -428,6 +891,15 @@ export default function RenderPage() {
             ))}
             <Pool />
             <TerrainDeBoules />
+            <ChambresDeBonne21a29 />
+            <ChambresDeBonne19a26 />
+            <Garages21a29 />
+            <CouloirStudios47a51 />
+            <CouloirStudios14a18 />
+            <CouloirStudios52a53 />
+            <CageEscalierPartie1 />
+            <CouloirCdB21a29 />
+            <CouloirCdB19a26 />
           </group>
         </Suspense>
 
