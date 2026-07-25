@@ -9,7 +9,8 @@ import { logActivity } from '@/utils/log-activity';
 interface Photo {
   name: string;
   path: string;
-  url: string;
+  thumbUrl: string;
+  fullUrl: string;
   year: number;
 }
 
@@ -21,23 +22,35 @@ export default function PhotosGalleryPage() {
   useEffect(() => {
     const fetchPhotos = async () => {
       // La policy RLS du bucket réserve l'accès au dossier "private/".
-      const { data: files } = await supabase.storage
+      // La galerie ne liste que les vignettes (private/thumbs/) pour limiter la
+      // bande passante ; la version complète (private/full/, même nom de fichier)
+      // n'est signée et ouverte qu'au clic.
+      const { data: rawFiles } = await supabase.storage
         .from('photos_import')
-        .list('private', { limit: 500, sortBy: { column: 'created_at', order: 'desc' } });
+        .list('private/thumbs', { limit: 500, sortBy: { column: 'created_at', order: 'desc' } });
 
-      if (files && files.length > 0) {
-        const paths = files.map(f => `private/${f.name}`);
-        const { data: signedUrls } = await supabase.storage
-          .from('photos_import')
-          .createSignedUrls(paths, 86400); // 24h : large marge si l'onglet reste ouvert longtemps
+      // Supabase crée un fichier ".emptyFolderPlaceholder" pour représenter un
+      // dossier vide dans son UI : ce n'est pas une photo, on l'ignore.
+      const files = (rawFiles || []).filter(f => f.name.endsWith('.webp'));
+
+      if (files.length > 0) {
+        const thumbPaths = files.map(f => `private/thumbs/${f.name}`);
+        const fullPaths = files.map(f => `private/full/${f.name}`);
+
+        const [{ data: signedThumbs }, { data: signedFulls }] = await Promise.all([
+          supabase.storage.from('photos_import').createSignedUrls(thumbPaths, 86400),
+          supabase.storage.from('photos_import').createSignedUrls(fullPaths, 86400),
+        ]);
 
         const photoList: Photo[] = files
           .map(f => {
-            const path = `private/${f.name}`;
-            const signed = signedUrls?.find(s => s.path === path);
+            const thumbPath = `private/thumbs/${f.name}`;
+            const fullPath = `private/full/${f.name}`;
+            const thumb = signedThumbs?.find(s => s.path === thumbPath);
+            const full = signedFulls?.find(s => s.path === fullPath);
             const createdAt = f.created_at ? new Date(f.created_at) : new Date();
-            return signed?.signedUrl
-              ? { name: f.name, path, url: signed.signedUrl, year: createdAt.getFullYear() }
+            return thumb?.signedUrl && full?.signedUrl
+              ? { name: f.name, path: fullPath, thumbUrl: thumb.signedUrl, fullUrl: full.signedUrl, year: createdAt.getFullYear() }
               : null;
           })
           .filter((p): p is Photo => p !== null);
@@ -112,14 +125,14 @@ export default function PhotosGalleryPage() {
                 {photos.filter(p => p.year === year).map(photo => (
                   <a
                     key={photo.name}
-                    href={photo.url}
+                    href={photo.fullUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => logActivity(supabase, 'PHOTO_VIEW', { photo: photo.path })}
                     className="group relative aspect-square rounded-2xl overflow-hidden border border-white/5 hover:border-red-600/50 transition-all duration-300 shadow-xl bg-zinc-900"
                   >
                     <img
-                      src={photo.url}
+                      src={photo.thumbUrl}
                       alt=""
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />

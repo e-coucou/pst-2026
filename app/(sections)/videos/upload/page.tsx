@@ -7,23 +7,21 @@ import imageCompression from 'browser-image-compression';
 import { logActivity } from '@/utils/log-activity';
 import { UploadCloud, X, Loader2, CheckCircle2, AlertCircle, Camera } from 'lucide-react';
 
-const MAX_BYTES = 600 * 1024; // Doit correspondre à la limite configurée sur le bucket photos_import
+const MAX_BYTES = 1.5 * 1024 * 1024; // Doit correspondre à la limite configurée sur le bucket photos_import
 const formatKo = (bytes: number) => `${Math.round(bytes / 1024)} Ko`;
 
 // La cible maxSizeMB de la lib n'est qu'indicative (nombre d'itérations limité par
 // appel) : on boucle nous-mêmes sur des réglages de plus en plus agressifs, en
 // repartant à chaque fois du résultat précédent, jusqu'à passer sous la limite.
-// Usage mobile avant tout : pas besoin de viser une résolution "print".
 // La lib écrase la qualité autant qu'il faut pour tenir dans maxSizeMB à la
-// résolution donnée : mieux vaut viser une résolution déjà raisonnable pour du
-// mobile (1280px) avec une qualité de départ haute, plutôt qu'une grande
-// résolution qui finit écrasée en qualité pour rentrer dans le budget.
+// résolution donnée : mieux vaut viser une résolution déjà raisonnable avec une
+// qualité de départ haute, plutôt qu'une grande résolution écrasée en qualité.
 const COMPRESSION_STEPS = [
-  { maxWidthOrHeight: 1280, initialQuality: 0.9 },
-  { maxWidthOrHeight: 1080, initialQuality: 0.85 },
-  { maxWidthOrHeight: 900, initialQuality: 0.8 },
-  { maxWidthOrHeight: 720, initialQuality: 0.75 },
-  { maxWidthOrHeight: 560, initialQuality: 0.7 },
+  { maxWidthOrHeight: 1920, initialQuality: 0.9 },
+  { maxWidthOrHeight: 1600, initialQuality: 0.88 },
+  { maxWidthOrHeight: 1280, initialQuality: 0.85 },
+  { maxWidthOrHeight: 1080, initialQuality: 0.8 },
+  { maxWidthOrHeight: 900, initialQuality: 0.75 },
 ];
 
 async function compressUnderLimit(file: File): Promise<File> {
@@ -46,6 +44,18 @@ async function compressUnderLimit(file: File): Promise<File> {
   return result;
 }
 
+// Vignette légère pour la galerie (400px suffit largement en grille) : une seule
+// passe, pas besoin de boucle, un webp 400px tient toujours largement sous 100 Ko.
+async function makeThumbnail(file: File): Promise<File> {
+  return imageCompression(file, {
+    maxWidthOrHeight: 400,
+    initialQuality: 0.7,
+    maxSizeMB: 0.1,
+    fileType: 'image/webp',
+    useWebWorker: true,
+  });
+}
+
 export default function UploadPhotoPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -65,23 +75,41 @@ export default function UploadPhotoPage() {
     setPreviewUrl(file ? URL.createObjectURL(file) : null);
   };
 
-  const sendToStorage = async (blob: File) => {
+  // Envoie la version pleine taille + une vignette (même nom de base, dossiers
+  // séparés) : la galerie ne charge que les vignettes, le clic ouvre la version
+  // complète.
+  const sendToStorage = async (full: File) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Tu dois être connecté pour importer une photo.");
 
+    const baseName = `${user.id}_${Date.now()}.webp`;
     // La policy RLS du bucket exige que le fichier soit dans le dossier "private/".
-    const fileName = `private/${user.id}_${Date.now()}.webp`;
+    const fullPath = `private/full/${baseName}`;
+    const thumbPath = `private/thumbs/${baseName}`;
+
     const { error: upError } = await supabase.storage
       .from('photos_import')
-      .upload(fileName, blob, { contentType: 'image/webp' });
+      .upload(fullPath, full, { contentType: 'image/webp' });
 
     if (upError) {
       if (/exceeded the maximum allowed size/i.test(upError.message)) {
         throw new Error(
-          `Le serveur a refusé la photo (${formatKo(blob.size)}) : elle dépasse la limite de ${formatKo(MAX_BYTES)}.`
+          `Le serveur a refusé la photo (${formatKo(full.size)}) : elle dépasse la limite de ${formatKo(MAX_BYTES)}.`
         );
       }
       throw upError;
+    }
+
+    try {
+      const thumbnail = await makeThumbnail(full);
+      const { error: thumbError } = await supabase.storage
+        .from('photos_import')
+        .upload(thumbPath, thumbnail, { contentType: 'image/webp' });
+      if (thumbError) console.error('Erreur upload vignette:', thumbError.message);
+    } catch (e) {
+      // La vignette est un bonus pour la galerie : son échec ne doit pas faire
+      // échouer l'import, la photo pleine taille est déjà en ligne.
+      console.error('Erreur génération vignette:', e);
     }
 
     logActivity(supabase, 'PHOTO_UPLOAD', { path: '/videos/upload' });
