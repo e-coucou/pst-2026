@@ -13,26 +13,31 @@ const formatKo = (bytes: number) => `${Math.round(bytes / 1024)} Ko`;
 // La cible maxSizeMB de la lib n'est qu'indicative (nombre d'itérations limité par
 // appel) : on boucle nous-mêmes sur des réglages de plus en plus agressifs, en
 // repartant à chaque fois du résultat précédent, jusqu'à passer sous la limite.
+// Usage mobile avant tout : pas besoin de viser une résolution "print".
 const COMPRESSION_STEPS = [
-  { maxWidthOrHeight: 1920, initialQuality: 0.8 },
-  { maxWidthOrHeight: 1600, initialQuality: 0.7 },
-  { maxWidthOrHeight: 1280, initialQuality: 0.6 },
-  { maxWidthOrHeight: 960, initialQuality: 0.5 },
-  { maxWidthOrHeight: 720, initialQuality: 0.4 },
-  { maxWidthOrHeight: 540, initialQuality: 0.3 },
+  { maxWidthOrHeight: 1600, initialQuality: 0.75 },
+  { maxWidthOrHeight: 1280, initialQuality: 0.65 },
+  { maxWidthOrHeight: 1024, initialQuality: 0.55 },
+  { maxWidthOrHeight: 800, initialQuality: 0.45 },
+  { maxWidthOrHeight: 600, initialQuality: 0.35 },
 ];
 
 async function compressUnderLimit(file: File): Promise<File> {
   let result: File = file;
-  for (const step of COMPRESSION_STEPS) {
-    result = await imageCompression(result, {
-      maxSizeMB: MAX_BYTES / (1024 * 1024),
-      maxWidthOrHeight: step.maxWidthOrHeight,
-      fileType: 'image/webp',
-      useWebWorker: true,
-      initialQuality: step.initialQuality,
-    });
-    if (result.size <= MAX_BYTES) break;
+  try {
+    for (const step of COMPRESSION_STEPS) {
+      result = await imageCompression(result, {
+        maxSizeMB: MAX_BYTES / (1024 * 1024),
+        maxWidthOrHeight: step.maxWidthOrHeight,
+        fileType: 'image/webp',
+        useWebWorker: true,
+        initialQuality: step.initialQuality,
+      });
+      if (result.size <= MAX_BYTES) break;
+    }
+  } catch {
+    // Format illisible par le navigateur (ex: HEIC brut échappé à la conversion iOS)
+    throw new Error("Format d'image non lisible par le navigateur. Essaie une capture d'écran ou une photo au format JPEG.");
   }
   return result;
 }
@@ -43,6 +48,7 @@ export default function UploadPhotoPage() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [oversizedBlob, setOversizedBlob] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -50,47 +56,68 @@ export default function UploadPhotoPage() {
   const handleFileChange = (file: File | null) => {
     setError('');
     setSuccess(false);
+    setOversizedBlob(null);
     setSelectedFile(file);
     setPreviewUrl(file ? URL.createObjectURL(file) : null);
   };
 
+  const sendToStorage = async (blob: File) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Tu dois être connecté pour importer une photo.");
+
+    // La policy RLS du bucket exige que le fichier soit dans le dossier "private/".
+    const fileName = `private/${user.id}_${Date.now()}.webp`;
+    const { error: upError } = await supabase.storage
+      .from('photos_import')
+      .upload(fileName, blob, { contentType: 'image/webp' });
+
+    if (upError) {
+      if (/exceeded the maximum allowed size/i.test(upError.message)) {
+        throw new Error(
+          `Le serveur a refusé la photo (${formatKo(blob.size)}) : elle dépasse la limite de ${formatKo(MAX_BYTES)}.`
+        );
+      }
+      throw upError;
+    }
+
+    logActivity(supabase, 'PHOTO_UPLOAD', { path: '/videos/upload' });
+    setSuccess(true);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setOversizedBlob(null);
+  };
+
+  // Compresse et envoie. Tant que le résultat dépasse la limite, on ne tente pas
+  // l'upload : on affiche la taille exacte et on garde le blob pour le bouton
+  // "Envoyer quand même" (au cas où l'utilisateur veuille forcer malgré tout).
   const handleUpload = async () => {
     if (!selectedFile) return;
     setUploading(true);
     setError('');
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Tu dois être connecté pour importer une photo.");
-
-      // Contrainte du bucket photos_import : 300ko max, jpeg/png/webp uniquement.
-      // On compresse et on convertit systématiquement en webp côté navigateur.
       const compressed = await compressUnderLimit(selectedFile);
 
       if (compressed.size > MAX_BYTES) {
+        setOversizedBlob(compressed);
         throw new Error(
-          `Photo encore trop lourde après compression : ${formatKo(compressed.size)} (maximum autorisé : ${formatKo(MAX_BYTES)}). Essaie une photo moins détaillée ou prise avec une résolution plus faible.`
+          `Photo encore trop lourde après compression : ${formatKo(compressed.size)} (maximum autorisé : ${formatKo(MAX_BYTES)}).`
         );
       }
 
-      // La policy RLS du bucket exige que le fichier soit dans le dossier "private/".
-      const fileName = `private/${user.id}_${Date.now()}.webp`;
-      const { error: upError } = await supabase.storage
-        .from('photos_import')
-        .upload(fileName, compressed, { contentType: 'image/webp' });
+      await sendToStorage(compressed);
+    } catch (err: any) {
+      setError(err.message || "Erreur lors de l'import.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
-      if (upError) {
-        if (/exceeded the maximum allowed size/i.test(upError.message)) {
-          throw new Error(
-            `Le serveur a refusé la photo (${formatKo(compressed.size)}) : elle dépasse la limite de ${formatKo(MAX_BYTES)}.`
-          );
-        }
-        throw upError;
-      }
-
-      logActivity(supabase, 'PHOTO_UPLOAD', { path: '/videos/upload' });
-      setSuccess(true);
-      setSelectedFile(null);
-      setPreviewUrl(null);
+  const handleForceSend = async () => {
+    if (!oversizedBlob) return;
+    setUploading(true);
+    setError('');
+    try {
+      await sendToStorage(oversizedBlob);
     } catch (err: any) {
       setError(err.message || "Erreur lors de l'import.");
     } finally {
@@ -152,6 +179,15 @@ export default function UploadPhotoPage() {
             {uploading ? <Loader2 className="animate-spin" size={18} /> : <UploadCloud size={18} />}
             {uploading ? 'Compression & envoi...' : 'Envoyer'}
           </button>
+
+          {oversizedBlob && !uploading && (
+            <button
+              onClick={handleForceSend}
+              className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 tracking-widest text-xs"
+            >
+              Envoyer quand même ({formatKo(oversizedBlob.size)})
+            </button>
+          )}
 
           <button
             onClick={() => router.push('/videos')}
