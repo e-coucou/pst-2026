@@ -7,7 +7,12 @@ import imageCompression from 'browser-image-compression';
 import { logActivity } from '@/utils/log-activity';
 import { UploadCloud, X, Loader2, CheckCircle2, AlertCircle, Camera } from 'lucide-react';
 
-const MAX_BYTES = 1.5 * 1024 * 1024; // Doit correspondre à la limite configurée sur le bucket photos_import
+// Supabase interprète la limite du bucket en Mo décimal (1 MB = 1 000 000 octets),
+// pas en Mio binaire : on utilise la même base, avec une petite marge de sécurité,
+// pour ne jamais se faire recaler par le serveur alors qu'on pensait être dans les clous.
+const BUCKET_LIMIT_MB = 1.5;
+const SAFETY_MARGIN = 0.95;
+const MAX_BYTES = BUCKET_LIMIT_MB * 1_000_000 * SAFETY_MARGIN; // ~1 425 000 octets
 const formatKo = (bytes: number) => `${Math.round(bytes / 1024)} Ko`;
 
 // La cible maxSizeMB de la lib n'est qu'indicative (nombre d'itérations limité par

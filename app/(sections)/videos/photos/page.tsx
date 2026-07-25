@@ -12,15 +12,26 @@ interface Photo {
   thumbUrl: string;
   fullUrl: string;
   year: number;
+  uploaderId: string;
 }
 
 export default function PhotosGalleryPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSuper, setIsSuper] = useState(false);
+  const [uploaderNames, setUploaderNames] = useState<Record<string, string>>({});
   const supabase = createClient();
 
   useEffect(() => {
     const fetchPhotos = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      let superAdmin = false;
+      if (user) {
+        const { data: selfRow } = await supabase.from('site_users').select('role').eq('id', user.id).single();
+        superAdmin = selfRow?.role === 'super';
+        setIsSuper(superAdmin);
+      }
+
       // La policy RLS du bucket réserve l'accès au dossier "private/".
       // La galerie ne liste que les vignettes (private/thumbs/) pour limiter la
       // bande passante ; la version complète (private/full/, même nom de fichier)
@@ -49,13 +60,25 @@ export default function PhotosGalleryPage() {
             const thumb = signedThumbs?.find(s => s.path === thumbPath);
             const full = signedFulls?.find(s => s.path === fullPath);
             const createdAt = f.created_at ? new Date(f.created_at) : new Date();
+            // Nom de fichier = "{uploaderId}_{timestamp}.webp" (l'id n'a pas de underscore).
+            const uploaderId = f.name.split('_')[0];
             return thumb?.signedUrl && full?.signedUrl
-              ? { name: f.name, path: fullPath, thumbUrl: thumb.signedUrl, fullUrl: full.signedUrl, year: createdAt.getFullYear() }
+              ? { name: f.name, path: fullPath, thumbUrl: thumb.signedUrl, fullUrl: full.signedUrl, year: createdAt.getFullYear(), uploaderId }
               : null;
           })
           .filter((p): p is Photo => p !== null);
 
         setPhotos(photoList);
+
+        if (superAdmin) {
+          const uploaderIds = Array.from(new Set(photoList.map(p => p.uploaderId)));
+          if (uploaderIds.length > 0) {
+            const { data: users } = await supabase.from('site_users').select('id, nickname').in('id', uploaderIds);
+            const map: Record<string, string> = {};
+            users?.forEach(u => { map[u.id] = u.nickname; });
+            setUploaderNames(map);
+          }
+        }
       }
 
       setLoading(false);
@@ -123,20 +146,26 @@ export default function PhotosGalleryPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
                 {photos.filter(p => p.year === year).map(photo => (
-                  <a
-                    key={photo.name}
-                    href={photo.fullUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => logActivity(supabase, 'PHOTO_VIEW', { photo: photo.path })}
-                    className="group relative aspect-square rounded-2xl overflow-hidden border border-white/5 hover:border-red-600/50 transition-all duration-300 shadow-xl bg-zinc-900"
-                  >
-                    <img
-                      src={photo.thumbUrl}
-                      alt=""
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  </a>
+                  <div key={photo.name} className="flex flex-col gap-2">
+                    <a
+                      href={photo.fullUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => logActivity(supabase, 'PHOTO_VIEW', { photo: photo.path })}
+                      className="group relative aspect-square rounded-2xl overflow-hidden border border-white/5 hover:border-red-600/50 transition-all duration-300 shadow-xl bg-zinc-900"
+                    >
+                      <img
+                        src={photo.thumbUrl}
+                        alt=""
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    </a>
+                    {isSuper && (
+                      <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest text-center truncate">
+                        {uploaderNames[photo.uploaderId] || photo.uploaderId}
+                      </p>
+                    )}
+                  </div>
                 ))}
               </div>
             </section>
