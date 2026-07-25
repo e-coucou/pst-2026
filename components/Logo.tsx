@@ -33,11 +33,12 @@ export const Logo = ({ className = "h-12" }: { className?: string }) => {
             <line x1="255" y1="220" x2="255" y2="215" />
           </g>
 
-          {/* Boule de pétanque */}
+          {/* Boule de pétanque (stries en arcs de cercle, façon globe : lisible comme une
+              boule, pas comme deux diagonales qui se croisent en X) */}
           <g stroke="#ffffff" strokeWidth="12" fill="none">
             <circle cx="180" cy="340" r="70" />
-            <path d="M130 300 Q180 340 230 380" />
-            <path d="M140 360 Q180 320 220 300" />
+            <path d="M112 340 Q180 358 248 340" />
+            <path d="M180 272 Q198 340 180 408" />
           </g>
 
           {/* Cochonnet — clin d'œil "petit cochon" (comme sur apple-icon.png), orange Tailwind 500 */}
