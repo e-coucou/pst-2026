@@ -81,7 +81,7 @@ export default function AdminControlPanel() {
           icon={<BarChart3 size={20} />} 
           label="Statistiques" 
           desc="Statistiques avancées & historiques"
-          onClick={() => navTo('/live/stats')}
+          onClick={() => navTo('/stats')}
         />
          <AdminNavButton 
           icon={<BookOpen size={20} />} 
@@ -100,12 +100,6 @@ export default function AdminControlPanel() {
           label="Gestion des Accès" 
           desc="Gestion des accès et rôles des Users"
           onClick={() => navTo('/live/users')}
-        />
-         <AdminNavButton
-          icon={<Users2 size={20} />}
-          label="Plan résidence"
-          desc="Plan du Batitment B"
-          onClick={() => navTo('/render')}
         />
          <AdminNavButton
           icon={<Activity size={20} />}
