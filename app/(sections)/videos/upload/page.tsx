@@ -14,12 +14,16 @@ const formatKo = (bytes: number) => `${Math.round(bytes / 1024)} Ko`;
 // appel) : on boucle nous-mêmes sur des réglages de plus en plus agressifs, en
 // repartant à chaque fois du résultat précédent, jusqu'à passer sous la limite.
 // Usage mobile avant tout : pas besoin de viser une résolution "print".
+// La lib écrase la qualité autant qu'il faut pour tenir dans maxSizeMB à la
+// résolution donnée : mieux vaut viser une résolution déjà raisonnable pour du
+// mobile (1280px) avec une qualité de départ haute, plutôt qu'une grande
+// résolution qui finit écrasée en qualité pour rentrer dans le budget.
 const COMPRESSION_STEPS = [
-  { maxWidthOrHeight: 1600, initialQuality: 0.75 },
-  { maxWidthOrHeight: 1280, initialQuality: 0.65 },
-  { maxWidthOrHeight: 1024, initialQuality: 0.55 },
-  { maxWidthOrHeight: 800, initialQuality: 0.45 },
-  { maxWidthOrHeight: 600, initialQuality: 0.35 },
+  { maxWidthOrHeight: 1280, initialQuality: 0.9 },
+  { maxWidthOrHeight: 1080, initialQuality: 0.85 },
+  { maxWidthOrHeight: 900, initialQuality: 0.8 },
+  { maxWidthOrHeight: 720, initialQuality: 0.75 },
+  { maxWidthOrHeight: 560, initialQuality: 0.7 },
 ];
 
 async function compressUnderLimit(file: File): Promise<File> {
@@ -190,7 +194,7 @@ export default function UploadPhotoPage() {
           )}
 
           <button
-            onClick={() => router.push('/videos')}
+            onClick={() => router.push('/videos/photos')}
             className="w-full text-zinc-500 font-bold text-xs uppercase hover:text-white transition-colors"
           >
             Retour à la galerie
