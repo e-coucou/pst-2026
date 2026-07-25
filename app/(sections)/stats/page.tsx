@@ -11,7 +11,7 @@ import {
   TrendingUp, BarChart3, ChevronRight, Zap, X,
   Flame, Skull, HeartPulse, Crosshair, Crown,
   Eye, ArrowUpRight, Rocket, ShieldOff, Swords, Frown, Focus, Handshake,
-  Medal, ThumbsDown, Thermometer
+  Medal, ThumbsDown, Thermometer, ImageIcon
 } from 'lucide-react';
 import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import { useRouter } from 'next/navigation';
@@ -52,6 +52,7 @@ interface PopularityStats {
   topPage: { path: string; count: number } | null;
   topPlayers: { id: number; nom: string; count: number }[];
   topTournament: { year: string; count: number } | null;
+  topPhoto: { path: string; count: number; url: string | null } | null;
 }
 
 //pour le graphique de progression historique, on peut réutiliser le même composant que dans la section classement/progression, en lui passant les données nécessaires (timeline complète et liste des joueurs)
@@ -68,7 +69,7 @@ export default function StatsPage() {
   const [timeline, setTimeline] = useState<any[]>([]);
   const [allPlayerNames, setAllPlayerNames] = useState<string[]>([]);
   const [nbYears, setNbYears] = useState(0);
-  const [popularity, setPopularity] = useState<PopularityStats>({ topPage: null, topPlayers: [], topTournament: null });
+  const [popularity, setPopularity] = useState<PopularityStats>({ topPage: null, topPlayers: [], topTournament: null, topPhoto: null });
 
   useEffect(() => {
     logActivity(supabase, 'PAGE_VIEW', { path: '/stats', tab: activeTab });
@@ -93,10 +94,21 @@ export default function StatsPage() {
       setNbYears(seasons.data ? new Set(seasons.data.map(g => g.year)).size : 0);
 
       if (popularityRes.data) {
+        const topPhoto = popularityRes.data.topPhoto ?? null;
+        let topPhotoUrl: string | null = null;
+
+        if (topPhoto?.path) {
+          const { data: signed } = await supabase.storage
+            .from('photos_import')
+            .createSignedUrl(topPhoto.path, 3600);
+          topPhotoUrl = signed?.signedUrl ?? null;
+        }
+
         setPopularity({
           topPage: popularityRes.data.topPage ?? null,
           topPlayers: popularityRes.data.topPlayers ?? [],
           topTournament: popularityRes.data.topTournament ?? null,
+          topPhoto: topPhoto ? { ...topPhoto, url: topPhotoUrl } : null,
         });
       }
       if (popularityRes.error) {
@@ -699,6 +711,36 @@ export default function StatsPage() {
                 </Link>
               ) : (
                 <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
+              )}
+            </div>
+
+            {/* PHOTO LA PLUS REGARDÉE */}
+            <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] overflow-hidden md:col-span-2">
+              <div className="p-6 pb-4">
+                <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                  <ImageIcon className="text-red-600" size={18} />
+                  Photo la plus regardée
+                </h3>
+              </div>
+              {popularity.topPhoto?.url ? (
+                <a
+                  href={popularity.topPhoto.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative aspect-[3/1] block overflow-hidden"
+                >
+                  <img
+                    src={popularity.topPhoto.url}
+                    alt=""
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                  <div className="absolute bottom-4 right-6 text-xl font-black text-white">
+                    {popularity.topPhoto.count} <span className="text-xs font-bold text-zinc-300 uppercase">vues</span>
+                  </div>
+                </a>
+              ) : (
+                <p className="px-6 pb-6 text-zinc-600 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
               )}
             </div>
 

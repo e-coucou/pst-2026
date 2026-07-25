@@ -7,7 +7,7 @@ import imageCompression from 'browser-image-compression';
 import { logActivity } from '@/utils/log-activity';
 import { UploadCloud, X, Loader2, CheckCircle2, AlertCircle, Camera } from 'lucide-react';
 
-const MAX_BYTES = 300 * 1024; // Limite du bucket photos_import
+const MAX_BYTES = 600 * 1024; // Doit correspondre à la limite configurée sur le bucket photos_import
 const formatKo = (bytes: number) => `${Math.round(bytes / 1024)} Ko`;
 
 // La cible maxSizeMB de la lib n'est qu'indicative (nombre d'itérations limité par

@@ -28,6 +28,8 @@ const ACTION_LABELS: Record<string, string> = {
   ADMIN_COMPLETE_TOURNAMENT: 'Fin du tournoi',
   FAVORITE_SET: 'Ajout favori',
   FAVORITE_UNSET: 'Retrait favori',
+  PHOTO_UPLOAD: 'Import photo',
+  PHOTO_VIEW: 'Photo consultée',
 };
 
 // Les 6 sections du site proposées comme filtres. Une entrée y appartient soit
@@ -45,6 +47,7 @@ const SECTIONS: { key: string; label: string; pathPrefixes: string[] }[] = [
 function getSection(log: ActivityLog): string | null {
   if (log.action_type.startsWith('ADMIN_')) return 'live';
   if (log.action_type.startsWith('FAVORITE_')) return 'classement';
+  if (log.action_type.startsWith('PHOTO_')) return 'videos';
   if (log.action_type === 'PAGE_VIEW') {
     const path = (log.metadata?.path as string) || '';
     const section = SECTIONS.find(s => s.pathPrefixes.some(p => path.startsWith(p)));

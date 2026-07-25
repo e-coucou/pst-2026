@@ -4,9 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 import { Film, Calendar, ExternalLink, Heart, Camera, ImageIcon, UploadCloud } from 'lucide-react';
+import { logActivity } from '@/utils/log-activity';
 
 interface Photo {
   name: string;
+  path: string;
   url: string;
   year: number;
 }
@@ -15,11 +17,10 @@ export default function VideosPage() {
   const [videos, setVideos] = useState<any[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient();
-
       const { data: videosData, error: videosError } = await supabase
         .from('videos')
         .select('*')
@@ -40,10 +41,11 @@ export default function VideosPage() {
 
         const photoList: Photo[] = files
           .map(f => {
-            const signed = signedUrls?.find(s => s.path === `private/${f.name}`);
+            const path = `private/${f.name}`;
+            const signed = signedUrls?.find(s => s.path === path);
             const createdAt = f.created_at ? new Date(f.created_at) : new Date();
             return signed?.signedUrl
-              ? { name: f.name, url: signed.signedUrl, year: createdAt.getFullYear() }
+              ? { name: f.name, path, url: signed.signedUrl, year: createdAt.getFullYear() }
               : null;
           })
           .filter((p): p is Photo => p !== null);
@@ -216,6 +218,7 @@ export default function VideosPage() {
                     href={photo.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => logActivity(supabase, 'PHOTO_VIEW', { photo: photo.path })}
                     className="group relative aspect-square rounded-2xl overflow-hidden border border-white/5 hover:border-red-600/50 transition-all duration-300 shadow-xl bg-zinc-900"
                   >
                     <img
