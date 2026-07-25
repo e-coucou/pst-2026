@@ -372,7 +372,7 @@ export default function PodiumPage() {
             <div className="p-4 md:p-8 space-y-2">
               {finalTop8.map((r, idx) => (
                 <div key={idx} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${r.rank === 1 ? 'bg-red-600/20 border-red-600' : 'bg-black/40 border-white/5'}`}>
-                  <div className={`text-2xl font-black italic w-10 ${r.rank <= 3 ? 'text-red-600' : 'text-zinc-700'}`}>
+                  <div className={`text-2xl font-black italic w-10 ${r.rank <= 3 ? 'text-red-600' : 'text-zinc-400'}`}>
                     #{r.rank}
                   </div>
                   <div className="flex-1">
@@ -450,7 +450,7 @@ export default function PodiumPage() {
 						      <div className="p-1.5 text-white bg-zinc-800 rounded-full group-hover:bg-red-600/20 group-hover:text-red-500 transition-colors">
 						        <Brain size={16} className="text-zinc-500 group-hover:text-red-500" />
 						      </div>
-						      <span className="text-[9px] font-black uppercase tracking-tighter text-zinc-600 group-hover:text-red-500">
+						      <span className="text-[9px] font-black uppercase tracking-tighter text-zinc-400 group-hover:text-red-500">
 						        IA Prono
 						      </span>
 						    </button>
@@ -517,7 +517,7 @@ export default function PodiumPage() {
 						      <div className="p-1.5 text-white bg-zinc-800 rounded-full group-hover:bg-red-600/20 group-hover:text-red-500 transition-colors">
 						        <Brain size={16} className="text-zinc-500 group-hover:text-red-500" />
 						      </div>
-						      <span className="text-[9px] font-black uppercase tracking-tighter text-zinc-600 group-hover:text-red-500">
+						      <span className="text-[9px] font-black uppercase tracking-tighter text-zinc-400 group-hover:text-red-500">
 						        IA Prono
 						      </span>
 						    </button>
@@ -568,7 +568,7 @@ export default function PodiumPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {['Gassin', 'Ramatuelle'].map((poule) => (
               <div key={poule} className="space-y-2">
-                <div className="text-md font-black uppercase text-zinc-600 mb-3 ml-1 tracking-[0.2em]">{poule}</div>
+                <div className="text-md font-black uppercase text-zinc-400 mb-3 ml-1 tracking-[0.2em]">{poule}</div>
                 {pouleMatches.filter(m => m.poule === poule).map(m => {
                   const t1 = teams.find(t => t.id === m.team1_id);
                   const t2 = teams.find(t => t.id === m.team2_id);
@@ -598,7 +598,7 @@ export default function PodiumPage() {
 						      <div className="p-1.5 text-white bg-zinc-800 rounded-full group-hover:bg-red-600/20 group-hover:text-red-500 transition-colors">
 						        <Brain size={16} className="text-zinc-500 group-hover:text-red-500" />
 						      </div>
-						      <span className="text-[9px] font-black uppercase tracking-tighter text-zinc-600 group-hover:text-red-500">
+						      <span className="text-[9px] font-black uppercase tracking-tighter text-zinc-400 group-hover:text-red-500">
 						        IA Prono
 						      </span>
 						    </button>

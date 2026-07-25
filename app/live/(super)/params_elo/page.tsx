@@ -120,7 +120,7 @@ export default function ParamsEloPage() {
                 <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest group-focus-within:text-red-500 transition-colors">
                   {setting.label || setting.key}
                 </label>
-                <span className="text-[10px] font-medium text-zinc-600">
+                <span className="text-[10px] font-medium text-zinc-400">
                   Défaut: {setting.init}
                 </span>
               </div>
@@ -132,7 +132,7 @@ export default function ParamsEloPage() {
                   onChange={(e) => handleInputChange(setting.key, e.target.value)}
                   className="w-full bg-zinc-800/50 border border-white/5 focus:border-red-600/50 focus:ring-0 rounded-2xl px-6 py-4 text-xl font-bold transition-all outline-none"
                 />
-                <Settings2 className="absolute right-6 top-1/2 -translate-y-1/2 text-zinc-700" size={20} />
+                <Settings2 className="absolute right-6 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
               </div>
             </div>
           ))}

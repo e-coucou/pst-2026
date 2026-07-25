@@ -46,7 +46,7 @@ const Top16Tooltip = ({ active, payload }: any) => {
             </div>
           ))}
         </div>
-        <p className="text-[8px] text-zinc-600 mt-4 text-center font-bold uppercase italic">
+        <p className="text-[8px] text-zinc-400 mt-4 text-center font-bold uppercase italic">
           + {data.totalPlayers - topPlayers.length} autres joueurs
         </p>
       </div>

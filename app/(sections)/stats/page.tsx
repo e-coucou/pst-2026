@@ -650,7 +650,7 @@ export default function StatsPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
+                <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
               )}
             </div>
 
@@ -663,7 +663,7 @@ export default function StatsPage() {
                 </h3>
               </div>
               {popularity.topPlayers.length === 0 ? (
-                <p className="p-6 text-zinc-600 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
+                <p className="p-6 text-zinc-400 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
               ) : (
                 <div className="divide-y divide-white/5">
                   {popularity.topPlayers.map((p, idx) => (
@@ -710,7 +710,7 @@ export default function StatsPage() {
                   </div>
                 </Link>
               ) : (
-                <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
+                <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
               )}
             </div>
 
@@ -740,7 +740,7 @@ export default function StatsPage() {
                   </div>
                 </a>
               ) : (
-                <p className="px-6 pb-6 text-zinc-600 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
+                <p className="px-6 pb-6 text-zinc-400 text-xs font-bold uppercase tracking-widest">Aucune donnée</p>
               )}
             </div>
 

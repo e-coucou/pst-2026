@@ -97,7 +97,7 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
             {/* NIVEAU 2 : DÉTAILS DES MATCHS (ACCORDÉON) */}
             {isExpanded && (
               <div className="bg-black/40 border-t border-gray-800 p-4 md:p-6 space-y-2">
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mb-4 flex items-center gap-2">
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 flex items-center gap-2">
                   <Swords size={12} /> Détail des rencontres tournois {s.annee}
                 </h4>
                 
@@ -130,7 +130,7 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
 					    <div className="flex items-center gap-2 md:ml-auto">
 					      <div className={`w-2 h-2 rounded-full ${m.win > 0 ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`} />
 					      <span className="font-mono text-lg font-black text-white">
-					        {m.sc_p} <span className="text-gray-600 text-sm">-</span> {m.sc_c}
+					        {m.sc_p} <span className="text-gray-400 text-sm">-</span> {m.sc_c}
 					      </span>
 					    </div>
 					  </div>
@@ -143,24 +143,24 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
 					    
 					    {/* ELO : On le montre aussi sur mobile à côté des adversaires */}
 					    <div className="flex flex-col text-right md:hidden">
-					        <span className="text-[9px] text-gray-600 uppercase font-black font-mono">ELO {m.elo_value.toFixed(0)}</span>
+					        <span className="text-[9px] text-gray-400 uppercase font-black font-mono">ELO {m.elo_value.toFixed(0)}</span>
 					        <span className="text-[9px] text-purple-600 uppercase font-black font-mono">MOD {m.elo_modern_value.toFixed(0)}</span>
 					    </div>
 					  </div>
 					{/* BLOC DROITE : ELO & RANG (Caché sur mobile ou réorganisé) */}
 					  <div className="hidden md:flex col-span-3 gap-6 justify-center">
 					    <div className="text-center">
-					      <p className="text-[8px] text-gray-600 font-black uppercase">ELO</p>
+					      <p className="text-[8px] text-gray-400 font-black uppercase">ELO</p>
 					      <p className="text-sm font-mono font-bold text-red-600">{m.elo_value.toFixed(1)}</p>
 					    </div>
 					    <div className="text-center">
-					      <p className="text-[8px] text-gray-600 font-black uppercase">Moderne</p>
+					      <p className="text-[8px] text-gray-400 font-black uppercase">Moderne</p>
 					      <p className="text-sm font-mono font-bold text-purple-400">{m.elo_modern_value.toFixed(1)}</p>
 					    </div>
 					  </div>
 
 					  <div className="flex justify-between items-center w-full md:w-auto md:col-span-2 md:text-right border-t border-white/5 pt-2 md:border-0 md:pt-0">
-					    <span className="text-[8px] text-gray-600 font-black uppercase md:hidden">Rang Final</span>
+					    <span className="text-[8px] text-gray-400 font-black uppercase md:hidden">Rang Final</span>
 					    <span className="text-xs font-black italic text-gray-400">#{m.rank_at_time} <span className="md:hidden">Global</span></span>
 					  </div>
 

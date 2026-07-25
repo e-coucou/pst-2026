@@ -269,7 +269,7 @@ export default function LivePoulesPage() {
                       disabled={isTermine} 
                       className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" 
                     />
-                    <span className="text-zinc-600 font-bold">-</span>
+                    <span className="text-zinc-400 font-bold">-</span>
                     <input 
                       type="number" 
                       inputMode="numeric"

@@ -86,7 +86,7 @@ export default function VideosGalleryPage() {
 
         {years.length === 0 ? (
           <div className="bg-zinc-900/50 border border-white/5 p-20 rounded-[3rem] text-center">
-            <p className="text-zinc-600 font-black uppercase tracking-widest">Aucune vidéo disponible.</p>
+            <p className="text-zinc-400 font-black uppercase tracking-widest">Aucune vidéo disponible.</p>
           </div>
         ) : (
           years.map(year => (

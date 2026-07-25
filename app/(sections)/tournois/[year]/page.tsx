@@ -197,7 +197,7 @@ const finalTop8 = rankedTeams
 		        }`}
 		      >
 		        <div className="flex justify-between items-start mb-3">
-		          <div className={`text-xl font-black italic ${item.rank === 2 ? 'text-zinc-300' : 'text-zinc-600'}`}>
+		          <div className={`text-xl font-black italic ${item.rank === 2 ? 'text-zinc-300' : 'text-zinc-400'}`}>
 		            #{item.rank}
 		          </div>
 		          <span className="text-[8px] font-black bg-black/50 px-2 py-1 rounded text-zinc-500 uppercase tracking-widest">
@@ -222,7 +222,7 @@ const finalTop8 = rankedTeams
                       </div>
                     ) : (
                       <div className="flex flex-1 h-20 rounded-lg overflow-hidden grayscale opacity-50 border border-white/5">
-                        <User size={20} className="text-zinc-600" />
+                        <User size={20} className="text-zinc-400" />
                       </div>
                     )}
                     {item.team?.tireur?.photo_url ? (
@@ -231,7 +231,7 @@ const finalTop8 = rankedTeams
                       </div>
                     ) : (
                       <div className="flex flex-1 h-20 rounded-lg overflow-hidden grayscale opacity-50 border border-white/5">
-                        <User size={20} className="text-zinc-600" />
+                        <User size={20} className="text-zinc-400" />
                       </div>
                     )}
                   </div>
@@ -270,7 +270,7 @@ const finalTop8 = rankedTeams
 		        </div>
 		        
 		        <div className="px-4 py-1.5 bg-black/40 text-center">
-		           <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">
+		           <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">
 		            Tableau {m.tableau}
 		           </span>
 		        </div>
@@ -351,7 +351,7 @@ const finalTop8 = rankedTeams
 	             {poule.data.map((team, idx) => (
 	               <tr key={team.nom} className={`hover:bg-white/5 transition-colors ${idx < 2 ? 'bg-red-600/5' : ''}`}>
 	                 <td className="px-4 py-3">
-	                   <span className={`text-xs font-black ${idx < 2 ? 'text-red-600' : 'text-gray-600'}`}>{idx + 1}</span>
+	                   <span className={`text-xs font-black ${idx < 2 ? 'text-red-600' : 'text-gray-400'}`}>{idx + 1}</span>
 	                 </td>
 	                 <td className="px-4 py-3">
 	                     <div className="flex flex-col">

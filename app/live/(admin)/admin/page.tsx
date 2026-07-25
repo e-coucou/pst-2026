@@ -372,7 +372,7 @@
 	                 return (
 	                   <div key={p.id} className={`p-3 rounded-2xl border transition-all ${isP || isT ? 'opacity-20 bg-black' : 'bg-zinc-900 border-white/5 hover:border-red-600'}`}>
 	                     <div className="flex justify-between items-center">
-	                       <span className="font-bold text-sm uppercase">{p.nom} <span className="text-zinc-600 ml-2 text-[11px]">{p.elo.toFixed(0)} / {p.modern.toFixed(0)}</span></span>
+	                       <span className="font-bold text-sm uppercase">{p.nom} <span className="text-zinc-400 ml-2 text-[11px]">{p.elo.toFixed(0)} / {p.modern.toFixed(0)}</span></span>
 	                       <div className="flex gap-2">
 	                         <button
 	                           onClick={() => withPending(keyP, async () => {
@@ -422,7 +422,7 @@
 	                       ? <Loader2 size={18} className="animate-spin text-zinc-400" />
 	                       : p.confirmed
 	                       ? <CheckCircle2 size={18} className="text-green-500" />
-	                       : <Circle size={18} className="text-zinc-600 hover:text-white transition-colors" />}
+	                       : <Circle size={18} className="text-zinc-400 hover:text-white transition-colors" />}
 	                   </button>
 	                   <span className="text-xs font-bold uppercase flex-1 truncate">{p.nom}</span>
 	                   <button
@@ -458,7 +458,7 @@
 	                       ? <Loader2 size={18} className="animate-spin text-zinc-400" />
 	                       : p.confirmed
 	                       ? <CheckCircle2 size={18} className="text-green-500" />
-	                       : <Circle size={18} className="text-zinc-600 hover:text-white transition-colors" />}
+	                       : <Circle size={18} className="text-zinc-400 hover:text-white transition-colors" />}
 	                   </button>
 	                   <span className="text-xs font-bold uppercase flex-1 truncate">{p.nom}</span>
 	                   <button
@@ -540,7 +540,7 @@
 
 	              {/* RÉCAPITULATIF VISUEL PAR ÉQUIPE / POULE */}
 	              <div className="space-y-3">
-	                 <h3 className="text-[10px] font-black text-zinc-600 uppercase text-center mb-4 tracking-[0.3em]">Aperçu des Équipes</h3>
+	                 <h3 className="text-[10px] font-black text-zinc-400 uppercase text-center mb-4 tracking-[0.3em]">Aperçu des Équipes</h3>
 	                 {draftP.map((p, i) => {
 	                   const tId = ['A','B','C','D','E','F','G','H'][i];
 	                   const isGassin = ['A','C','E','G'].includes(tId);
@@ -549,7 +549,7 @@
 	                       <span className="font-black italic text-red-600 w-8">#{tId}</span>
 	                       <div className="flex-1 flex justify-center gap-4 text-[11px] font-black uppercase">
 	                         <span className="text-white">{p.nom}</span>
-	                         <span className="text-zinc-700">& {((p.elo+draftT[i].elo)/2).toFixed(1)} &</span>
+	                         <span className="text-zinc-400">& {((p.elo+draftT[i].elo)/2).toFixed(1)} &</span>
 	                         <span className="text-white">{draftT[i].nom}</span>
 	                       </div>
 	                       <span className="text-[8px] font-black text-zinc-500 w-16 text-right uppercase tracking-tighter">

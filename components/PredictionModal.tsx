@@ -464,7 +464,7 @@ export default function PredictionModal({
               <span className="text-[10px] font-black text-zinc-400 uppercase animate-pulse">
                 Calcul de probabilité...
               </span>
-              <span className="text-[9px] text-zinc-600">Analyse des moyennes de scores</span>
+              <span className="text-[9px] text-zinc-400">Analyse des moyennes de scores</span>
             </div>
           </div>
         ) : prediction && (
@@ -488,7 +488,7 @@ export default function PredictionModal({
               </div>
 
               <div className="col-span-1 flex flex-col items-center gap-2">
-                <div className="text-zinc-700 font-black italic">VS</div>
+                <div className="text-zinc-400 font-black italic">VS</div>
                 {prediction.isPoule && (
                   <div className="text-[8px] bg-white/5 text-zinc-500 px-1.5 py-0.5 rounded border border-white/5 font-bold">
                     NUL:{prediction.probTie}%
@@ -515,7 +515,7 @@ export default function PredictionModal({
 
             {/* Score Prédit Stylisé */}
             <div className="bg-black/40 rounded-[2rem] p-8 border border-white/5 relative shadow-inner">
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] whitespace-nowrap">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] whitespace-nowrap">
                 Score final probable
               </div>
               <div className="flex justify-center items-center gap-8 text-7xl font-black italic text-white mt-2">
@@ -528,7 +528,7 @@ export default function PredictionModal({
                 >
                   {prediction.scoreA}
                 </span>
-                <span className="text-zinc-800 text-3xl">-</span>
+                <span className="text-zinc-500 text-3xl">-</span>
                 <span
                   className={
                     Number(prediction.scoreB) > Number(prediction.scoreA)
@@ -541,8 +541,8 @@ export default function PredictionModal({
               </div>
               {prediction.isPoule && (
                 <div className="mt-4 flex justify-center items-center gap-1.5">
-                  <Clock size={10} className="text-zinc-600" />
-                  <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">
+                  <Clock size={10} className="text-zinc-400" />
+                  <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest">
                     Temps réglementaire 20'
                   </span>
                 </div>

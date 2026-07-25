@@ -131,8 +131,8 @@ export default function PhotosGalleryPage() {
 
         {photoYears.length === 0 ? (
           <div className="bg-zinc-900/50 border border-white/5 p-20 rounded-[3rem] text-center">
-            <Camera className="text-zinc-700 mx-auto mb-4" size={32} />
-            <p className="text-zinc-600 font-black uppercase tracking-widest">Aucune photo pour l&apos;instant.</p>
+            <Camera className="text-zinc-400 mx-auto mb-4" size={32} />
+            <p className="text-zinc-400 font-black uppercase tracking-widest">Aucune photo pour l&apos;instant.</p>
           </div>
         ) : (
           photoYears.map(year => (
@@ -161,7 +161,7 @@ export default function PhotosGalleryPage() {
                       />
                     </a>
                     {isSuper && (
-                      <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest text-center truncate">
+                      <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest text-center truncate">
                         {uploaderNames[photo.uploaderId] || photo.uploaderId}
                       </p>
                     )}

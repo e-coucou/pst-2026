@@ -53,7 +53,7 @@ const toggleFavori = async () => {
       ) : (
         <Star 
           size={20} 
-          className={isFavori ? "text-red-600 fill-red-600" : "text-zinc-600 fill-zinc-600"} 
+          className={isFavori ? "text-red-600 fill-red-600" : "text-zinc-400 fill-zinc-600"} 
         />
       )}
     </button>

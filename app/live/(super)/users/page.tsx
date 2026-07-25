@@ -107,7 +107,7 @@ export default function SuperAdminPage() {
                       </div>
                       <div>
                         <p className="font-black text-sm uppercase italic tracking-tight text-white">{user.nickname}</p>
-                        <p className="text-[9px] text-zinc-600 font-bold">{user.email}</p>
+                        <p className="text-[9px] text-zinc-400 font-bold">{user.email}</p>
                       </div>
                     </div>
                   </td>
@@ -135,7 +135,7 @@ export default function SuperAdminPage() {
 
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-2">
-                      <Star size={12} className={user.favoris ? "text-yellow-500" : "text-zinc-800"} />
+                      <Star size={12} className={user.favoris ? "text-yellow-500" : "text-zinc-500"} />
                       <select
                         value={user.favoris || ''}
                         disabled={updating === user.id}
@@ -150,7 +150,7 @@ export default function SuperAdminPage() {
                     </div>
                   </td>
 
-                  <td className="px-8 py-6 text-right font-mono text-[10px] text-zinc-600">
+                  <td className="px-8 py-6 text-right font-mono text-[10px] text-zinc-400">
                     {user.last_login ? new Date(user.last_login).toLocaleString() : '—'}
                   </td>
                 </tr>

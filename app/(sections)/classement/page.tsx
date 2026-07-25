@@ -82,7 +82,7 @@ export default async function Leaderboard() {
 	      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 group-hover:text-white transition-colors">
 	        Live Analytics
 	      </span>
-	      <ArrowRight size={12} className="text-zinc-700 group-hover:text-red-600 group-hover:translate-x-1 transition-all" />
+	      <ArrowRight size={12} className="text-zinc-400 group-hover:text-red-600 group-hover:translate-x-1 transition-all" />
 	    </Link>
 	  </div>
 
@@ -92,7 +92,7 @@ export default async function Leaderboard() {
           <div className="divide-y divide-white/5">
             {leaderboard.map((player, index) => {
               const isTop3 = index < 3;
-              const rankColor = index === 0 ? 'text-red-600' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-orange-500' : 'text-zinc-700';
+              const rankColor = index === 0 ? 'text-red-600' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-orange-500' : 'text-zinc-400';
 
               return (
                 <Link key={player.id} href={`/joueurs/${player.id}`} className="flex items-center p-4 sm-p6 hover:bg-white/5 transition-all group">
@@ -109,7 +109,7 @@ export default async function Leaderboard() {
                       </div>
                     ) : (
                       <div className="w-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-800 flex items-center justify-center border border-white/5">
-                        <User size={20} className="text-zinc-600" />
+                        <User size={20} className="text-zinc-400" />
                       </div>
                     )}
                   </div>
@@ -122,13 +122,13 @@ export default async function Leaderboard() {
                   {/* ELO */}
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="hidden md:block text-[9px] text-gray-600 font-black uppercase mb-1">ELO</p>
+                      <p className="hidden md:block text-[9px] text-gray-400 font-black uppercase mb-1">ELO</p>
                       <p className="text-sm sm:text-3xl font-mono font-black italic text-white leading-none">
                         {player.elo.toFixed(0)}
                       </p>
                     </div>
-                    <ArrowRight size={14} className="text-zinc-800 group-hover:text-red-600 transition-all" />
-                    <Star size={14} className={`${player.id === favori ? "text-red-600 fill-red-600" : "text-zinc-600 fill-zinc-600"}`} />
+                    <ArrowRight size={14} className="text-zinc-500 group-hover:text-red-600 transition-all" />
+                    <Star size={14} className={`${player.id === favori ? "text-red-600 fill-red-600" : "text-zinc-400 fill-zinc-600"}`} />
                   </div>
                 </Link>
               );

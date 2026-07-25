@@ -197,12 +197,12 @@ export default function ManagePlayersPage() {
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Prénom Nom..."
-                className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-3 focus:border-red-600 outline-none transition-all placeholder:text-zinc-600 text-white"
+                className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-3 focus:border-red-600 outline-none transition-all placeholder:text-zinc-400 text-white"
               />
               <button 
                 type="submit" 
                 disabled={isUploading || !newName.trim()}
-                className="w-full bg-red-600 hover:bg-red-500 disabled:bg-zinc-800 disabled:text-zinc-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
+                className="w-full bg-red-600 hover:bg-red-500 disabled:bg-zinc-800 disabled:text-zinc-400 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
               >
                 {isUploading ? <Loader2 className="animate-spin" size={18} /> : <UserPlus size={18} />}
                 Ajouter au tournoi
@@ -227,13 +227,13 @@ export default function ManagePlayersPage() {
                       {imageUrl ? (
                         <img src={imageUrl} className="w-full h-full object-cover" alt={player.nom} />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-600 font-bold uppercase">PST</div>
+                        <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-400 font-bold uppercase">PST</div>
                       )}
                       {isUploading && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 size={12} className="animate-spin" /></div>}
                     </div>
                     <div>
                       <div className="font-bold uppercase leading-tight text-sm md:text-base">{player.nom}</div>
-                      <div className="text-[10px] text-zinc-600 font-mono italic">ID: {player.id}</div>
+                      <div className="text-[10px] text-zinc-400 font-mono italic">ID: {player.id}</div>
                     </div>
                   </div>
                   
@@ -259,7 +259,7 @@ export default function ManagePlayersPage() {
                       <button
                         onClick={() => handleDeletePlayer(player.id, player.nom, player.photo_url)}
                         disabled={deletingId === player.id}
-                        className="text-zinc-700 hover:text-red-500 p-2 transition-all hover:bg-red-500/10 rounded-lg disabled:opacity-40"
+                        className="text-zinc-400 hover:text-red-500 p-2 transition-all hover:bg-red-500/10 rounded-lg disabled:opacity-40"
                       >
                         {deletingId === player.id ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}
                       </button>

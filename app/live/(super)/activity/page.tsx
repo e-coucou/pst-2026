@@ -194,7 +194,7 @@ export default function ActivityLogsPage() {
 
         <div className="bg-zinc-900/20 border border-white/5 rounded-[2rem] overflow-hidden divide-y divide-white/5">
           {filteredLogs.length === 0 ? (
-            <div className="p-12 text-center text-zinc-600 text-xs font-bold uppercase tracking-widest">
+            <div className="p-12 text-center text-zinc-400 text-xs font-bold uppercase tracking-widest">
               Aucune activité
             </div>
           ) : (
@@ -207,7 +207,7 @@ export default function ActivityLogsPage() {
                   <>
                     {log.nickname || 'Inconnu'}
                     {log.metadata && Object.keys(log.metadata).length > 0 && (
-                      <span className="text-zinc-700 normal-case font-mono ml-2">
+                      <span className="text-zinc-400 normal-case font-mono ml-2">
                         {formatMetadata(log.metadata, playersMap)}
                       </span>
                     )}
@@ -229,7 +229,7 @@ export default function ActivityLogsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="text-[10px] text-zinc-600 font-mono shrink-0 text-right">
+                  <div className="text-[10px] text-zinc-400 font-mono shrink-0 text-right">
                     {new Date(log.created_at).toLocaleString('fr-FR')}
                   </div>
                 </div>

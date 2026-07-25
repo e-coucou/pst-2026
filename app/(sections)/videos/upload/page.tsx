@@ -211,7 +211,7 @@ export default function UploadPhotoPage() {
           <button
             onClick={handleUpload}
             disabled={!selectedFile || uploading}
-            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-black uppercase py-4 rounded-2xl transition-all shadow-xl shadow-red-600/20 active:scale-95 flex items-center justify-center gap-3 tracking-widest"
+            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-zinc-800 disabled:text-zinc-400 text-white font-black uppercase py-4 rounded-2xl transition-all shadow-xl shadow-red-600/20 active:scale-95 flex items-center justify-center gap-3 tracking-widest"
           >
             {uploading ? <Loader2 className="animate-spin" size={18} /> : <UploadCloud size={18} />}
             {uploading ? 'Compression & envoi...' : 'Envoyer'}

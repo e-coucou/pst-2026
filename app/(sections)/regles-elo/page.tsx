@@ -103,7 +103,7 @@ export default function EloRulesPage() {
 
       {/* FOOTER WIKI */}
       <div className="mt-20 flex flex-col items-center gap-4 text-center">
-        <Info className="text-zinc-700" />
+        <Info className="text-zinc-400" />
         <p className="text-zinc-500 text-xs uppercase tracking-widest font-bold">Pour les plus curieux</p>
         <a 
           href="https://fr.wikipedia.org/wiki/Classement_World_Rugby_des_%C3%A9quipes_nationales_de_rugby_%C3%A0_XV" 

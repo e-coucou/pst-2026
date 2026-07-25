@@ -45,7 +45,7 @@ export default function RenderStepper({ currentStatus }: StepperProps) {
               {/* Label sous le rond */}
               <span 
                 className={`absolute -bottom-7 text-[9px] font-black uppercase italic whitespace-nowrap transition-colors duration-500 ${
-                  isCurrent ? 'text-white' : 'text-zinc-600'
+                  isCurrent ? 'text-white' : 'text-zinc-400'
                 }`}
               >
                 {step.label}

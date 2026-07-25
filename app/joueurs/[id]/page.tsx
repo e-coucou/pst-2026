@@ -99,7 +99,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 		            />
 		          ) : (
 		            <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-		              <Users size={48} className="text-zinc-700" />
+		              <Users size={48} className="text-zinc-400" />
 		            </div>
 		          )}
 		        </div>

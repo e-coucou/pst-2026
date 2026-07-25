@@ -114,7 +114,7 @@ export default async function TournamentsPage() {
                       className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-700 font-black italic">TIREUR</div>
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-400 font-black italic">TIREUR</div>
                   )}
                 </div>
 
@@ -127,7 +127,7 @@ export default async function TournamentsPage() {
                       className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-700 font-black italic">POINTEUR</div>
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-400 font-black italic">POINTEUR</div>
                   )}
                 </div>
               </div>
@@ -153,7 +153,7 @@ export default async function TournamentsPage() {
 
                 <div className="flex items-center justify-between pt-8 border-t border-white/5">
                   <div className="flex flex-col">
-                    <span className="text-[9px] text-gray-600 font-black uppercase">Volume de jeu</span>
+                    <span className="text-[9px] text-gray-400 font-black uppercase">Volume de jeu</span>
                     <span className="text-xs font-bold text-gray-400">{t.totalMatchs} MATCHS</span>
                   </div>
                   <div className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl text-[11px] font-black uppercase group-hover:bg-red-600 group-hover:text-white transition-all duration-300">

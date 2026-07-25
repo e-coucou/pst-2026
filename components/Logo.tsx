@@ -50,7 +50,7 @@ export const Logo = ({ className = "h-12" }: { className?: string }) => {
       </svg>
 
       <div className="flex flex-col leading-tight">
-        <span className="text-xl font-black tracking-tighter text-slate-800 dark:text-white">
+        <span className="text-xl font-black tracking-tighter text-slate-500 dark:text-white">
           PST <span className="text-[#e31e24]">2026</span>
         </span>
         <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">

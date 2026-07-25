@@ -142,7 +142,7 @@ const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
 
         <div className="relative flex items-center gap-4 mb-6">
           <div className="h-[1px] w-full bg-white/10"></div>
-          <span className="text-[10px] text-zinc-600 font-black uppercase">OU</span>
+          <span className="text-[10px] text-zinc-400 font-black uppercase">OU</span>
           <div className="h-[1px] w-full bg-white/10"></div>
         </div>
 

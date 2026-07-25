@@ -207,9 +207,9 @@ export default function LiveDemiPage() {
                       {playersMap[t1?.pointeur_id]?.split(' ')[0]} / {playersMap[t1?.tireur_id]?.split(' ')[0]}
                     </span>                    
                     <div className="flex items-center gap-2 px-3 font-black italic">
-                      <span className={win1 ? 'text-red-500' : 'text-zinc-600'}>{m.score_team1}</span>
-                      <span className="text-zinc-800">-</span>
-                      <span className={!win1 ? 'text-red-500' : 'text-zinc-600'}>{m.score_team2}</span>
+                      <span className={win1 ? 'text-red-500' : 'text-zinc-400'}>{m.score_team1}</span>
+                      <span className="text-zinc-500">-</span>
+                      <span className={!win1 ? 'text-red-500' : 'text-zinc-400'}>{m.score_team2}</span>
                     </div>
                     <span className={`flex-1 truncate text-right uppercase ${!win1 ? 'text-white font-bold' : 'text-zinc-500'}`}>
                       {playersMap[t2?.pointeur_id]?.split(' ')[0]} / {playersMap[t2?.tireur_id]?.split(' ')[0]}
@@ -250,7 +250,7 @@ export default function LiveDemiPage() {
                 <div className="items-center text-center text-sm text-zinc-500">{m.type}
                   <div className="flex items-center gap-1 md:gap-2 bg-zinc-900 p-1 md:p-2 rounded-lg md:rounded-xl">
                     <input type="number" inputMode="numeric" value={s.s1} onChange={(e) => handleScoreChange(m.id, 1, e.target.value)} disabled={isTermine} className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" />
-                    <span className="text-zinc-600 font-bold">-</span>
+                    <span className="text-zinc-400 font-bold">-</span>
                     <input type="number" inputMode="numeric" value={s.s2} onChange={(e) => handleScoreChange(m.id, 2, e.target.value)} disabled={isTermine} className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" />
                   </div>
 				</div>

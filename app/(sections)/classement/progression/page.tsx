@@ -60,16 +60,16 @@ export default async function ProgressionPage() {
         <footer className="flex justify-between items-center px-6">
           <div className="flex gap-8">
             <div className="flex flex-col">
-              <span className="text-[8px] text-zinc-600 font-black uppercase tracking-widest">Base de données</span>
+              <span className="text-[8px] text-zinc-400 font-black uppercase tracking-widest">Base de données</span>
               <span className="text-[10px] font-bold text-zinc-400">history_all</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-[8px] text-zinc-600 font-black uppercase tracking-widest">Joueurs tracés</span>
+              <span className="text-[8px] text-zinc-400 font-black uppercase tracking-widest">Joueurs tracés</span>
               <span className="text-[10px] font-bold text-zinc-400">{allPlayerNames.length}</span>
             </div>
           </div>
           
-          <div className="text-[8px] text-zinc-700 font-bold uppercase tracking-tighter">
+          <div className="text-[8px] text-zinc-400 font-bold uppercase tracking-tighter">
             © 2026 PST eCoucou digital
           </div>
         </footer>

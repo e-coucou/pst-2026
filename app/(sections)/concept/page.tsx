@@ -156,7 +156,7 @@ export default function ConceptPage() {
             { title: "Finale", desc: "Le titre suprême (Vainqueurs Principal)", ranking: "Places 1 & 2", color: "border-red-600 bg-red-600/10 text-red-500" },
             { title: "Petite Finale", desc: "Le podium (Perdants Principal)", ranking: "Places 3 & 4", color: "border-zinc-500 bg-zinc-900/50 text-zinc-300" },
             { title: "Toute Petite Finale", desc: "L'honneur du repêchage (Vainqueurs Repêchage)", ranking: "Places 5 & 6", color: "border-zinc-700 bg-zinc-900/30 text-zinc-500" },
-            { title: "Finale d'Honneur", desc: "Le courage (Perdants Repêchage)", ranking: "Places 7 & 8", color: "border-zinc-800 bg-zinc-900/10 text-zinc-600" },
+            { title: "Finale d'Honneur", desc: "Le courage (Perdants Repêchage)", ranking: "Places 7 & 8", color: "border-zinc-800 bg-zinc-900/10 text-zinc-400" },
           ].map((f, i) => (
             <div key={i} className={`flex flex-col md:flex-row md:items-center justify-between p-6 rounded-2xl border ${f.color} transition-transform hover:scale-[1.01]`}>
               <div className="flex flex-col">
