@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# documents privés (données personnelles/financières, jamais commités)
+/documents/private/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

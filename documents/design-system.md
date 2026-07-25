@@ -25,7 +25,7 @@ Principe de hiérarchie observé dans tout le code :
 | Panel / carte | `bg-zinc-900/50`, `bg-zinc-900/40`, `bg-zinc-800/50`, `bg-zinc-800/40` |
 | Overlay modale | `bg-black/90 backdrop-blur-md`, `bg-black/95` |
 | Bordures subtiles | `border-white/5`, `border-white/10` |
-| Texte secondaire | `text-zinc-400`, `text-zinc-500`, `text-zinc-600` |
+| Texte secondaire | `text-zinc-300`, `text-zinc-400`, `text-zinc-500` |
 | Icône neutre | `bg-zinc-700` |
 
 ### Rouge — accent primaire ("Saint-Tropez")
@@ -130,6 +130,20 @@ Convention commune à `EloChart` / `GlobalProgressionChart` / `stats/page.tsx` :
 - Rouge `#dc2626` pour ELO Classic, violet `#a855f7` pour ELO Modern — cohérent avec la palette Tailwind (`red-600`/`purple-500`).
 
 ---
+
+## 5bis. Contraste des gris — règle appliquée
+
+`text-zinc-600`/`700`/`800` (et équivalents `gray-600`, `slate-600`/`800`) sont **trop sombres sur fond noir pur** (contraste WCAG ≈ 2.7:1, sous le seuil AA). Corrigé sur l'ensemble du code (~83 occurrences, 32 fichiers) : `600/700` → `400`, `800` → `500`. `text-zinc-400`/`500` restent la référence pour un texte secondaire lisible sur `bg-black`.
+
+Piège identifié : une classe `opacity-XX` posée **par-dessus** une couleur déjà correcte peut annuler le gain de contraste (les deux effets se cumulent). Préférer fixer directement une couleur suffisamment claire plutôt que réduire l'opacité d'une couleur foncée pour "l'estomper".
+
+## 5ter. Feedback global (chargement & tactile)
+
+Deux mécanismes posés une fois pour toute l'app, sans instrumenter chaque page :
+
+- **Retour tactile** (`app/globals.css`) : `button:active, a:active, [role="button"]:active { transform: scale(0.96); }`, spécificité volontairement basse — toute classe `active:*` déjà présente sur un composant prend le dessus sans conflit.
+- **Barre de chargement globale** (`components/GlobalLoadingBar.tsx`) : fine barre rouge en haut de l'écran, visible dès qu'une requête Supabase est en vol (compteur branché sur le `fetch` custom du client navigateur, pas de logique par page).
+- **Vague de lumière douce** (vignettes `RecordCard` de `/stats`) : bande diagonale animée qui traverse la carte en fondu, couleur dérivée de la classe `text-{couleur}-{nuance}` déjà passée à la carte (variables CSS de palette Tailwind v4, `var(--color-orange-500)` etc.) — pas de configuration par carte.
 
 ## 6. Animations & interactions
 

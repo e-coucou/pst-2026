@@ -16,11 +16,12 @@ Application web privée de gestion de tournois de **pétanque** entre amis, sais
 | 📊 **Statistiques** | Tableaux de bord globaux (distribution des scores, tendances) |
 | 📡 **Live** | Suivi du tournoi en cours : poules → demies → finales → podium, en temps réel (Supabase Realtime) |
 | 🧠 **Prono IA** | Prédiction probabiliste du score d'un match à venir (modèle statistique local, pas de LLM) |
-| 🎬 **Vidéos** | Zone membres — replays YouTube et moments forts privés |
+| 🎬 **Médiathèque** | Hub `/videos` (Vidéos / Photos / Contribuez) — replays YouTube, galerie photo alimentée par les membres (upload compressé côté navigateur, miniatures + version complète) |
 | 📱 **Partage** | Page plein écran avec QR code d'invitation |
 | 📖 **Le Concept** | Organisation des poules, tirage au sort et route vers la finale |
 | 📐 **L'Algorithme** | Explication pédagogique du calcul ELO Classic vs Modern |
 | 🔧 **Panel Admin / Super** | Pilotage du tournoi live, gestion des joueurs/équipes, réglages ELO, recalcul d'historique (accès par rôle) |
+| 🕵️ **Journal d'activité** *(super)* | Traçabilité des actions admin et des consultations (pages, joueurs, tournois, photos) + page "Qui est en ligne" + stats de popularité |
 
 ---
 
@@ -100,14 +101,19 @@ pst-2026/
 ├── app/
 │   ├── page.tsx                 # Page d'accueil
 │   ├── (acces)/                 # Login / Signup / Logout
+│   ├── auth/callback/           # Callback OAuth Google (revérifie le code d'invitation)
 │   ├── (sections)/              # Pages publiques : classement, tournois,
-│   │                             # stats, concept, regles-elo, videos, share, render
+│   │                             # stats, concept, regles-elo, share, render
+│   │   └── videos/               # Hub médiathèque : gallery/ (vidéos), photos/, upload/
 │   ├── joueurs/[id]/            # Fiche joueur détaillée
 │   ├── live/                    # Espace tournoi en direct
 │   │   ├── (admin)/              # Pilotage tournoi (rôle admin/super)
 │   │   └── (super)/              # Administration système (rôle super)
+│   │       ├── activity/          # Journal d'activité (filtrable par section)
+│   │       └── online/            # Qui est en ligne (fenêtre glissante 1h)
 │   └── api/                     # Routes API (recalcul ELO, lecture .md)
 ├── components/                  # Navbar, Footer, EloChart, Stepper,
+│                                 # GlobalLoadingBar, PageViewTracker,
 │                                 # PredictionModal, SeasonHistory, ...
 ├── lib/
 │   ├── elo-engine.ts             # Moteur de calcul ELO (2 méthodes)
@@ -116,9 +122,12 @@ pst-2026/
 ├── utils/
 │   ├── elo-logic.ts              # Orchestration du calcul ELO par match
 │   ├── live-stats.ts             # Agrégation des deltas ELO live
+│   ├── log-activity.ts           # Enregistrement d'activité (exclut le rôle super)
+│   ├── activity-format.ts        # Libellés/format partagés (journal, qui est en ligne)
 │   └── supabase/                 # Clients Supabase (SSR + navigateur)
 ├── data/residence.ts             # Modèle paramétrique du bâtiment (rendu 3D)
 ├── documents/                    # Documentation approfondie (voir ci-dessous)
+│   └── private/                  # Documents non versionnés (PDF AG, rapprochements)
 ├── proxy.ts                      # Middleware Next.js 16 (auth/session)
 └── scripts/                      # Scripts CLI (recompute-elo, live-elo)
 ```
