@@ -43,20 +43,20 @@ export const Logo = ({ className = "h-12" }: { className?: string }) => {
           {/* Cochonnet — clin d'œil "petit cochon" (comme sur apple-icon.png), orange Tailwind 500 */}
           <g fill="#f97316">
             {/* Corps */}
-            <ellipse cx="306" cy="360" rx="26" ry="15" />
+            <ellipse cx="335" cy="360" rx="26" ry="15" />
             {/* Tête */}
-            <circle cx="280" cy="352" r="13" />
+            <circle cx="315" cy="352" r="13" />
             {/* Groin */}
-            <ellipse cx="266" cy="354" rx="6" ry="4" />
+            <ellipse cx="301" cy="354" rx="6" ry="4" />
             {/* Oreille */}
-            <path d="M283 340 L276 328 L292 338 Z" />
+            <path d="M311 340 L304 328 L320 338 Z" />
             {/* Pattes */}
-            <rect x="292" y="372" width="6" height="12" rx="2" />
-            <rect x="314" y="372" width="6" height="12" rx="2" />
+            <rect x="321" y="372" width="6" height="12" rx="2" />
+            <rect x="343" y="372" width="6" height="12" rx="2" />
           </g>
           {/* Queue en tire-bouchon */}
           <path
-            d="M330 356 Q340 350 334 342 Q330 337 336 333"
+            d="M359 356 Q369 350 363 342 Q359 337 365 333"
             stroke="#f97316"
             strokeWidth="4"
             fill="none"
@@ -64,7 +64,7 @@ export const Logo = ({ className = "h-12" }: { className?: string }) => {
           />
 
           {/* Ligne de sol */}
-          <line x1="260" y1="340" x2="272" y2="340" stroke="#ffffff" strokeWidth="12" />
+          <line x1="250" y1="340" x2="298" y2="340" stroke="#ffffff" strokeWidth="12" />
         </g>
       </svg>
 
