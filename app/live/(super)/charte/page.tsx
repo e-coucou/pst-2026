@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, AlertCircle, Loader } from 'lucide-react';
+import { X, AlertCircle, Loader } from 'lucide-react';
 import { MarkdownDisplay } from '@/components/MarkdownDisplay';
 
 export default function ChartePage() {
@@ -41,19 +41,16 @@ export default function ChartePage() {
       {/* HEADER */}
       <header className="sticky top-0 z-40 border-b border-white/5 bg-black/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
-          <Link 
-            href="/" 
-            className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors group"
-          >
-            <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-            Retour
-          </Link>
-          
           <h1 className="text-2xl font-black uppercase italic tracking-tighter">
             <span className="text-white">Charte</span> <span className="text-red-600">Graphique</span>
           </h1>
 
-          <div className="w-[60px]" /> {/* Spacer for centering */}
+          <Link
+            href="/live/super"
+            className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors"
+          >
+            <X size={24} />
+          </Link>
         </div>
       </header>
 
