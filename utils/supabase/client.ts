@@ -1,8 +1,17 @@
 import { createBrowserClient } from '@supabase/ssr'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { increment, decrement } from '@/utils/loading-bus'
 
+// Singleton : chaque composant appelle createClient(), mais une seule instance
+// de GoTrueClient doit exister par onglet. Sinon plusieurs instances se battent
+// pour le même verrou de rafraîchissement de token (localStorage), ce qui finit
+// par expirer le verrou et déclencher des déconnexions forcées.
+let client: SupabaseClient | undefined
+
 export function createClient() {
-  return createBrowserClient(
+  if (client) return client
+
+  client = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -19,4 +28,6 @@ export function createClient() {
       },
     }
   )
+
+  return client
 }
