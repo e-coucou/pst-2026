@@ -11,7 +11,7 @@ import {
   AlertTriangle, 
   Loader2,
   ChevronRight,
-  Fingerprint, BookOpen, ListTodo, BarChart3, Gauge, Users2, Activity
+  Fingerprint, BookOpen, ListTodo, BarChart3, Gauge, Users2, Activity, Radio
 } from 'lucide-react';
 
 export default function AdminControlPanel() {
@@ -112,6 +112,12 @@ export default function AdminControlPanel() {
           label="Journal d'activité"
           desc="Actions admin & membres tracées"
           onClick={() => navTo('/live/activity')}
+        />
+         <AdminNavButton
+          icon={<Radio size={20} />}
+          label="Qui est en ligne"
+          desc="Membres actifs sur la dernière heure"
+          onClick={() => navTo('/live/online')}
         />
       </div>
 

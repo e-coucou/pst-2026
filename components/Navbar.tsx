@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Trophy, Swords, Home, BarChart3, TrendingUp, Video,
-  User, Crown, Zap, Loader2, Fingerprint, Settings2, ShieldAlert, Skull, Building2} from 'lucide-react';
+  User, Crown, Zap, Loader2, Fingerprint, Settings2, ShieldAlert, Skull, Building2, Radio} from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
 export default function Navbar() {
@@ -106,6 +106,16 @@ export default function Navbar() {
         title="Panel Super Admin"
       >
         <Fingerprint size={20} className="group-hover:animate-pulse" />
+      </Link>
+    )}
+    {/* Qui est en ligne (réservé au rôle super) */}
+    {userRole === 'super' && (
+      <Link
+        href="/live/online"
+        className="p-1.5 rounded-lg bg-zinc-900 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-lg hover:scale-110 active:scale-95"
+        title="Qui est en ligne"
+      >
+        <Radio size={20} />
       </Link>
     )}
     {/* Accès direct à /live/super pour le rôle super */}
