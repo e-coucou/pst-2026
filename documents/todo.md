@@ -9,12 +9,14 @@
 ## 🔴 PRIORITÉS CRITIQUES
 - [ ] **Data :** Vérifier l'intégrité des schémas de base de données pour la version 2026.
 - [ ] **Sécurité :** Vérifier les policies RLS de `activity_logs`, `photos_import` et la fonction `get_popularity_stats` dans un schéma SQL versionné (rien n'est commité à ce jour, tout vit dans le dashboard Supabase).
+- [ ] **Live :** Graphique ELO en bas de `/app/live` — le tooltip ne fonctionne pas correctement. Mis de côté pour l'instant (priorité au plan format 10 équipes, cf. `documents/plan_10_teams.md`).
 
 ## 🛠️ EN COURS (Sprint Actuel)
 - [ ] **3D Résidence :** `app/(sections)/render/page.tsx` et `data/residence.ts` très avancés (appartements, piscine, terrain de boules, joueurs stylisés) mais **toujours non commités** — reprendre et committer quand la modélisation sera jugée complète.
 - [ ] **Photos :** Prévoir une politique de rétention/migration pour les photos uploadées avant l'introduction du système vignette + version complète (chemin plat, non listées par la galerie actuelle).
 
 ## 🕒 BACKLOG
+- [ ] **Live :** Uniformiser le tableau de palmarès/résultats de poules — actuellement affiché différemment selon les pages (poules, finale, podium, live public). Prendre comme référence la version complète affichée en live pendant la saisie des résultats (`poules/page.tsx`) et l'aligner partout ailleurs.
 - [ ] **UI :** Étendre la case à cocher "Favoris" au-delà de la fiche joueur (`/joueurs/[id]`) — actuellement la seule page qui l'expose.
 - [ ] **Communication :** Système de push messages exclusif aux admins et super, avec affichage sur la première page.
 - [ ] **Documentation :** Générer un fichier `notes.md` basé sur le `README.md` et les logs de commit GitHub.

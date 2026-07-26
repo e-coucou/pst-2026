@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
@@ -20,6 +20,8 @@ export default function LiveDemiPage() {
   const [pouleMatches, setPouleMatches] = useState<any[]>([]);
   const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
   const [status, setStatus] = useState<string>('FINALE');
+  const [format, setFormat] = useState<string>('classique');
+  const [stepValues, setStepValues] = useState<any[]>([]);
   
   const [localScores, setLocalScores] = useState<Record<number, { s1: number | '', s2: number | '' }>>({});
   const [savingMatch, setSavingMatch] = useState<number | null>(null);
@@ -33,9 +35,10 @@ export default function LiveDemiPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
+    const { data: tournoi } = await supabase.from('live_tournament').select('status, format').eq('id', 1).single();
     if (tournoi) {
       setStatus(tournoi.status);
+      setFormat(tournoi.format || 'classique');
     }
 
     const { data: sData } = await supabase.from('settings').select('*');
@@ -51,6 +54,9 @@ export default function LiveDemiPage() {
 
     const { data: teamsData } = await supabase.from('live_teams').select('*').neq('id', 'Z');
     if (teamsData) setTeams(teamsData);
+
+    const { data: steps } = await supabase.from('steps').select('id, value, label');
+    if (steps) setStepValues(steps);
 
     const { data: allMatches } = await supabase.from('live_matches').select('*').order('id', { ascending: true });
     if (allMatches) {
@@ -224,6 +230,13 @@ export default function LiveDemiPage() {
     );
   };
 
+  // Libellé lisible d'un type de match (ex: 'Finale Rang1' -> 'Finale') : lit la colonne
+  // `label` de la table `steps` si renseignée, sinon retombe sur le type brut.
+  const stepLabelMap = useMemo(
+    () => stepValues.reduce((acc, s) => ({ ...acc, [s.id]: s.label || s.id }), {} as Record<string, string>),
+    [stepValues]
+  );
+
   const renderTableauSection = (tableauName: 'Principal') => {
     const tableauMatches = matches.filter(m => m.tableau === tableauName);
     return (
@@ -247,7 +260,7 @@ export default function LiveDemiPage() {
                         {playersMap[t1?.tireur_id] || t1?.tireur_id}
                     </div>
                   </div>
-                <div className="items-center text-center text-sm text-zinc-500">{m.type}
+                <div className="items-center text-center text-sm text-zinc-500">{stepLabelMap[m.type] || m.type}
                   <div className="flex items-center gap-1 md:gap-2 bg-zinc-900 p-1 md:p-2 rounded-lg md:rounded-xl">
                     <input type="number" inputMode="numeric" value={s.s1} onChange={(e) => handleScoreChange(m.id, 1, e.target.value)} disabled={isTermine} className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" />
                     <span className="text-zinc-400 font-bold">-</span>
@@ -306,8 +319,8 @@ export default function LiveDemiPage() {
             Live <span className="text-red-600 group-hover:text-white">Finales</span>
           </h1>
 			 <div className="flex flex-cols">
-			   <button onClick={() => router.push('/live/demi')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
-			     <ArrowLeft size={14} /> <span className="hidden md:inline">demi</span>
+			   <button onClick={() => router.push(format === '10_equipes' ? '/live/poules' : '/live/demi')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
+			     <ArrowLeft size={14} /> <span className="hidden md:inline">{format === '10_equipes' ? 'poules' : 'demi'}</span>
 			   </button>
 			   <button onClick={() => router.push('/live/podium')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
 			     <ArrowRight size={14} /> <span className="hidden md:inline">podium</span>
@@ -315,7 +328,7 @@ export default function LiveDemiPage() {
 			 </div>
         </header>
 
-        <RenderStepper currentStatus = {status} />
+        <RenderStepper currentStatus = {status} skipDemi={format === '10_equipes'} />
 
         {allFinished && (
            <div className="mb-12 p-6 rounded-[2rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_0_40px_rgba(220,38,38,0.3)] animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -335,7 +348,7 @@ export default function LiveDemiPage() {
 
         {renderTableauSection('Principal')}
 
-        {renderDemiSummary()}
+        {demiMatches.length > 0 && renderDemiSummary()}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {renderStandingsMini('Gassin')}

@@ -7,6 +7,46 @@
 	import { ArrowRight, ArrowLeft, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
 	 import { logActivity } from '@/utils/log-activity';
 
+	// --- HELPERS FORMAT DE TOURNOI ---
+	// 'classique' = 8 équipes / 2 poules de 4 (demies puis 4 finales)
+	// '10_equipes' = 10 équipes / 2 poules de 5 (pas de demies, 5 finales classées)
+	const getRequiredCount = (format: string) => (format === '10_equipes' ? 10 : 8);
+	const getTeamIds = (format: string) =>
+	  format === '10_equipes'
+	    ? ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+	    : ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+	const getGassinIds = (format: string) =>
+	  format === '10_equipes' ? ['A', 'C', 'E', 'G', 'I'] : ['A', 'C', 'E', 'G'];
+
+	// Round-robin générique (méthode du cercle) : pour n équipes (pair ou impair, avec bye si
+	// impair), génère toutes les paires C(n,2) sans répétition. Vérifié à la main pour n=4 :
+	// reproduit exactement l'ancienne séquence figée [[0,1],[2,3],[0,2],[1,3],[0,3],[1,2]].
+	const generateRoundRobinPairs = (n: number): [number, number][] => {
+	  const BYE = -1;
+	  const hasBye = n % 2 !== 0;
+	  const m = hasBye ? n + 1 : n;
+	  let arr: number[] = Array.from({ length: m }, (_, i) => (i < n ? i : BYE));
+	  const rounds: [number, number][][] = [];
+
+	  for (let r = 0; r < m - 1; r++) {
+	    const roundPairs: [number, number][] = [];
+	    for (let i = 0; i < m / 2; i++) {
+	      const a = arr[i];
+	      const b = arr[m - 1 - i];
+	      if (a !== BYE && b !== BYE) {
+	        roundPairs.push(a < b ? [a, b] : [b, a]);
+	      }
+	    }
+	    rounds.push(roundPairs);
+	    // Rotation : arr[0] fixe, le reste tourne (dernier élément passe en position 1)
+	    arr = [arr[0], arr[m - 1], ...arr.slice(1, m - 1)];
+	  }
+
+	  // Inversion de l'ordre des rounds (pas des paires à l'intérieur d'un round) : nécessaire
+	  // pour retomber exactement sur l'ordre legacy à n=4.
+	  return rounds.reverse().flat();
+	};
+
 	export default function LiveAdminWizard() {
 	 const supabase = createClient();
 	 const router = useRouter(); // <-- INITIALISATION DU ROUTER
@@ -42,17 +82,19 @@
 	 
 	 const [step, setStep] = useState(1);
 	 const [status, setStatus] = useState<string>('JOUEURS');
+	 const [format, setFormat] = useState<string>('classique');
 
 	 useEffect(() => {
 	   async function init() {
 	     const { data: { user } } = await supabase.auth.getUser();
 	     if (!user) { setLoading(false); return; }
 
-	  const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
+	  const { data: tournoi } = await supabase.from('live_tournament').select('status, format').eq('id', 1).single();
 	  if (tournoi?.status) {
 	    setStatus(tournoi.status);
 	    setStep(1);
 	  }
+	  setFormat(tournoi?.format || 'classique');
 
 	     await fetchPlayersWithElo();
 	     
@@ -160,9 +202,10 @@
 	     const sP = [...selectedPointeurs].sort((a, b) => b.elo - a.elo);
 	     const sT = [...selectedTireurs].sort((a, b) => b.elo - a.elo);
 	     const shuffle = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
+	     const half = requiredCount / 2;
 
-	     const newP = [...shuffle(sP.slice(0, 4)), ...shuffle(sP.slice(4, 8))];
-	     const newT = [...shuffle(sT.slice(4, 8)), ...shuffle(sT.slice(0, 4))];
+	     const newP = [...shuffle(sP.slice(0, half)), ...shuffle(sP.slice(half, requiredCount))];
+	     const newT = [...shuffle(sT.slice(half, requiredCount)), ...shuffle(sT.slice(0, half))];
 
 	     setDraftP(newP);
 	     setDraftT(newT);
@@ -180,7 +223,8 @@
 	};
 
 	 const syncTeamsToDatabase = async (pList: any[], tList: any[]) => {
-	   const teamIds = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+	   const teamIds = getTeamIds(format);
+	   const gassinIds = getGassinIds(format);
 	   const teamsToInsert = pList.map((p, i) => ({
 	     id: teamIds[i],
 	     tireur_id: tList[i].id,
@@ -189,20 +233,21 @@
 	     elo_start_pointeur: p.elo,
 	     elo_start_tireur: tList[i].elo,
 	     modern_start: (tList[i].modern + p.modern) / 2 || 100,
-	     poule: ['A', 'C', 'E', 'G'].includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle'
+	     poule: gassinIds.includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle'
 	   }));
 
 	   // On utilise upsert pour mettre à jour les lignes existantes A, B, C...
 	   await supabase.from('live_teams').upsert(teamsToInsert);
 	 };
-	 
+
 	const handleInitialShuffle = async () => {
 	 const sP = [...selectedPointeurs].sort((a, b) => b.elo - a.elo);
 	 const sT = [...selectedTireurs].sort((a, b) => b.elo - a.elo);
 	 const shuffle = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
+	 const half = getRequiredCount(format) / 2;
 
-	 const newP = [...shuffle(sP.slice(0, 4)), ...shuffle(sP.slice(4, 8))];
-	 const newT = [...shuffle(sT.slice(4, 8)), ...shuffle(sT.slice(0, 4))];
+	 const newP = [...shuffle(sP.slice(0, half)), ...shuffle(sP.slice(half, half * 2))];
+	 const newT = [...shuffle(sT.slice(half, half * 2)), ...shuffle(sT.slice(0, half))];
 
 	 setDraftP(newP);
 	 setDraftT(newT);
@@ -237,7 +282,8 @@
 	     await supabase.from('live_teams').delete().neq('id', 'Z');
 
 	     // 2. Insertion des équipes (ton code est correct ici)
-	     const teamIds = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+	     const teamIds = getTeamIds(format);
+	     const gassinIds = getGassinIds(format);
 	     const teamsToInsert = draftP.map((p, i) => ({
 	       id: teamIds[i],
 	       tireur_id: draftT[i].id,
@@ -246,31 +292,18 @@
 	       elo_start_pointeur: p.elo,
 	       elo_start_tireur: draftT[i].elo,
 	       modern_start: (draftT[i].modern + p.modern) / 2 || 100,
-	       poule: ['A', 'C', 'E', 'G'].includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle'
+	       poule: gassinIds.includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle'
 	     }));
 
-	     await supabase.from('live_teams').insert(teamsToInsert);
+	     const { error: teamsError } = await supabase.from('live_teams').insert(teamsToInsert);
+	     if (teamsError) throw new Error("Insertion des équipes échouée : " + teamsError.message);
 
-	     // 3. Génération ordonnée des matches
+	     // 3. Génération ordonnée des matches (round-robin générique, cf. generateRoundRobinPairs)
 	     const pouleMatches: any[] = [];
 
-	     /**
-	      * Nouvelle logique de génération ordonnée
-	      * Pour Gassin (A,C,E,G), l'ordre sera : 
-	      * 1: A-C, 2: E-G, 3: A-E, 4: C-G, 5: A-G, 6: C-E
-	      */
 	     const generateOrderedMatches = (ids: string[], village: string) => {
-	       // Définition des paires par index (0=A/B, 1=C/D, 2=E/F, 3=G/H)
-	       const sequence = [
-	         [0, 1], // AC ou BD
-	         [2, 3], // EG ou FH
-	         [0, 2], // AE ou BF
-	         [1, 3], // CG ou DH
-	         [0, 3], // AG ou BH
-	         [1, 2]  // CE ou DF
-	       ];
-
-	       sequence.forEach(([idx1, idx2]) => {
+	       const pairs = generateRoundRobinPairs(ids.length);
+	       pairs.forEach(([idx1, idx2]) => {
 	         pouleMatches.push({
 	           poule: village,
 	           type: 'Poule',
@@ -283,11 +316,13 @@
 	     };
 
 	     // Appel de la génération pour les deux poules
-	     generateOrderedMatches(['A', 'C', 'E', 'G'], 'Gassin');
-	     generateOrderedMatches(['B', 'D', 'F', 'H'], 'Ramatuelle');
+	     const ramatuelleIds = teamIds.filter(id => !gassinIds.includes(id));
+	     generateOrderedMatches(gassinIds, 'Gassin');
+	     generateOrderedMatches(ramatuelleIds, 'Ramatuelle');
 
 	     // 4. Envoi en base
-	     await supabase.from('live_matches').insert(pouleMatches);
+	     const { error: matchesError } = await supabase.from('live_matches').insert(pouleMatches);
+	     if (matchesError) throw new Error("Insertion des matchs échouée : " + matchesError.message);
 	     await supabase.from('live_tournament').update({ status: 'POULES' }).eq('id', 1);
 	     logActivity(supabase, 'ADMIN_START_TOURNAMENT');
 
@@ -303,12 +338,19 @@
 
 	 if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black italic animate-pulse">CHARGEMENT...</div>;
 	//  const selectionOK = false;
-	 const selectionOK = (selectedPointeurs.length == 8 && selectedTireurs.length == 8);
+	 const requiredCount = getRequiredCount(format);
+	 const selectionOK = (selectedPointeurs.length === requiredCount && selectedTireurs.length === requiredCount);
 
 	 const backSelection = async () => {
 	 	setStep(1);
 	   await supabase.from('live_tournament').update({ status: 'JOUEURS' }).eq('id', 1);
 	   setStatus('JOUEURS');
+	 };
+
+	 const changeFormat = async (next: string) => {
+	   setFormat(next);
+	   await supabase.from('live_tournament').update({ format: next }).eq('id', 1);
+	   logActivity(supabase, 'ADMIN_SET_FORMAT', { format: next });
 	 };
 
 	 return (
@@ -328,12 +370,27 @@
 	         </div>
 	       </header>
 
-		<RenderStepper currentStatus = {status} />
+		<RenderStepper currentStatus = {status} skipDemi={format === '10_equipes'} />
 
 	       {step === 1 ? (
 	         /* ÉTAPE 1 : SÉLECTION */
 	         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
+	         {/* SÉLECTEUR DE FORMAT : verrouillé une fois qu'on a quitté l'étape JOUEURS */}
+	         <div className="md:col-span-3 flex justify-center gap-3 mb-2">
+	           {(['classique', '10_equipes'] as const).map(f => (
+	             <button
+	               key={f}
+	               onClick={() => changeFormat(f)}
+	               disabled={status !== 'JOUEURS'}
+	               className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 ${
+	                 format === f ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
+	               }`}
+	             >
+	               {f === 'classique' ? 'Classique (8 équipes)' : '10 équipes'}
+	             </button>
+	           ))}
+	         </div>
 
 	         <div className="md:col-span-3 flex justify-center mt-1">
 	      {/* SECTION BOUTON POUR LANCER LES EQUIPES */}
@@ -363,8 +420,8 @@
 	               {allProfiles.map(p => {
 	                 const isP = selectedPointeurs.find(x => x.id === p.id);
 	                 const isT = selectedTireurs.find(x => x.id === p.id);
-	                 const unavailableP = !!(isP || isT || selectedPointeurs.length >= 8);
-	                 const unavailableT = !!(isP || isT || selectedTireurs.length >= 8);
+	                 const unavailableP = !!(isP || isT || selectedPointeurs.length >= requiredCount);
+	                 const unavailableT = !!(isP || isT || selectedTireurs.length >= requiredCount);
 	                 const keyP = `P-${p.id}`;
 	                 const keyT = `T-${p.id}`;
 	                 const pendingP = pendingKeys.has(keyP);
@@ -403,7 +460,7 @@
 	           </div>
 
 	           <div className="bg-purple-900/5 border border-purple-500/50 p-6 rounded-[2.5rem]">
-	             <h2 className="text-purple-500 text-center text-xs font-black uppercase mb-4 italic">Pointeurs ({selectedPointeurs.length}/8)</h2>
+	             <h2 className="text-purple-500 text-center text-xs font-black uppercase mb-4 italic">Pointeurs ({selectedPointeurs.length}/{requiredCount})</h2>
 	             <div className="space-y-2">
 	               {selectedPointeurs.map(p => {
 	                 const confKey = `conf-${p.id}`;
@@ -439,7 +496,7 @@
 	           </div>
 
 	           <div className="bg-orange-900/5 border border-orange-500/50 p-6 rounded-[2.5rem]">
-	             <h2 className="text-orange-500 text-center text-xs font-black uppercase mb-4 italic">Tireurs ({selectedTireurs.length}/8)</h2>
+	             <h2 className="text-orange-500 text-center text-xs font-black uppercase mb-4 italic">Tireurs ({selectedTireurs.length}/{requiredCount})</h2>
 	             <div className="space-y-2">
 	               {selectedTireurs.map(p => {
 	                 const confKey = `conf-${p.id}`;
@@ -542,8 +599,8 @@
 	              <div className="space-y-3">
 	                 <h3 className="text-[10px] font-black text-zinc-400 uppercase text-center mb-4 tracking-[0.3em]">Aperçu des Équipes</h3>
 	                 {draftP.map((p, i) => {
-	                   const tId = ['A','B','C','D','E','F','G','H'][i];
-	                   const isGassin = ['A','C','E','G'].includes(tId);
+	                   const tId = getTeamIds(format)[i];
+	                   const isGassin = getGassinIds(format).includes(tId);
 	                   return (
 	                     <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border ${isGassin ? 'border-blue-900/30 bg-blue-900/5' : 'border-red-900/30 bg-red-900/5'}`}>
 	                       <span className="font-black italic text-red-600 w-8">#{tId}</span>
