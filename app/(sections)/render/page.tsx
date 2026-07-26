@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { residenceData } from '@/data/residence';
 import { createClient } from '@/utils/supabase/client';
 
-function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: number | null; onSelect: (data: any) => void }) {
+function Apartment({ data, selected, onSelect }: { data: any; selected: any; onSelect: (data: any) => void }) {
   const { config, building } = residenceData.residence;
   const sectionKey = data.section as keyof typeof building.sections;
   const s = building.sections[sectionKey];
@@ -16,6 +16,13 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
 
   const isAvant = data.avant === "oui";
   const colWidth = (s as any).colWidth || config.gridColWidth;
+
+  // Sélectionné directement, OU via un garage lié qui pointe vers cet appartement (lien
+  // bidirectionnel garage <-> appartement, cf. linkedApartmentId sur les garages).
+  const isSelected =
+    (selected?.kind === 'apartment' && selected.id === data.id) ||
+    (selected?.kind === 'garage' && selected.linkedApartmentId === data.id);
+  const select = () => onSelect({ ...data, kind: 'apartment' });
 
   // Repères de profondeur partagés (façade / cour) — calculés une fois pour être réutilisés
   // aussi bien par renderBox que par une éventuelle extension "couloir nord" indépendante.
@@ -71,14 +78,12 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
       zPos = faceAvantCour - (depth / 2);
     }
 
-    const isSelected = data.id === selectedId;
-
     return (
       <group position={[xPos, yFinal, zPos]}>
         <mesh
           onDoubleClick={(e: ThreeEvent<MouseEvent>) => {
             e.stopPropagation();
-            onSelect(data);
+            select();
           }}
         >
           <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
@@ -132,14 +137,12 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
     // Attaché au bord nord du corps cour existant (faceAvantCour), grandit vers +Z (Nord)
     const zPos = faceAvantCour + depth / 2;
 
-    const isSelected = data.id === selectedId;
-
     return (
       <group position={[xPos, yFinal, zPos]}>
         <mesh
           onDoubleClick={(e: ThreeEvent<MouseEvent>) => {
             e.stopPropagation();
-            onSelect(data);
+            select();
           }}
         >
           <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
@@ -180,14 +183,12 @@ function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: numb
     // de cette même limite (pas au-delà, vers la façade).
     const zPos = faceAvantCour - depth / 2;
 
-    const isSelected = data.id === selectedId;
-
     return (
       <group position={[xPos, yFinal, zPos]}>
         <mesh
           onDoubleClick={(e: ThreeEvent<MouseEvent>) => {
             e.stopPropagation();
-            onSelect(data);
+            select();
           }}
         >
           <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
@@ -237,205 +238,136 @@ function getEastWallX(aptId: number) {
   return xPos - width / 2;
 }
 
-// --- CHAMBRES DE BONNE (CdB 1 à 18), sous les cours des appartements 21 à 29 ---
-// 18 chambres, 2 par appartement (CdB1-2 sous le 21, CdB3-4 sous le 22, ... CdB17-18 sous le
-// 29). Largeur = 1/18 de la somme des largeurs des 9 appartements = moitié de la largeur d'un
-// appartement (tous égaux). Hauteur = 1 étage (2 * gridRowHeight, comme un appartement
-// standard). Profondeur Nord-Sud = profondeur du pan cour - 1.5m - un couloir, calée sur la
-// face SUD du pan cour (donc en retrait vers le Nord de cette même quantité par rapport à la
-// face sud).
-function ChambresDeBonne21a29() {
-  const { config, building, apartments } = residenceData.residence;
-  const s = building.sections.principale;
-  const colWidth = s.colWidth || config.gridColWidth;
+// --- CHAMBRES DE BONNE (CdB 1 à 26) ---
+// Data-driven depuis residenceData.residence.chambresDeBonne : chaque entrée référence son
+// appartement/studio parent (parentId), sa position au sein de celui-ci (index / splitCount).
+// CdB1-18 (parents 21-29, splitCount 2) et CdB19-26 (parents 19-20, splitCount 4) partagent
+// exactement la même hauteur (1 étage), profondeur (courDepth - 1.5 - corridorDepth) et face
+// Sud (= face sud du pan cour des appartements 21-29 / 30-33, mathématiquement identique dans
+// les deux cas puisqu'aucun de ces appartements n'a "avant") — d'où la formule commune,
+// indépendante du parent. Seuls le niveau (Y) et la position en X dépendent du parent.
+function ChambresDeBonne({ selected, onSelect }: { selected: any; onSelect: (data: any) => void }) {
+  const { config, building, apartments, chambresDeBonne } = residenceData.residence;
 
-  const parentIds = [21, 22, 23, 24, 25, 26, 27, 28, 29];
-  const roomWidth = colWidth / 2;
   const height = 2 * config.gridRowHeight; // 1 étage
   const roomDepth = config.courDepth - 1.5 - config.corridorDepth;
-
-  // Aucun des appartements 21-29 n'a "avant" : même faceAvantCour / face sud du pan cour pour tous.
-  const faceAvantCour = 0 - config.facadeDepth;
-  const faceSudCour = faceAvantCour - config.courDepth;
+  const faceSudCour = 0 - config.facadeDepth - config.courDepth;
   const zCenter = faceSudCour + roomDepth / 2;
 
-  const rooms: { id: number; xCenter: number; yFinal: number }[] = [];
-  parentIds.forEach((aptId) => {
-    const apt: any = apartments.find((a: any) => a.id === aptId);
-    const yBase = apt.row * config.gridRowHeight;
-    const isUp = apt.up !== "non";
-    const yOffsetCour = (isUp ? 1 : -1) * config.slopeOffsetMeters;
-    const yFinal = yBase + yOffsetCour - height / 2;
-
-    const aptXStart = s.startX + (s.leftMargin || 0) + apt.col * colWidth;
-    [0, 1].forEach((half) => {
-      rooms.push({
-        id: (aptId - 21) * 2 + half + 1,
-        xCenter: aptXStart + roomWidth * half + roomWidth / 2,
-        yFinal,
-      });
-    });
-  });
-
   return (
     <>
-      {rooms.map((room) => (
-        <group key={room.id} position={[room.xCenter, room.yFinal, zCenter]}>
-          <mesh>
-            <boxGeometry args={[roomWidth - 0.1, height - 0.1, roomDepth]} />
-            <meshStandardMaterial color="#27272a" transparent opacity={0.8} />
-            <Edges color="#f2f2fb" threshold={15} />
-          </mesh>
-          <Text
-            position={[0, 0, -(roomDepth / 2 + 0.05)]}
-            rotation={[0, Math.PI, 0]}
-            fontSize={0.35}
-            color="white"
-            anchorX="center"
-            anchorY="middle"
-          >
-            {`CdB${room.id}`}
-          </Text>
-        </group>
-      ))}
+      {chambresDeBonne.map((cdb: any) => {
+        const parent: any = apartments.find((a: any) => a.id === cdb.parentId);
+        const sec: any = (building.sections as any)[parent.section];
+        const colWidth = sec.colWidth || config.gridColWidth;
+        const roomWidth = colWidth / cdb.splitCount;
+
+        const yBase = parent.row * config.gridRowHeight;
+        const isUp = parent.up !== "non";
+        const yOffsetCour = (isUp ? 1 : -1) * config.slopeOffsetMeters;
+        const yFinal = yBase + yOffsetCour - height / 2;
+
+        const parentXStart = sec.startX + (sec.leftMargin || 0) + parent.col * colWidth;
+        const xCenter = parentXStart + roomWidth * cdb.index + roomWidth / 2;
+
+        const isSelected = selected?.kind === 'cdb' && selected.id === cdb.id;
+
+        return (
+          <group key={cdb.id} position={[xCenter, yFinal, zCenter]}>
+            <mesh
+              onDoubleClick={(e: ThreeEvent<MouseEvent>) => {
+                e.stopPropagation();
+                onSelect({ ...cdb, kind: 'cdb' });
+              }}
+            >
+              <boxGeometry args={[roomWidth - 0.1, height - 0.1, roomDepth]} />
+              <meshStandardMaterial color={isSelected ? "#dc2626" : "#27272a"} transparent opacity={0.8} />
+              <Edges color={isSelected ? "#ffffff" : "#f2f2fb"} threshold={15} />
+            </mesh>
+            <Text
+              position={[0, 0, -(roomDepth / 2 + 0.05)]}
+              rotation={[0, Math.PI, 0]}
+              fontSize={0.35}
+              color="white"
+              anchorX="center"
+              anchorY="middle"
+            >
+              {`CdB${cdb.num}`}
+            </Text>
+          </group>
+        );
+      })}
     </>
   );
 }
 
-// --- CHAMBRES DE BONNE (CdB 19 à 26), sous les studios 19 et 20 (sectionB) ---
-// 8 chambres, 4 par studio (19-22 sous le 19, 23-26 sous le 20) — chaque studio fait colSpan
-// 2, divisé en 4 : largeur = colWidth/2 = 2.6m, identique aux autres CdB. Hauteur et profondeur
-// également identiques aux autres CdB (1 étage ; courDepth - 1.5 - corridorDepth). Face SUD
-// calée sur la face sud des appartements 30-33 (leur pan cour, sans "avant" donc même formule
-// que pour les CdB 1-18 : -facadeDepth-courDepth), plutôt que dérivée de la profondeur propre
-// des studios 19-20.
-function ChambresDeBonne19a26() {
-  const { config, building, apartments } = residenceData.residence;
-  const s = building.sections.sectionB;
-  const colWidth = s.colWidth || config.gridColWidth;
+// --- GARAGES (G1 à G18) ---
+// Data-driven depuis residenceData.residence.garages (même schéma parentId/index/splitCount
+// que les CdB — un garage par CdB, même emprise en X, juste en dessous). Face Sud identique
+// aux CdB ; face Nord calée contre la face sud des studios 1-9 (façade + southCorridorExtra +
+// extraSouthDepth), d'où la profondeur dérivée. Chaque garage peut porter un linkedApartmentId
+// (nullable) : si renseigné, double-cliquer le garage OU l'appartement lié illumine les deux en
+// rouge (lien bidirectionnel — la réciproque est gérée côté Apartment).
+function Garages({ selected, onSelect }: { selected: any; onSelect: (data: any) => void }) {
+  const { config, building, apartments, garages } = residenceData.residence;
 
-  const parentIds = [19, 20];
-  const roomsPerParent = 4;
-  const roomWidth = colWidth / 2; // identique aux autres CdB
-  const height = 2 * config.gridRowHeight; // identique aux autres CdB (1 étage)
-  const roomDepth = config.courDepth - 1.5 - config.corridorDepth; // identique aux autres CdB
-
-  // Face sud des appartements 30-33 (pas de "avant" → même formule que pour les CdB 1-18)
-  const faceAvantCour3033 = 0 - config.facadeDepth;
-  const faceSud3033 = faceAvantCour3033 - config.courDepth;
-  const zCenter = faceSud3033 + roomDepth / 2;
-
-  const rooms: { id: number; xCenter: number; yFinal: number }[] = [];
-  parentIds.forEach((aptId, parentIndex) => {
-    const apt: any = apartments.find((a: any) => a.id === aptId);
-    const yBase = apt.row * config.gridRowHeight;
-    const isUp = apt.up !== "non";
-    const yOffsetCour = (isUp ? 1 : -1) * config.slopeOffsetMeters;
-    const yFinal = yBase + yOffsetCour - height / 2;
-
-    const aptXStart = s.startX + (s.leftMargin || 0) + apt.col * colWidth;
-    for (let k = 0; k < roomsPerParent; k++) {
-      rooms.push({
-        id: 19 + parentIndex * roomsPerParent + k,
-        xCenter: aptXStart + roomWidth * k + roomWidth / 2,
-        yFinal,
-      });
-    }
-  });
-
-  return (
-    <>
-      {rooms.map((room) => (
-        <group key={room.id} position={[room.xCenter, room.yFinal, zCenter]}>
-          <mesh>
-            <boxGeometry args={[roomWidth - 0.1, height - 0.1, roomDepth]} />
-            <meshStandardMaterial color="#27272a" transparent opacity={0.8} />
-            <Edges color="#f2f2fb" threshold={15} />
-          </mesh>
-          <Text
-            position={[0, 0, -(roomDepth / 2 + 0.05)]}
-            rotation={[0, Math.PI, 0]}
-            fontSize={0.35}
-            color="white"
-            anchorX="center"
-            anchorY="middle"
-          >
-            {`CdB${room.id}`}
-          </Text>
-        </group>
-      ))}
-    </>
-  );
-}
-
-// --- GARAGES (G1 à G18), sous les chambres de bonne (CdB 1-18) ---
-// Même emprise en X que les CdB correspondantes (G{n} directement sous CdB{n}). Hauteur =
-// 1 étage (2 * gridRowHeight, comme les CdB et un appartement standard).
-// Face sud identique à celle des CdB (= face sud du pan cour des appartements 21-29). Face
-// nord calée contre (touche) la face sud des studios 1-9 (façade + southCorridorExtra +
-// extraSouthDepth) — la profondeur en découle, ce n'est pas une valeur fixée arbitrairement.
-function Garages21a29() {
-  const { config, building, apartments } = residenceData.residence;
-  const s = building.sections.principale;
-  const colWidth = s.colWidth || config.gridColWidth;
-
-  const parentIds = [21, 22, 23, 24, 25, 26, 27, 28, 29];
-  const roomWidth = colWidth / 2;
   const cdbHeight = 2 * config.gridRowHeight; // hauteur des CdB, pour caler le dessus des garages juste dessous
   const height = 2 * config.gridRowHeight; // 1 étage
 
   // Face nord = face sud des studios 1-9 (avant + facadeDepth + corridorDepth du southCorridorExtra + extraSouthDepth)
-  const faceAvantStudios = 0 + config.avantOffset;
-  const depthStudios = config.facadeDepth + config.corridorDepth + 1.5;
-  const faceNord = faceAvantStudios - depthStudios;
-
+  const faceNord = config.avantOffset - (config.facadeDepth + config.corridorDepth + 1.5);
   // Face sud = face sud du pan cour (identique aux CdB)
-  const faceAvantCour = 0 - config.facadeDepth;
-  const faceSud = faceAvantCour - config.courDepth;
+  const faceSud = 0 - config.facadeDepth - config.courDepth;
 
   const depth = faceNord - faceSud;
   const zCenter = faceSud + depth / 2;
 
-  const garages: { id: number; xCenter: number; yFinal: number }[] = [];
-  parentIds.forEach((aptId) => {
-    const apt: any = apartments.find((a: any) => a.id === aptId);
-    const yBase = apt.row * config.gridRowHeight;
-    const isUp = apt.up !== "non";
-    const yOffsetCour = (isUp ? 1 : -1) * config.slopeOffsetMeters;
-    const cdbBottom = yBase + yOffsetCour - cdbHeight; // base des CdB = sommet des garages
-    const yFinal = cdbBottom - height / 2;
-
-    const aptXStart = s.startX + (s.leftMargin || 0) + apt.col * colWidth;
-    [0, 1].forEach((half) => {
-      garages.push({
-        id: (aptId - 21) * 2 + half + 1,
-        xCenter: aptXStart + roomWidth * half + roomWidth / 2,
-        yFinal,
-      });
-    });
-  });
-
   return (
     <>
-      {garages.map((g) => (
-        <group key={g.id} position={[g.xCenter, g.yFinal, zCenter]}>
-          <mesh>
-            <boxGeometry args={[roomWidth - 0.1, height - 0.1, depth]} />
-            <meshStandardMaterial color="#27272a" transparent opacity={0.8} />
-            <Edges color="#f2f2fb" threshold={15} />
-          </mesh>
-          <Text
-            position={[0, 0, -(depth / 2 + 0.05)]}
-            rotation={[0, Math.PI, 0]}
-            fontSize={0.35}
-            color="white"
-            anchorX="center"
-            anchorY="middle"
-          >
-            {`G${g.id}`}
-          </Text>
-        </group>
-      ))}
+      {garages.map((g: any) => {
+        const parent: any = apartments.find((a: any) => a.id === g.parentId);
+        const sec: any = (building.sections as any)[parent.section];
+        const colWidth = sec.colWidth || config.gridColWidth;
+        const roomWidth = colWidth / g.splitCount;
+
+        const yBase = parent.row * config.gridRowHeight;
+        const isUp = parent.up !== "non";
+        const yOffsetCour = (isUp ? 1 : -1) * config.slopeOffsetMeters;
+        const cdbBottom = yBase + yOffsetCour - cdbHeight; // base des CdB = sommet des garages
+        const yFinal = cdbBottom - height / 2;
+
+        const parentXStart = sec.startX + (sec.leftMargin || 0) + parent.col * colWidth;
+        const xCenter = parentXStart + roomWidth * g.index + roomWidth / 2;
+
+        const isSelected =
+          (selected?.kind === 'garage' && selected.id === g.id) ||
+          (selected?.kind === 'apartment' && g.linkedApartmentId === selected.id);
+
+        return (
+          <group key={g.id} position={[xCenter, yFinal, zCenter]}>
+            <mesh
+              onDoubleClick={(e: ThreeEvent<MouseEvent>) => {
+                e.stopPropagation();
+                onSelect({ ...g, kind: 'garage' });
+              }}
+            >
+              <boxGeometry args={[roomWidth - 0.1, height - 0.1, depth]} />
+              <meshStandardMaterial color={isSelected ? "#dc2626" : "#27272a"} transparent opacity={0.8} />
+              <Edges color={isSelected ? "#ffffff" : "#f2f2fb"} threshold={15} />
+            </mesh>
+            <Text
+              position={[0, 0, -(depth / 2 + 0.05)]}
+              rotation={[0, Math.PI, 0]}
+              fontSize={0.35}
+              color="white"
+              anchorX="center"
+              anchorY="middle"
+            >
+              {`G${g.num}`}
+            </Text>
+          </group>
+        );
+      })}
     </>
   );
 }
@@ -1018,15 +950,14 @@ export default function RenderPage() {
           {/* Centrage du bâtiment (environ la moitié de 71m) */}
           <group position={[-35, 0, 0]}>
             {!onlyCorridors && apartments.map((apt) => (
-              <Apartment key={apt.id} data={apt} selectedId={selected?.id ?? null} onSelect={setSelected} />
+              <Apartment key={apt.id} data={apt} selected={selected} onSelect={setSelected} />
             ))}
             {!onlyCorridors && (
               <>
                 <Pool />
                 <TerrainDeBoules />
-                <ChambresDeBonne21a29 />
-                <ChambresDeBonne19a26 />
-                <Garages21a29 />
+                <ChambresDeBonne selected={selected} onSelect={setSelected} />
+                <Garages selected={selected} onSelect={setSelected} />
               </>
             )}
             <CouloirStudios47a51 />
@@ -1074,9 +1005,30 @@ export default function RenderPage() {
         </div>
       )}
 
-      {/* Titre / Fiche appartement en overlay */}
+      {/* Titre / Fiche en overlay (appartement, chambre de bonne ou garage) */}
       <div className="absolute top-8 left-8 pointer-events-none max-w-sm">
-        {selected ? (
+        {selected?.kind === 'cdb' ? (
+          <>
+            <h1 className="text-4xl font-black italic text-white leading-none uppercase">
+              CdB<span className="text-red-600">{selected.num}</span>
+            </h1>
+            <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest mt-2">
+              Chambre de bonne
+            </p>
+          </>
+        ) : selected?.kind === 'garage' ? (
+          <>
+            <h1 className="text-4xl font-black italic text-white leading-none uppercase">
+              G<span className="text-red-600">{selected.num}</span>
+            </h1>
+            <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest mt-2">
+              Garage
+              {selected.linkedApartmentId != null && (
+                <span className="text-red-500"> ↔ Appartement {selected.linkedApartmentId}</span>
+              )}
+            </p>
+          </>
+        ) : selected ? (
           <>
             <h1 className="text-4xl font-black italic text-white leading-none uppercase">
               N°<span className="text-red-600">{selected.num}</span>
