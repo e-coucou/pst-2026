@@ -16,6 +16,7 @@
 - [ ] **Photos :** Prévoir une politique de rétention/migration pour les photos uploadées avant l'introduction du système vignette + version complète (chemin plat, non listées par la galerie actuelle).
 
 ## 🕒 BACKLOG
+- [ ] **Live :** Uniformiser le tableau de palmarès/résultats de poules — actuellement affiché différemment selon les pages (poules, finale, podium, live public). Prendre comme référence la version complète affichée en live pendant la saisie des résultats (`poules/page.tsx`) et l'aligner partout ailleurs.
 - [ ] **UI :** Étendre la case à cocher "Favoris" au-delà de la fiche joueur (`/joueurs/[id]`) — actuellement la seule page qui l'expose.
 - [ ] **Communication :** Système de push messages exclusif aux admins et super, avec affichage sur la première page.
 - [ ] **Documentation :** Générer un fichier `notes.md` basé sur le `README.md` et les logs de commit GitHub.

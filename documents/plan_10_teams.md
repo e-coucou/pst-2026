@@ -1,6 +1,6 @@
 # Format alternatif "10 équipes" pour le tournoi live PST
 
-**Statut global :** Implémentation terminée sur la branche `feature/format-10-equipes`. Tests utilisateur validés (poules → finales classées → podium). Reste : confirmer le fix du RPC `reset_tournament`, puis commit/push.
+**Statut global :** Terminé et commité sur la branche `feature/format-10-equipes`. Tests utilisateur validés (poules → finales classées → podium), fix du RPC `reset_tournament` appliqué côté Supabase. Plus aucun point bloquant identifié.
 
 ## Contexte
 
@@ -69,12 +69,13 @@ Les types techniques `'Finale Rang1'`..`'Rang5'` ne sont pas des libellés prés
 
 ## Vérification
 
-1. **Non-régression format classique** : lancer un tournoi complet en format `'classique'` de bout en bout et vérifier que rien n'a changé visuellement/fonctionnellement.
+1. **Non-régression format classique** : lancer un tournoi complet en format `'classique'` de bout en bout et vérifier que rien n'a changé visuellement/fonctionnellement. — ✅ Confirmé par l'utilisateur, aucune régression.
 2. **Format 10 équipes** : lancer un tournoi test (10 équipes/20 joueurs), vérifier poules (10 matchs/poule), bifurcation directe vers les finales classées (pas de page Demi), 5 finales 1er×1er...5e×5e avec libellés lisibles, podium classant les 10 équipes de 1 à 10 sans collision, sections "Demis" masquées partout.
-3. Confirmer que le RPC `reset_tournament` a bien été corrigé pour remettre `format = 'classique'` après un reset.
+3. Confirmer que le RPC `reset_tournament` a bien été corrigé pour remettre `format = 'classique'` après un reset. — ✅ Confirmé par l'utilisateur.
 
 ## Reste à faire
 
-- [ ] Test end-to-end complet du format 10 équipes jusqu'au podium (en cours par l'utilisateur).
-- [ ] Confirmer le fix du RPC `reset_tournament` (format) appliqué côté Supabase.
-- [ ] Décider si un commit/push sur la branche `feature/format-10-equipes` est fait maintenant ou après validation complète.
+- [x] Test end-to-end complet du format 10 équipes jusqu'au podium — validé par l'utilisateur.
+- [x] Fix du RPC `reset_tournament` (format) appliqué côté Supabase.
+- [x] Commit sur la branche `feature/format-10-equipes` — fait par l'utilisateur.
+- [ ] Merge dans `main` / PR : à faire quand l'utilisateur le décide.
