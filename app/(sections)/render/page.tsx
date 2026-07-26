@@ -998,19 +998,16 @@ export default function RenderPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user }, error: userError }) => {
-      if (userError) console.error('[render] getUser error', userError);
-      if (!user) { console.warn('[render] no user session found'); return; }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
       supabase.rpc('get_my_role').then(({ data: role, error }) => {
-        if (error) console.error('[render] get_my_role error', error);
-        console.log('[render] role fetched:', role);
         if (!error && role) setUserRole(role);
       });
     });
   }, []);
 
   return (
-    <div className="w-full h-screen bg-[#09090b]">
+    <div className="relative w-full h-screen bg-[#09090b]">
       <Canvas camera={{ position: [50, 30, 50], fov: 35 }}>
         <color attach="background" args={['#09090b']} />
 
