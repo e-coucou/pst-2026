@@ -204,7 +204,7 @@ export const residenceData = {
       },
       {
         "id": 13, "num": "13", "occupant": "Repetto Carboneschi",
-        "section": "sectionB", "col": 4, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "both", "up": "non", "corridorRear": true
+        "section": "sectionB", "col": 4, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "both", "up": "non", "corridorRear": true, "colCour": 1, "colSpanCour": 4, "courExtraWidth": 0.8
       },
       {
         "id": 14, "num": "14", "type": "studio", "corridorLevel": true,
@@ -467,24 +467,24 @@ export const residenceData = {
       { "id": 26, "num": "26", "parentId": 20, "index": 3, "splitCount": 4 }
     ],
     "garages": [
-      { "id": 1, "num": "1", "parentId": 21, "index": 0, "splitCount": 2, "linkedApartmentId": 62 },
-      { "id": 2, "num": "2", "parentId": 21, "index": 1, "splitCount": 2, "linkedApartmentId": 45 },
-      { "id": 3, "num": "3", "parentId": 22, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 4, "num": "4", "parentId": 22, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 5, "num": "5", "parentId": 23, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 6, "num": "6", "parentId": 23, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 7, "num": "7", "parentId": 24, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 8, "num": "8", "parentId": 24, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 9, "num": "9", "parentId": 25, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 10, "num": "10", "parentId": 25, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 11, "num": "11", "parentId": 26, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 12, "num": "12", "parentId": 26, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 13, "num": "13", "parentId": 27, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 14, "num": "14", "parentId": 27, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 15, "num": "15", "parentId": 28, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 16, "num": "16", "parentId": 28, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 17, "num": "17", "parentId": 29, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 18, "num": "18", "parentId": 29, "index": 1, "splitCount": 2, "linkedApartmentId": 66 }
+      { "id": 11, "num": "11", "parentId": 21, "index": 0, "splitCount": 2, "linkedApartmentId": 62 },
+      { "id": 12, "num": "12", "parentId": 21, "index": 1, "splitCount": 2, "linkedApartmentId": 45 },
+      { "id": 13, "num": "13", "parentId": 22, "index": 0, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 14, "num": "14", "parentId": 22, "index": 1, "splitCount": 2, "linkedApartmentId": 63 },
+      { "id": 15, "num": "15", "parentId": 23, "index": 0, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 16, "num": "16", "parentId": 23, "index": 1, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 17, "num": "17", "parentId": 24, "index": 0, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 18, "num": "18", "parentId": 24, "index": 1, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 19, "num": "19", "parentId": 25, "index": 0, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 20, "num": "20", "parentId": 25, "index": 1, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 21, "num": "21", "parentId": 26, "index": 0, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 22, "num": "22", "parentId": 26, "index": 1, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 23, "num": "23", "parentId": 27, "index": 0, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 24, "num": "24", "parentId": 27, "index": 1, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 25, "num": "25", "parentId": 28, "index": 0, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 26, "num": "26", "parentId": 28, "index": 1, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 27, "num": "27", "parentId": 29, "index": 0, "splitCount": 2, "linkedApartmentId": null },
+      { "id": 28, "num": "28", "parentId": 29, "index": 1, "splitCount": 2, "linkedApartmentId": 66 }
     ],
     "derivedFormulas": {
       "description": "Calcul boîte 3D pour Three.js / React Three Fiber",

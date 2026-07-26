@@ -1,8 +1,8 @@
 'use client';
 
-import { Canvas, ThreeEvent } from '@react-three/fiber';
+import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, Text, Edges, GizmoHelper, GizmoViewport } from '@react-three/drei';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { residenceData } from '@/data/residence';
 import { createClient } from '@/utils/supabase/client';
@@ -260,7 +260,11 @@ function ChambresDeBonne({ selected, onSelect }: { selected: any; onSelect: (dat
         const parent: any = apartments.find((a: any) => a.id === cdb.parentId);
         const sec: any = (building.sections as any)[parent.section];
         const colWidth = sec.colWidth || config.gridColWidth;
-        const roomWidth = colWidth / cdb.splitCount;
+        // + courExtraWidth : le pan cour du parent peut déborder vers l'Ouest (ex: studio 20)
+        // — sans ce terme, pas de décroché sur la façade arrière : la largeur cumulée des CdB
+        // doit correspondre exactement à la largeur réelle (rendue) du studio/appartement parent.
+        const parentWidth = colWidth * (parent.colSpan || 1) + (parent.courExtraWidth || 0);
+        const roomWidth = parentWidth / cdb.splitCount;
 
         const yBase = parent.row * config.gridRowHeight;
         const isUp = parent.up !== "non";
@@ -301,7 +305,7 @@ function ChambresDeBonne({ selected, onSelect }: { selected: any; onSelect: (dat
   );
 }
 
-// --- GARAGES (G1 à G18) ---
+// --- GARAGES (G11 à G28) ---
 // Data-driven depuis residenceData.residence.garages (même schéma parentId/index/splitCount
 // que les CdB — un garage par CdB, même emprise en X, juste en dessous). Face Sud identique
 // aux CdB ; face Nord calée contre la face sud des studios 1-9 (façade + southCorridorExtra +
@@ -328,7 +332,8 @@ function Garages({ selected, onSelect }: { selected: any; onSelect: (data: any) 
         const parent: any = apartments.find((a: any) => a.id === g.parentId);
         const sec: any = (building.sections as any)[parent.section];
         const colWidth = sec.colWidth || config.gridColWidth;
-        const roomWidth = colWidth / g.splitCount;
+        const parentWidth = colWidth * (parent.colSpan || 1) + (parent.courExtraWidth || 0);
+        const roomWidth = parentWidth / g.splitCount;
 
         const yBase = parent.row * config.gridRowHeight;
         const isUp = parent.up !== "non";
@@ -657,13 +662,21 @@ function CouloirCage9a10Partie3() {
 // des CdB, même espace comblé entre l'extension arrière et les CdB), mais sur l'emprise en X
 // des studios 19-20 (sectionB) pour desservir les CdB 19-26.
 function CouloirCdB19a26() {
-  const { config, building } = residenceData.residence;
+  const { config, building, apartments, chambresDeBonne } = residenceData.residence;
   const s = building.sections.sectionB;
   const colWidth = s.colWidth || config.gridColWidth;
 
-  const xEastEdge = s.startX + (s.leftMargin || 0) + 1 * colWidth; // bord est (col1, studio 19)
-  const xWestEdge = s.startX + (s.leftMargin || 0) + (3 + 2) * colWidth; // bord ouest (col3+colSpan2, studio 20)
-  const width = xWestEdge - xEastEdge;
+  // Largeur = somme des largeurs réelles des CdB 19 à 26 (même formule que ChambresDeBonne) —
+  // reste automatiquement synchro avec elles plutôt que de redériver la largeur des studios
+  // 19-20 séparément (source d'un précédent désaccord après la correction de courExtraWidth).
+  const group = chambresDeBonne.filter((cdb: any) => cdb.id >= 19 && cdb.id <= 26);
+  const width = group.reduce((sum: number, cdb: any) => {
+    const parent: any = apartments.find((a: any) => a.id === cdb.parentId);
+    const parentWidth = colWidth * (parent.colSpan || 1) + (parent.courExtraWidth || 0);
+    return sum + parentWidth / cdb.splitCount;
+  }, 0);
+
+  const xEastEdge = s.startX + (s.leftMargin || 0) + 1 * colWidth; // bord est (col1, studio 19 = CdB19)
   const xCenter = xEastEdge + width / 2;
 
   const row = 1; // row des studios 19-20
@@ -916,6 +929,31 @@ function Compass() {
   );
 }
 
+// --- SONDE DE COORDONNÉES (mode super uniquement) ---
+// Raycast à chaque frame depuis la caméra vers le pointeur, contre toute la scène : remonte le
+// point 3D survolé (repère LOCAL, cf. groupOffsetX — annule le décalage du <group position=
+// {[-35,0,0]}> qui centre le bâtiment à l'écran, pour que X/Y/Z affichés correspondent aux
+// mêmes coordonnées que celles utilisées dans les formules/résidence.ts). Facilite les
+// indications ("mets ça à x=30, z=-8") sans avoir à redériver la position à la main.
+function CoordinateProbe({ onHover, groupOffsetX }: { onHover: (p: { x: number; y: number; z: number } | null) => void; groupOffsetX: number }) {
+  const last = useRef<{ x: number; y: number; z: number } | null>(null);
+  useFrame(({ raycaster, camera, pointer, scene }) => {
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObjects(scene.children, true).find((i) => (i.object as any).isMesh);
+    const next = hit
+      ? { x: Math.round((hit.point.x - groupOffsetX) * 100) / 100, y: Math.round(hit.point.y * 100) / 100, z: Math.round(hit.point.z * 100) / 100 }
+      : null;
+    const changed =
+      (next === null) !== (last.current === null) ||
+      (next && last.current && (next.x !== last.current.x || next.y !== last.current.y || next.z !== last.current.z));
+    if (changed) {
+      last.current = next;
+      onHover(next);
+    }
+  });
+  return null;
+}
+
 // --- LA PAGE PRINCIPALE ---
 export default function RenderPage() {
   // Memoisation des appartements pour la performance
@@ -927,6 +965,10 @@ export default function RenderPage() {
   // Flip/flop : masque le bâtiment (appartements, CdB, garages, piscine, terrain de boules) et
   // ne garde que les couloirs + la cage d'escalier
   const [onlyCorridors, setOnlyCorridors] = useState(false);
+
+  // Gizmo de coordonnées (mode super) : point 3D survolé par le curseur
+  const [hoverCoords, setHoverCoords] = useState<{ x: number; y: number; z: number } | null>(null);
+  const groupOffsetX = -35; // doit rester synchro avec le <group position={[groupOffsetX, 0, 0]}> ci-dessous
 
   useEffect(() => {
     const supabase = createClient();
@@ -946,9 +988,11 @@ export default function RenderPage() {
         <ambientLight intensity={0.7} />
         <pointLight position={[100, 100, 100]} intensity={1} />
 
+        {userRole === 'super' && <CoordinateProbe onHover={setHoverCoords} groupOffsetX={groupOffsetX} />}
+
         <Suspense fallback={null}>
           {/* Centrage du bâtiment (environ la moitié de 71m) */}
-          <group position={[-35, 0, 0]}>
+          <group position={[groupOffsetX, 0, 0]}>
             {!onlyCorridors && apartments.map((apt) => (
               <Apartment key={apt.id} data={apt} selected={selected} onSelect={setSelected} />
             ))}
@@ -1005,8 +1049,19 @@ export default function RenderPage() {
         </div>
       )}
 
-      {/* Titre / Fiche en overlay (appartement, chambre de bonne ou garage) */}
-      <div className="absolute top-8 left-8 pointer-events-none max-w-sm">
+      {/* Titre / Fiche + gizmo de coordonnées, empilés en haut à gauche */}
+      <div className="absolute top-8 left-8 pointer-events-none max-w-sm flex flex-col gap-3">
+      {userRole === 'super' && (
+        <div className="inline-flex gap-3 px-3 py-2 rounded-lg bg-zinc-900/80 border border-zinc-700/50 font-mono text-xs font-bold w-fit">
+          <span className="text-zinc-500">X</span>
+          <span className="text-white">{hoverCoords ? hoverCoords.x.toFixed(2) : '—'}</span>
+          <span className="text-zinc-500">Y</span>
+          <span className="text-white">{hoverCoords ? hoverCoords.y.toFixed(2) : '—'}</span>
+          <span className="text-zinc-500">Z</span>
+          <span className="text-white">{hoverCoords ? hoverCoords.z.toFixed(2) : '—'}</span>
+        </div>
+      )}
+      <div>
         {selected?.kind === 'cdb' ? (
           <>
             <h1 className="text-4xl font-black italic text-white leading-none uppercase">
@@ -1063,6 +1118,7 @@ export default function RenderPage() {
             </p>
           </>
         )}
+      </div>
       </div>
     </div>
   );
