@@ -95,56 +95,56 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
-{/* LOGO & AUTH ICON DYNAMIQUE */}
-<div className="flex items-center gap-2">
-  <div className="flex items-center gap-1.5"> 
-    {/* Accès direct à /live/super pour le rôle super */}
-    {userRole === 'super' && (
-      <Link
-        href="/live/super"
-        className="p-1.5 rounded-lg bg-zinc-900 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-lg hover:scale-110 active:scale-95"
-        title="Panel Super Admin"
-      >
-        <Fingerprint size={20} className="group-hover:animate-pulse" />
-      </Link>
-    )}
-    {/* Qui est en ligne (réservé au rôle super) */}
-    {userRole === 'super' && (
-      <Link
-        href="/live/online"
-        className="p-1.5 rounded-lg bg-zinc-900 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-lg hover:scale-110 active:scale-95"
-        title="Qui est en ligne"
-      >
-        <Radio size={20} />
-      </Link>
-    )}
-    {/* Accès direct à /live/super pour le rôle super */}
-    { (userRole === 'admin' || userRole === 'super') && (
-      <Link
-        href="/live/switch"
-        className="p-1.5 rounded-lg bg-zinc-900 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-lg hover:scale-110 active:scale-95"
-        title="Panel Live"
-      >
-        <Settings2 size={20} fill="currentColor" />
-      </Link>
-    )}
-    {/* Bouton de Connexion/Déconnexion existant */}
-    <button 
-      onClick={handleAuthAction}
-      className={`p-1.5 rounded-lg transition-all duration-500 shadow-lg ${
-        !userRole ? 'bg-red-600 shadow-red-600/20' : 'bg-red-600 border border-white/10'
-      } hover:scale-110 active:scale-95`}
-      title={userRole ? `Connecté en tant que ${userRole}` : "Se connecter"}
-    >
-      {getRoleIcon()}
-    </button>
-  </div>
+          {/* LOGO & AUTH ICON DYNAMIQUE */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5"> 
+              {/* Accès direct à /live/super pour le rôle super */}
+              {userRole === 'super' && (
+                <Link
+                  href="/live/super"
+                  className="p-1.5 rounded-lg bg-zinc-900 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-lg hover:scale-110 active:scale-95"
+                  title="Panel Super Admin"
+                >
+                  <Fingerprint size={20} className="group-hover:animate-pulse" />
+                </Link>
+              )}
+              {/* Qui est en ligne (réservé au rôle super) */}
+              {userRole === 'super' && (
+                <Link
+                  href="/live/online"
+                  className="p-1.5 rounded-lg bg-zinc-900 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-lg hover:scale-110 active:scale-95"
+                  title="Qui est en ligne"
+                >
+                  <Radio size={20} />
+                </Link>
+              )}
+              {/* Accès direct à /live/super pour le rôle super */}
+              { (userRole === 'admin' || userRole === 'super') && (
+                <Link
+                  href="/live/switch"
+                  className="p-1.5 rounded-lg bg-zinc-900 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-lg hover:scale-110 active:scale-95"
+                  title="Panel Live"
+                >
+                  <Settings2 size={20} fill="currentColor" />
+                </Link>
+              )}
+              {/* Bouton de Connexion/Déconnexion existant */}
+              <button 
+                onClick={handleAuthAction}
+                className={`p-1.5 rounded-lg transition-all duration-500 shadow-lg ${
+                  !userRole ? 'bg-red-600 shadow-red-600/20' : 'bg-red-600 border border-white/10'
+                } hover:scale-110 active:scale-95`}
+                title={userRole ? `Connecté en tant que ${userRole}` : "Se connecter"}
+              >
+                {getRoleIcon()}
+              </button>
+            </div>
 
-  <Link href="/" className="group font-black italic uppercase tracking-tighter text-lg leading-none hidden md:block ml-1">
-    <span className="text-white group-hover:text-red-600 transition-colors">Paris </span>
-    <span className="text-red-600 group-hover:text-white transition-colors">Saint-Tropez</span>
-  </Link>
-</div>
+            <Link href="/" className="group font-black italic uppercase tracking-tighter text-lg leading-none hidden md:block ml-1">
+              <span className="text-white group-hover:text-red-600 transition-colors">Paris </span>
+              <span className="text-red-600 group-hover:text-white transition-colors">Saint-Tropez</span>
+            </Link>
+          </div>
 
           {/* NAVIGATION DESKTOP */}
           <div className="hidden md:flex items-center gap-8">
@@ -167,10 +167,10 @@ export default function Navbar() {
           </div>
 
           {/* ACCÈS ADMIN (Desktop uniquement) - Visible seulement si Admin ou Super */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4 ml-auto">
             {(userRole === 'admin' || userRole === 'super') && (
-              <div className="flex flex-col items-end group">
-                <Link href="/live" className="flex flex-col items-end">
+              <div className="flex flex-col items-end text-right group">
+                <Link href="/live" className="flex flex-col items-end text-right">
                   <span className="text-[10px] font-black text-red-500 uppercase tracking-widest group-hover:text-white">Live</span>
                   <span className="text-xs font-bold italic text-white uppercase group-hover:text-red-600">Saison 2026</span>
                 </Link>
@@ -201,7 +201,7 @@ function NavLink({ href, icon, label, active }: { href: string, icon: React.Reac
     <Link 
       href={href} 
       className={`relative flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 group ${
-        active ? 'text-white' : 'text-gray-500 hover:text-red-500'
+        active ? 'text-white' : 'text-gray-300 hover:text-red-500'
       }`}
     >
       <span className={`${active ? 'text-red-600' : 'group-hover:text-red-600'} transition-colors`}>

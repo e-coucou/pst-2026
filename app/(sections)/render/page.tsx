@@ -2,9 +2,10 @@
 
 import { Canvas, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Grid, Text, Edges, GizmoHelper, GizmoViewport } from '@react-three/drei';
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { residenceData } from '@/data/residence';
+import { createClient } from '@/utils/supabase/client';
 
 function Apartment({ data, selectedId, onSelect }: { data: any; selectedId: number | null; onSelect: (data: any) => void }) {
   const { config, building } = residenceData.residence;
@@ -220,6 +221,20 @@ function getWestWallX(aptId: number) {
   const isExtendLeft = apt.extendLeft === "oui";
   const xPos = sec.startX + (sec.leftMargin || 0) + (apt.col * colWidth) + width / 2 - (isExtendLeft ? colWidth / 2 : 0);
   return xPos + width / 2;
+}
+
+// Calcule le mur EST (bord X le plus petit) d'un appartement — pendant de getWestWallX, pour
+// aligner un élément sur le bord opposé (ex: le bord de l'appartement 10 qui fait face au 9).
+function getEastWallX(aptId: number) {
+  const { apartments, building, config } = residenceData.residence;
+  const apt: any = apartments.find((a: any) => a.id === aptId);
+  if (!apt) return 0;
+  const sec: any = (building.sections as any)[apt.section];
+  const colWidth = sec.colWidth || config.gridColWidth;
+  const width = (apt.colSpan || 1) * colWidth;
+  const isExtendLeft = apt.extendLeft === "oui";
+  const xPos = sec.startX + (sec.leftMargin || 0) + (apt.col * colWidth) + width / 2 - (isExtendLeft ? colWidth / 2 : 0);
+  return xPos - width / 2;
 }
 
 // --- CHAMBRES DE BONNE (CdB 1 à 18), sous les cours des appartements 21 à 29 ---
@@ -575,16 +590,19 @@ function CouloirStudios52a53() {
 }
 
 // --- CAGE D'ESCALIER (1ère partie) ---
-// Volume de la cage d'escalier principale (section cageEscalier, X 48.2-50.9). En hauteur : du
-// bas de l'appartement 9 (row0, y=0) au bas du studio 18 (row2, y=2.3) — soit 1 étage. En
-// profondeur : de la ligne "avant" (comme les appartements 9/18, tous deux avant="oui") à la
-// façade sud du studio 18 (ligne de soudure) — soit la profondeur façade standard.
+// Volume entre les appartements 9 et 10 tels qu'ils sont réellement rendus (leur bord réel
+// diffère légèrement de la section "cageEscalier" déclarée dans les données — d'où l'usage de
+// getWestWallX/getEastWallX plutôt que building.sections.cageEscalier). En hauteur : du bas de
+// l'appartement 9 (row0, y=0) au bas du studio 18 (row2, y=2.3) — soit 1 étage. En profondeur :
+// de la ligne "avant" (comme les appartements 9/18, tous deux avant="oui") à la façade sud du
+// studio 18 (ligne de soudure) — soit la profondeur façade standard.
 function CageEscalierPartie1() {
-  const { config, building } = residenceData.residence;
-  const cage: any = building.sections.cageEscalier;
+  const { config } = residenceData.residence;
 
-  const xCenter = cage.startX + cage.width / 2;
-  const width = cage.width;
+  const xNearApt9 = getWestWallX(9);
+  const xNearApt10 = getEastWallX(10);
+  const width = xNearApt10 - xNearApt9;
+  const xCenter = xNearApt9 + width / 2;
 
   const yBottom = 0 * config.gridRowHeight; // bas de l'appartement 9 (row0)
   const yTop = 2 * config.gridRowHeight; // bas du studio 18 (row2)
@@ -601,6 +619,103 @@ function CageEscalierPartie1() {
       <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
       <meshStandardMaterial color="#27272a" transparent opacity={0.8} />
       <Edges color="#f2f2fb" threshold={15} />
+    </mesh>
+  );
+}
+
+// --- COULOIR (entre appartement 9 et appartement 10) ---
+// Largeur = entre le bord réel de l'appartement 9 et le bord réel de l'appartement 10 (cf.
+// getWestWallX/getEastWallX, plus fiable que la section "cageEscalier" déclarée). Profondeur =
+// profondeur du studio 18 (avantOffset à la ligne de soudure, soit facadeDepth). Niveau = même
+// niveau que l'appartement 9 (row0, hauteur 1 étage, pas d'offset — façade). Coïncide donc
+// exactement avec CageEscalierPartie1, mais matérialisé ici en bleu comme un couloir (élément
+// de circulation) plutôt qu'en gris (structure).
+function CouloirCage9a10() {
+  const { config } = residenceData.residence;
+
+  const xNearApt9 = getWestWallX(9);
+  const xNearApt10 = getEastWallX(10);
+  const width = xNearApt10 - xNearApt9;
+  const xCenter = xNearApt9 + width / 2;
+
+  const row = 0; // niveau de l'appartement 9
+  const yBase = row * config.gridRowHeight;
+  const height = 2 * config.gridRowHeight; // hauteur de l'appartement 9 (rowSpan2)
+  const yFinal = yBase + height / 2;
+
+  const zNord = config.avantOffset;
+  const zSud = config.avantOffset - config.facadeDepth; // profondeur du studio 18
+  const depth = zNord - zSud;
+  const zPos = zNord - depth / 2;
+
+  return (
+    <mesh position={[xCenter, yFinal, zPos]}>
+      <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+      <meshStandardMaterial color="#3b82f6" transparent opacity={0.8} />
+      <Edges color="#93c5fd" threshold={15} />
+    </mesh>
+  );
+}
+
+// --- COULOIR (entre appartement 9 et appartement 10, prolongement Sud) ---
+// Même largeur (X) que CouloirCage9a10, flush contre sa face Sud (avantOffset-facadeDepth) et
+// s'étend encore vers le Sud sur une profondeur couloir standard (corridorDepth), plutôt que la
+// profondeur du studio 18. Hauteur = 2 étages + 1/2 étage (au lieu d'1), même bas (y=0, niveau
+// du 9).
+function CouloirCage9a10Sud() {
+  const { config } = residenceData.residence;
+
+  const xNearApt9 = getWestWallX(9);
+  const xNearApt10 = getEastWallX(10);
+  const width = xNearApt10 - xNearApt9;
+  const xCenter = xNearApt9 + width / 2;
+
+  const yBottom = 0; // même bas que CouloirCage9a10 (niveau du 9)
+  const height = 4 * config.gridRowHeight + config.slopeOffsetMeters; // 2 étages + 1/2 étage
+  const yFinal = yBottom + height / 2;
+
+  const zNord = config.avantOffset - config.facadeDepth; // face Sud de CouloirCage9a10
+  const depth = config.corridorDepth; // profondeur couloir standard
+  const zPos = zNord - depth / 2;
+
+  return (
+    <mesh position={[xCenter, yFinal, zPos]}>
+      <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+      <meshStandardMaterial color="#3b82f6" transparent opacity={0.8} />
+      <Edges color="#93c5fd" threshold={15} />
+    </mesh>
+  );
+}
+
+// --- COULOIR (entre appartement 9 et appartement 10, prolongement) ---
+// Même largeur (X) que les précédents. Descendu de 1/2 étage par rapport au sommet de
+// CouloirCage9a10Sud (donc un recouvrement de 1/2 étage avec lui, plutôt qu'un empilement bord
+// à bord), puis encore descendu de 2,5 étages supplémentaires ("bloc escalier"). En profondeur
+// (Sud), flush contre la face Sud de CouloirCage9a10Sud, sur une dimension = 1 couloir
+// (corridorDepth) + la profondeur du studio 19 (courDepth, son pan cour n'a pas de
+// courDepthMeters spécifique). Hauteur totale = 5 étages.
+function CouloirCage9a10Partie3() {
+  const { config } = residenceData.residence;
+
+  const xNearApt9 = getWestWallX(9);
+  const xNearApt10 = getEastWallX(10);
+  const width = xNearApt10 - xNearApt9;
+  const xCenter = xNearApt9 + width / 2;
+
+  const previousTop = 4 * config.gridRowHeight + config.slopeOffsetMeters; // sommet de CouloirCage9a10Sud
+  const yBottom = previousTop - config.slopeOffsetMeters - 2.5 * 2 * config.gridRowHeight; // descendu de 1/2 étage, puis de 2,5 étages supplémentaires
+  const height = 5 * 2 * config.gridRowHeight; // 5 étages
+  const yFinal = yBottom + height / 2;
+
+  const zNord = config.avantOffset - config.facadeDepth - config.corridorDepth; // face Sud de CouloirCage9a10Sud
+  const depth = config.corridorDepth + config.courDepth; // 1 couloir + profondeur du studio 19
+  const zPos = zNord - depth / 2;
+
+  return (
+    <mesh position={[xCenter, yFinal, zPos]}>
+      <boxGeometry args={[width - 0.1, height - 0.1, depth]} />
+      <meshStandardMaterial color="#3b82f6" transparent opacity={0.8} />
+      <Edges color="#93c5fd" threshold={15} />
     </mesh>
   );
 }
@@ -875,6 +990,25 @@ export default function RenderPage() {
   const apartments = useMemo(() => residenceData.residence.apartments, []);
   const [selected, setSelected] = useState<any>(null);
 
+  // Rôle utilisateur (pour le bouton flip/flop réservé au mode super)
+  const [userRole, setUserRole] = useState<string | null>(null);
+  // Flip/flop : masque le bâtiment (appartements, CdB, garages, piscine, terrain de boules) et
+  // ne garde que les couloirs + la cage d'escalier
+  const [onlyCorridors, setOnlyCorridors] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user }, error: userError }) => {
+      if (userError) console.error('[render] getUser error', userError);
+      if (!user) { console.warn('[render] no user session found'); return; }
+      supabase.rpc('get_my_role').then(({ data: role, error }) => {
+        if (error) console.error('[render] get_my_role error', error);
+        console.log('[render] role fetched:', role);
+        if (!error && role) setUserRole(role);
+      });
+    });
+  }, []);
+
   return (
     <div className="w-full h-screen bg-[#09090b]">
       <Canvas camera={{ position: [50, 30, 50], fov: 35 }}>
@@ -886,18 +1020,25 @@ export default function RenderPage() {
         <Suspense fallback={null}>
           {/* Centrage du bâtiment (environ la moitié de 71m) */}
           <group position={[-35, 0, 0]}>
-            {apartments.map((apt) => (
+            {!onlyCorridors && apartments.map((apt) => (
               <Apartment key={apt.id} data={apt} selectedId={selected?.id ?? null} onSelect={setSelected} />
             ))}
-            <Pool />
-            <TerrainDeBoules />
-            <ChambresDeBonne21a29 />
-            <ChambresDeBonne19a26 />
-            <Garages21a29 />
+            {!onlyCorridors && (
+              <>
+                <Pool />
+                <TerrainDeBoules />
+                <ChambresDeBonne21a29 />
+                <ChambresDeBonne19a26 />
+                <Garages21a29 />
+              </>
+            )}
             <CouloirStudios47a51 />
             <CouloirStudios14a18 />
             <CouloirStudios52a53 />
             <CageEscalierPartie1 />
+            <CouloirCage9a10 />
+            <CouloirCage9a10Sud />
+            <CouloirCage9a10Partie3 />
             <CouloirCdB21a29 />
             <CouloirCdB19a26 />
           </group>
@@ -919,6 +1060,22 @@ export default function RenderPage() {
 
         <OrbitControls makeDefault />
       </Canvas>
+
+      {/* Flip/flop couloirs+escalier seul (réservé au mode super) */}
+      {userRole === 'super' && (
+        <div className="absolute top-8 right-8">
+          <button
+            onClick={() => setOnlyCorridors((v) => !v)}
+            className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
+              onlyCorridors
+                ? 'bg-blue-600 text-white'
+                : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700'
+            }`}
+          >
+            {onlyCorridors ? 'Bâtiment masqué' : 'Masquer le bâtiment'}
+          </button>
+        </div>
+      )}
 
       {/* Titre / Fiche appartement en overlay */}
       <div className="absolute top-8 left-8 pointer-events-none max-w-sm">
