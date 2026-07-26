@@ -8,6 +8,8 @@ import PredictionModal from '@/components/PredictionModal';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
 import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Swords, CheckCircle2 } from 'lucide-react';
 import { logActivity } from '@/utils/log-activity';
+import { calculatePouleStandings } from '@/utils/live-stats';
+import PouleStandingsTable from '@/components/PouleStandingsTable';
 
 export default function LiveDemiPage() {
   const supabase = createClient();
@@ -94,28 +96,7 @@ export default function LiveDemiPage() {
     }
   };
 
-  const calculateStandings = (pouleName: string) => {
-    const pouleTeams = teams.filter(t => t.poule === pouleName);
-    const pMatches = pouleMatches.filter(m => m.poule === pouleName && m.status === 'TERMINE');
-    const standings = pouleTeams.map(t => ({
-      id: t.id,
-      pName: playersMap[t.pointeur_id] || `ID:${t.pointeur_id}`,
-      tName: playersMap[t.tireur_id] || `ID:${t.tireur_id}`,
-      pts: 0, diff: 0
-    }));
-    pMatches.forEach(m => {
-      const t1 = standings.find(s => s.id === m.team1_id);
-      const t2 = standings.find(s => s.id === m.team2_id);
-      if (t1 && t2) {
-        t1.diff += (m.score_team1 - m.score_team2);
-        t2.diff += (m.score_team2 - m.score_team1);
-        if (m.score_team1 > m.score_team2) t1.pts += 3;
-        else if (m.score_team2 > m.score_team1) t2.pts += 3;
-        else { t1.pts += 1; t2.pts += 1; }
-      }
-    });
-    return standings.sort((a, b) => b.pts - a.pts || b.diff - a.diff);
-  };
+  const calculateStandings = (pouleName: string) => calculatePouleStandings(pouleName, teams, pouleMatches, playersMap);
 
   const handleScoreChange = (matchId: number, team: 1 | 2, value: string) => {
     const numValue = value === '' ? '' : parseInt(value, 10);
@@ -174,25 +155,9 @@ export default function LiveDemiPage() {
     setSavingMatch(null);
   };
 
-  const renderStandingsMini = (pouleName: string) => {
-    const standings = calculateStandings(pouleName);
-    return (
-      <div className="bg-zinc-900/50 border border-white/5 rounded-2xl overflow-hidden">
-        <div className="bg-zinc-800/50 px-4 py-2 text-[10px] font-black uppercase italic text-zinc-400 border-b border-white/5">Poule {pouleName}</div>
-        <table className="w-full text-[11px]">
-          <tbody>
-            {standings.map((s, idx) => (
-              <tr key={s.id} className="border-b border-white/5 last:border-0">
-                <td className="p-2 text-zinc-500 w-6">{idx + 1}.</td>
-                <td className="p-2 uppercase font-bold text-zinc-300">{s.pName.split(' ')[0]} / {s.tName.split(' ')[0]}</td>
-                <td className="p-2 text-right font-black text-red-500">{s.pts} pts</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
+  const renderStandingsMini = (pouleName: string, accentColor: 'orange' | 'purple') => (
+    <PouleStandingsTable pouleName={pouleName} standings={calculateStandings(pouleName)} accentColor={accentColor} />
+  );
 
   const renderDemiSummary = () => {
     return (
@@ -351,8 +316,8 @@ export default function LiveDemiPage() {
         {demiMatches.length > 0 && renderDemiSummary()}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {renderStandingsMini('Gassin')}
-          {renderStandingsMini('Ramatuelle')}
+          {renderStandingsMini('Gassin', 'orange')}
+          {renderStandingsMini('Ramatuelle', 'purple')}
         </div>
 		{/* MODALE DE PREDICTION */}
         {matchToPredict && (

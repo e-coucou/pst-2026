@@ -8,6 +8,8 @@ import PredictionModal from '@/components/PredictionModal';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
 import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2 } from 'lucide-react';
 import { logActivity } from '@/utils/log-activity';
+import { calculatePouleStandings } from '@/utils/live-stats';
+import PouleStandingsTable from '@/components/PouleStandingsTable';
 
 export default function LivePoulesPage() {
   const supabase = createClient();
@@ -137,39 +139,7 @@ export default function LivePoulesPage() {
     setSavingMatch(null);
   };
 
-  const calculateStandings = (pouleName: string) => {
-    const pouleTeams = teams.filter(t => t.poule === pouleName);
-    const pouleMatches = matches.filter(m => m.poule === pouleName && m.status === 'TERMINE');
-
-    const standings = pouleTeams.map(t => {
-	  const teamDeltas = matches.filter(m => m.status === 'TERMINE' && (m.team1_id === t.id || m.team2_id === t.id));
-      const totalDelta = teamDeltas.reduce((acc, m) => {
-        return acc + (m.team1_id === t.id ? m.delta_elo_team1 : m.delta_elo_team2);
-      }, 0);
-	  return {
-        id: t.id,
-        pName: playersMap[t.pointeur_id] ? playersMap[t.pointeur_id] : `ID:${t.pointeur_id}`,
-        tName: playersMap[t.tireur_id] ? playersMap[t.tireur_id] : `ID:${t.tireur_id}`,
-        currentElo: t.elo_start + totalDelta,
-        j: 0, pts: 0, diff: 0, pPlus: 0
-      };
-    });
-
-    pouleMatches.forEach(m => {
-      const t1 = standings.find(s => s.id === m.team1_id);
-      const t2 = standings.find(s => s.id === m.team2_id);
-      if (t1 && t2) {
-        t1.j++; t2.j++;
-        t1.pPlus += m.score_team1; t1.diff += (m.score_team1 - m.score_team2);
-        t2.pPlus += m.score_team2; t2.diff += (m.score_team2 - m.score_team1);
-        if (m.score_team1 > m.score_team2) t1.pts += 3;
-        else if (m.score_team2 > m.score_team1) t2.pts += 3;
-        else { t1.pts += 1; t2.pts += 1; }
-      }
-    });
-
-    return standings.sort((a, b) => (b.pts - a.pts) || (b.diff - a.diff) || (b.pPlus - a.pPlus));
-  };
+  const calculateStandings = (pouleName: string) => calculatePouleStandings(pouleName, teams, matches, playersMap);
 
 
   const generateDemis = async () => {
@@ -371,37 +341,7 @@ export default function LivePoulesPage() {
           </div>
 
           {/* CLASSEMENT */}
-          <div className="bg-black border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden">
-            <div className="overflow-x-auto">
-                <table className="w-full text-left min-w-[300px]">
-                <thead>
-                    <tr className="text-[10px] md:text-[12px] uppercase text-zinc-500 border-b border-white/10">
-                    <th className="p-3 md:p-4 hidden md:table-cell">Rk</th>
-                    <th className="p-3 md:p-4">Équipe</th>
-                    <th className="p-3 md:p-4 text-center hidden md:table-cell">J</th>
-                    <th className="p-3 md:p-4 text-center text-red-500">PTS</th>
-                    <th className="p-3 md:p-4 text-center">Diff</th>
-                    </tr>
-                </thead>
-                <tbody className="text-[12px] md:text-[14px] text-white font-bold">
-                    {standings.map((s, idx) => (
-                    <tr key={s.id} className={`border-2b border-white/5 last:border-0 ${idx < 2 ? ( isG ? 'bg-orange-500/10' : 'bg-purple-500/10') : ''}`}>
-                        <td className="p-3 md:p-4 text-zinc-500">{idx + 1}.<span className="text-white">{s.id} </span></td>
-                        <td className="p-3 md:p-4 uppercase text-zinc-300 truncate max-w-[100px] md:max-w-none">
-                            <span className="text-[12px] md:text-[14px] text-white block md:inline md:mr-1">{s.pName.split(' ')[0]} / </span>
-                            {s.tName.split(' ')[0]}
-                        </td>
-                        <td className="p-3 md:p-4 text-center text-zinc-500 hidden md:table-cell">{s.j}</td>
-                        <td className="p-3 md:p-4 text-center text-white bg-white/5">{s.pts}</td>
-                        <td className={`p-3 md:p-4 text-center ${s.diff > 0 ? 'text-green-500' : s.diff < 0 ? 'text-red-500' : ''}`}>
-                            {s.diff > 0 ? `+${s.diff}` : s.diff}
-                        </td>
-                    </tr>
-                    ))}
-                </tbody>
-                </table>
-            </div>
-          </div>
+          <PouleStandingsTable pouleName={pouleName} standings={standings} accentColor={accentColor} showHeader={false} />
         </div>
       </div>
     );

@@ -1,6 +1,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { Trophy, Target, Swords, Users, ChevronLeft, Star, Medal, Zap, User } from 'lucide-react';
 import Link from 'next/link';
+import PouleStandingsTable from '@/components/PouleStandingsTable';
+import { PouleStanding } from '@/utils/live-stats';
 
 export default async function TournamentDetailPage({ 
   params 
@@ -71,21 +73,30 @@ export default async function TournamentDetailPage({
   const gassin = matches?.filter(m => m.poule?.toLowerCase() === 'gassin') || [];
   const ramatuelle = matches?.filter(m => m.poule?.toLowerCase() === 'ramatuelle') || [];
 
-  const calculerClassement = (matchs: any[]) => {
-    const stats: Record<string, any> = {};
+  // Même forme (PouleStanding) et même tri que le classement live (poules/finale/podium/live)
+  // pour afficher exactement le même tableau via <PouleStandingsTable>. `teams.nom` porte déjà
+  // le vrai code historique de l'équipe (A, C, E, G... pour Gassin, B, D, F, H... pour
+  // Ramatuelle) — pas besoin d'en recréer un, `nom` est sélectionné dans la requête ci-dessus.
+  const calculerClassement = (matchs: any[]): PouleStanding[] => {
+    const stats: Record<string, PouleStanding> = {};
     matchs.forEach(m => {
-      [{t: m.team_1, s: m.score_1, oppS: m.score_2}, {t: m.team_2, s: m.score_2, oppS: m.score_1}].forEach(({t, s, oppS}) => {
+      [{ t: m.team_1, s: m.score_1, oppS: m.score_2 }, { t: m.team_2, s: m.score_2, oppS: m.score_1 }].forEach(({ t, s, oppS }) => {
         if (!t) return;
-        if (!stats[t.nom]) stats[t.nom] = { nom: t.nom, tireur: t.tireur.nom, pointeur: t.pointeur.nom, v: 0, d: 0, plus: 0, moins: 0, diffuse: 0 };
-        const isWinner = s > oppS;
-        stats[t.nom].v += isWinner ? 1 : 0;
-        stats[t.nom].d += isWinner ? 0 : 1;
-        stats[t.nom].plus += s || 0;
-        stats[t.nom].moins += oppS || 0;
-        stats[t.nom].diffuse = stats[t.nom].plus - stats[t.nom].moins;
+        const key = String(t.id);
+        if (!stats[key]) {
+          stats[key] = { id: t.nom || key, pName: t.pointeur.nom, tName: t.tireur.nom, j: 0, v: 0, d: 0, n: 0, pts: 0, pour: 0, contre: 0, diff: 0 };
+        }
+        const st = stats[key];
+        st.j++;
+        st.pour += s || 0;
+        st.contre += oppS || 0;
+        st.diff = st.pour - st.contre;
+        if (s > oppS) { st.v++; st.pts += 3; }
+        else if (s < oppS) { st.d++; }
+        else { st.n++; st.pts += 1; }
       });
     });
-    return Object.values(stats).sort((a: any, b: any) => b.v - a.v || b.diffuse - a.diffuse);
+    return Object.values(stats).sort((a, b) => (b.pts - a.pts) || (b.diff - a.diff) || (b.pour - a.pour));
   };
 
   const classementGassin = calculerClassement(gassin);
@@ -327,50 +338,8 @@ const finalTop8 = rankedTeams
 	   </div>
  
 	   <div className="grid lg:grid-cols-2 gap-8">
-	     {[
-	       { nom: "Gassin", data: classementGassin, color: "text-orange-500" },
-	       { nom: "Ramatuelle", data: classementRamatuelle, color: "text-purple-500" }
-	     ].map((poule) => (
-	       <div key={poule.nom} className="bg-zinc-900/40 border border-white/5 rounded-2xl overflow-hidden">
-	         <div className="bg-zinc-800/50 px-4 py-2 border-b border-white/5 flex justify-between items-center">
-	           <span className={`font-black uppercase italic text-sm ${poule.color}`}>{poule.nom}</span>
-	           <span className="text-[10px] text-gray-500 font-bold uppercase">Stats Globales</span>
-	         </div>
-	         <table className="w-full text-left border-collapse">
-	           <thead>
-	             <tr className="text-[10px] text-gray-500 uppercase font-black border-b border-white/5">
-	               <th className="px-4 py-3">Clt</th>
-	               <th className="px-4 py-3">Équipe</th>
-	               <th className="px-2 py-3 text-center">V</th>
-	               <th className="px-2 py-3 text-center">D</th>
-	               <th className="px-2 py-3 text-center">+/-</th>
-	               <th className="px-4 py-3 text-center text-red-500">Diff.</th>
-	             </tr>
-	           </thead>
-	           <tbody className="divide-y divide-white/5">
-	             {poule.data.map((team, idx) => (
-	               <tr key={team.nom} className={`hover:bg-white/5 transition-colors ${idx < 2 ? 'bg-red-600/5' : ''}`}>
-	                 <td className="px-4 py-3">
-	                   <span className={`text-xs font-black ${idx < 2 ? 'text-red-600' : 'text-gray-400'}`}>{idx + 1}</span>
-	                 </td>
-	                 <td className="px-4 py-3">
-	                     <div className="flex flex-col">
-	                       <span className="text-red-500 font-bold uppercase text-xs">{team.tireur}</span>
-	                       <span className="text-white font-bold uppercase text-xs leading-none">{team.pointeur}</span>
-	                     </div>
-	                 </td>
-	                 <td className="px-2 py-3 text-center font-mono text-xs">{team.v}</td>
-	                 <td className="px-2 py-3 text-center font-mono text-xs text-gray-500">{team.d}</td>
-	                 <td className="px-2 py-3 text-center font-mono text-[10px] text-gray-400">{team.plus}/{team.moins}</td>
-	                 <td className={`px-4 py-3 text-center font-mono font-black text-xs ${team.diffuse > 0 ? 'text-green-500' : team.diffuse < 0 ? 'text-red-500' : 'text-gray-500'}`}>
-	                   {team.diffuse > 0 ? `+${team.diffuse}` : team.diffuse}
-	                 </td>
-	               </tr>
-	             ))}
-	           </tbody>
-	         </table>
-	       </div>
-	     ))}
+	     <PouleStandingsTable pouleName="Gassin" standings={classementGassin} accentColor="orange" />
+	     <PouleStandingsTable pouleName="Ramatuelle" standings={classementRamatuelle} accentColor="purple" />
 	   </div>
 	 </section>
 
