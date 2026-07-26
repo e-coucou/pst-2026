@@ -5,17 +5,27 @@ import React from 'react';
 
 interface StepperProps {
   currentStatus: string;
+  // Format "10 équipes" : pas de demi-finales, l'étape 'Demis' n'existe pas dans ce cycle.
+  skipDemi?: boolean;
 }
 
-export default function RenderStepper({ currentStatus }: StepperProps) {
-  const steps = [
-    { id: 'JOUEURS', label: 'Joueurs' },
-    { id: 'EQUIPES', label: 'Equipes' },
-    { id: 'POULES', label: 'Poules' },
-    { id: 'DEMI', label: 'Demis' },
-    { id: 'FINALE', label: 'Finales' },
-    { id: 'TERMINE', label: 'Podium' }
-  ];
+export default function RenderStepper({ currentStatus, skipDemi = false }: StepperProps) {
+  const steps = skipDemi
+    ? [
+        { id: 'JOUEURS', label: 'Joueurs' },
+        { id: 'EQUIPES', label: 'Equipes' },
+        { id: 'POULES', label: 'Poules' },
+        { id: 'FINALE', label: 'Finales' },
+        { id: 'TERMINE', label: 'Podium' }
+      ]
+    : [
+        { id: 'JOUEURS', label: 'Joueurs' },
+        { id: 'EQUIPES', label: 'Equipes' },
+        { id: 'POULES', label: 'Poules' },
+        { id: 'DEMI', label: 'Demis' },
+        { id: 'FINALE', label: 'Finales' },
+        { id: 'TERMINE', label: 'Podium' }
+      ];
 
   // Trouver l'index actuel pour savoir quelles étapes sont passées
   const currentIdx = steps.findIndex(s => s.id === currentStatus);

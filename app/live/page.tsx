@@ -35,6 +35,7 @@ export default function PodiumPage() {
   const [stepValues, setStepValues] = useState<any[]>([]);
   const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
   const [status, setStatus] = useState<string>('TERMINE');
+  const [format, setFormat] = useState<string>('classique');
   const [season, setSeason] = useState<any[]>([]);
   const [matchToPredict, setMatchToPredict] = useState<{match: any, t1: any, t2: any} | null>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
@@ -45,9 +46,10 @@ export default function PodiumPage() {
     if (isInitialLoad) setLoading(true);
     try {
 
-      const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
+      const { data: tournoi } = await supabase.from('live_tournament').select('status, format').eq('id', 1).single();
 	    if (tournoi) {
 	      setStatus(tournoi?.status);
+	      setFormat(tournoi?.format || 'classique');
 	    }
 
       const { data: seasons } = await supabase.from('seasons').select('year, is_active');
@@ -83,7 +85,7 @@ export default function PodiumPage() {
         setPouleMatches(allMatches.filter(m => m.type === 'Poule'));      
       }
 
-      const { data: steps } = await supabase.from('steps').select('id, value');
+      const { data: steps } = await supabase.from('steps').select('id, value, label');
       if (steps) setStepValues(steps);
 
 	  const { data: selectedData } = await supabase
@@ -161,6 +163,13 @@ export default function PodiumPage() {
   const teamsStats = useMemo(() =>  calculateTeamsStats(teams, pmatches), [teams, pmatches]);
 
 
+  // Libellé lisible d'un type de match (ex: 'Finale Rang1' -> 'Finale') : lit la colonne
+  // `label` de la table `steps` si renseignée, sinon retombe sur le type brut.
+  const stepLabelMap = useMemo(
+    () => stepValues.reduce((acc, s) => ({ ...acc, [s.id]: s.label || s.id }), {} as Record<string, string>),
+    [stepValues]
+  );
+
   const finalTop8 = useMemo(() => {
       const results: any[] = [];
       const stepsMap = stepValues.reduce((acc, s) => ({ ...acc, [s.id]: s.value }), {});
@@ -171,13 +180,14 @@ export default function PodiumPage() {
           const isTeam1Winner = (m.score_team1 ?? 0) > (m.score_team2 ?? 0);
           const t1 = teams.find(t => t.id === m.team1_id);
           const t2 = teams.find(t => t.id === m.team2_id);
+          const label = stepLabelMap[m.type] || m.type;
 
-          if (t1) results.push({ rank: isTeam1Winner ? baseRank : baseRank + 1, team: t1, type: m.type });
-          if (t2) results.push({ rank: isTeam1Winner ? baseRank + 1 : baseRank, team: t2, type: m.type });
+          if (t1) results.push({ rank: isTeam1Winner ? baseRank : baseRank + 1, team: t1, label });
+          if (t2) results.push({ rank: isTeam1Winner ? baseRank + 1 : baseRank, team: t2, label });
         }
       });
       return results.sort((a, b) => a.rank - b.rank);
-    }, [matches, stepValues, teams]);
+    }, [matches, stepValues, teams, stepLabelMap]);
   
 
   const calculateStandings = (pouleName: string) => {
@@ -359,7 +369,7 @@ export default function PodiumPage() {
           })()}
         </header>
 
-        <RenderStepper currentStatus = {status} />
+        <RenderStepper currentStatus = {status} skipDemi={format === '10_equipes'} />
 
         {/* 1. CLASSEMENT DES 8 ÉQUIPES */}
 		{currentStepIndex >= statusSteps.findIndex(s => s.id === 'TERMINE') && (
@@ -376,7 +386,7 @@ export default function PodiumPage() {
                     #{r.rank}
                   </div>
                   <div className="flex-1">
-                    <div className="text-[9px] font-black uppercase text-zinc-500 mb-1">{r.type}</div>
+                    <div className="text-[9px] font-black uppercase text-zinc-500 mb-1">{r.label}</div>
                     <div className="text-sm md:text-lg font-bold uppercase truncate">
                       <span>
                         {playersMap[r.team?.pointeur_id]?.split(' ')[0]} <span className="text-red-600">&</span> {playersMap[r.team?.tireur_id]?.split(' ')[0]}
@@ -427,7 +437,7 @@ export default function PodiumPage() {
               const t2 = teams.find(t => t.id === m.team2_id);
 				return (
 				  <div key={m.id} className={`border border-white/5 p-5 rounded-2xl flex flex-col items-center gap-3 ${m.status =='EN_COURS' ? 'bg-purple-500/20' : 'bg-zinc-500/10'}`}>
-				    <span className="text-sm font-black text-red-600 uppercase tracking-widest">{m.type}</span>
+				    <span className="text-sm font-black text-red-600 uppercase tracking-widest">{stepLabelMap[m.type] || m.type}</span>
 				    
 				    {/* Conteneur principal (La ligne) */}
 				    <div className="flex items-center justify-between w-full font-bold uppercase text-sm md:text-md">
@@ -478,8 +488,8 @@ export default function PodiumPage() {
         </section>
         )}
 
-        {/* 3. MATCHES DES DEMIS */}
-        {currentStepIndex >= statusSteps.findIndex(s => s.id === 'DEMI') && (
+        {/* 3. MATCHES DES DEMIS (absent en format 10 équipes) */}
+        {demiMatches.length > 0 && (
         <section className="mb-16">
           <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Scores des Demis <div className="h-[1px] flex-1 bg-zinc-800"></div>

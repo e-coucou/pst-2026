@@ -9,6 +9,7 @@
 ## 🔴 PRIORITÉS CRITIQUES
 - [ ] **Data :** Vérifier l'intégrité des schémas de base de données pour la version 2026.
 - [ ] **Sécurité :** Vérifier les policies RLS de `activity_logs`, `photos_import` et la fonction `get_popularity_stats` dans un schéma SQL versionné (rien n'est commité à ce jour, tout vit dans le dashboard Supabase).
+- [ ] **Live :** Graphique ELO en bas de `/app/live` — le tooltip ne fonctionne pas correctement. Mis de côté pour l'instant (priorité au plan format 10 équipes, cf. `documents/plan_10_teams.md`).
 
 ## 🛠️ EN COURS (Sprint Actuel)
 - [ ] **3D Résidence :** `app/(sections)/render/page.tsx` et `data/residence.ts` très avancés (appartements, piscine, terrain de boules, joueurs stylisés) mais **toujours non commités** — reprendre et committer quand la modélisation sera jugée complète.

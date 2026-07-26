@@ -18,7 +18,8 @@ export default function LivePoulesPage() {
   const [matches, setMatches] = useState<any[]>([]);
   const [playersMap, setPlayersMap] = useState<Record<number, string>>({});
   const [status, setStatus] = useState<string>('POULES');
-  
+  const [format, setFormat] = useState<string>('classique');
+
   const [localScores, setLocalScores] = useState<Record<number, { s1: number | '', s2: number | '' }>>({});
   const [savingMatch, setSavingMatch] = useState<number | null>(null);
   const [eloSettings, setEloSettings] = useState<any>(null);
@@ -31,9 +32,10 @@ export default function LivePoulesPage() {
   const fetchData = async () => {
     setLoading(true);
 
-    const { data: tournoi } = await supabase.from('live_tournament').select('status').eq('id', 1).single();
+    const { data: tournoi } = await supabase.from('live_tournament').select('status, format').eq('id', 1).single();
 	if (tournoi) {
-      setStatus(tournoi?.status); 
+      setStatus(tournoi?.status);
+      setFormat(tournoi?.format || 'classique');
     }
 
     const { data: sData } = await supabase.from('settings').select('*');
@@ -217,6 +219,49 @@ export default function LivePoulesPage() {
     }
   };
 
+  // Format "10 équipes" : pas de demi-finales, on va directement des poules (5 équipes chacune)
+  // aux 5 finales classées (1er×1er, 2e×2e, ... 5e×5e), et le statut passe directement à FINALE.
+  const generateFinalesClassees = async () => {
+    const message = status === 'FINALE'
+      ? "Attention : Tu vas régénérer les finales classées. Cela effacera TOUS les scores déjà enregistrés. Continuer ?"
+      : "Générer les finales classées ? Cette action verrouille les poules.";
+
+    if (!confirm(message)) return;
+    setLoading(true);
+
+    try {
+      const standingsGassin = calculateStandings('Gassin');
+      const standingsRamatuelle = calculateStandings('Ramatuelle');
+
+      const { error: deleteError } = await supabase
+        .from('live_matches')
+        .delete()
+        .neq('type', 'Poule');
+      if (deleteError) throw deleteError;
+
+      const finalesMatchs = standingsGassin.map((_, i) => ({
+        poule: '',
+        tableau: 'Principal',
+        type: `Finale Rang${i + 1}`,
+        team1_id: standingsGassin[i].id,
+        team2_id: standingsRamatuelle[i].id,
+        status: 'EN_COURS'
+      }));
+
+      const { error: insertError } = await supabase.from('live_matches').insert(finalesMatchs);
+      if (insertError) throw insertError;
+
+      // Saute directement à FINALE (pas de statut DEMI pour ce format)
+      await supabase.from('live_tournament').update({ status: 'FINALE' }).eq('id', 1);
+      logActivity(supabase, 'ADMIN_GENERATE_FINALES_CLASSEES');
+
+      router.push('/live/finale');
+    } catch (err) {
+      alert("Erreur lors de la génération : " + (err as any).message);
+      setLoading(false);
+    }
+  };
+
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black animate-pulse italic">CHARGEMENT...</div>;
 
 
@@ -373,28 +418,32 @@ export default function LivePoulesPage() {
             <button onClick={() => router.push('/live/admin')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
               <ArrowLeft size={14} /> <span className="hidden md:inline">équipes</span>
             </button>
-            <button onClick={() => router.push('/live/demi')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
-              <ArrowRight size={14} /> <span className="hidden md:inline">demi</span>
+            <button onClick={() => router.push(format === '10_equipes' ? '/live/finale' : '/live/demi')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
+              <ArrowRight size={14} /> <span className="hidden md:inline">{format === '10_equipes' ? 'finale' : 'demi'}</span>
 			</button>
           </div>
         </header>
 
-		<RenderStepper currentStatus = {status} />
+		<RenderStepper currentStatus = {status} skipDemi={format === '10_equipes'} />
 
-        {/* SECTION BOUTON POUR LANCER LES DEMIS */}
+        {/* SECTION BOUTON POUR LANCER LES DEMIS (classique) OU LES FINALES CLASSÉES (10 équipes) */}
         {allFinished && (
           <div className="mb-12 p-8 rounded-[2.5rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(220,38,38,0.3)] animate-bounce-subtle">
             <div className="text-center md:text-left">
               <h3 className="text-2xl font-black uppercase italic text-white leading-none mb-2">Terminé !</h3>
-              <p className="text-red-100 font-bold text-sm">Le classement est définitif. Prêt pour les demi-finales ?</p>
+              <p className="text-red-100 font-bold text-sm">
+                {format === '10_equipes'
+                  ? "Le classement est définitif. Prêt pour les finales classées ?"
+                  : "Le classement est définitif. Prêt pour les demi-finales ?"}
+              </p>
             </div>
             <button
-              onClick={generateDemis}
+              onClick={format === '10_equipes' ? generateFinalesClassees : generateDemis}
               disabled={loading}
               className="w-full md:w-auto bg-black text-white px-10 py-4 rounded-2xl font-black uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all active:scale-95 disabled:opacity-50"
             >
               {loading ? <Loader2 size={20} className="animate-spin" /> : <Trophy size={20} />}
-              Générer Demi-Finales
+              {format === '10_equipes' ? 'Générer les Finales Classées' : 'Générer Demi-Finales'}
             </button>
           </div>
         )}
