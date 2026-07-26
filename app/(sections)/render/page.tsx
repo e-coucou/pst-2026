@@ -7,6 +7,54 @@ import * as THREE from 'three';
 import { residenceData } from '@/data/residence';
 import { createClient } from '@/utils/supabase/client';
 
+// Largeur/profondeur d'un pan (façade ou cour) d'un appartement — factorisé hors de Apartment
+// pour être réutilisé tel quel par la fiche d'info (dimensions + surface estimée), sans risquer
+// de dupliquer la formule et de la laisser diverger (cf. le bug CouloirCdB19a26/courExtraWidth).
+function getApartmentBoxDims(data: any, type: 'facade' | 'cour', building: any, config: any) {
+  const s: any = (building.sections as any)[data.section];
+  if (!s) return null;
+  const colWidth = s.colWidth || config.gridColWidth;
+  const isCour = type === 'cour';
+
+  const hasCourOverride = isCour && data.colSpanCour !== undefined;
+  const sideColSpan = hasCourOverride ? data.colSpanCour : (data.colSpan || 1);
+  const courExtraWidth = isCour ? (data.courExtraWidth || 0) : 0;
+  const width = sideColSpan * colWidth + courExtraWidth;
+
+  const depth = isCour
+    ? (data.courDepthMeters ?? (data.corridorRear ? config.corridorDepth : config.courDepth))
+    : config.facadeDepth + (data.southCorridorExtra ? config.corridorDepth : 0) + (data.extraSouthDepth || 0);
+
+  return { width, depth };
+}
+
+// Fiche dimensions/surface d'un appartement sélectionné : un badge par pan existant (façade
+// et/ou cour), largeur×profondeur en mètres, plus une surface totale estimée (somme des pans).
+function ApartmentDimensions({ apt }: { apt: any }) {
+  const { building, config } = residenceData.residence;
+  const facade = (apt.face === 'facade' || apt.face === 'both') ? getApartmentBoxDims(apt, 'facade', building, config) : null;
+  const cour = (apt.face === 'cour' || apt.face === 'both') ? getApartmentBoxDims(apt, 'cour', building, config) : null;
+  const surface = (facade ? facade.width * facade.depth : 0) + (cour ? cour.width * cour.depth : 0);
+
+  return (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {facade && (
+        <span className="px-2 py-1 bg-zinc-800/80 text-zinc-300 text-[10px] font-black uppercase tracking-widest rounded-md">
+          Façade {facade.width.toFixed(1)}×{facade.depth.toFixed(1)}
+        </span>
+      )}
+      {cour && (
+        <span className="px-2 py-1 bg-zinc-800/80 text-zinc-300 text-[10px] font-black uppercase tracking-widest rounded-md">
+          Cour {cour.width.toFixed(1)}×{cour.depth.toFixed(1)}
+        </span>
+      )}
+      <span className="px-2 py-1 bg-red-600/20 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-md">
+        ≈ {surface.toFixed(1)} m²
+      </span>
+    </div>
+  );
+}
+
 function Apartment({ data, selected, onSelect }: { data: any; selected: any; onSelect: (data: any) => void }) {
   const { config, building } = residenceData.residence;
   const sectionKey = data.section as keyof typeof building.sections;
@@ -50,23 +98,11 @@ function Apartment({ data, selected, onSelect }: { data: any; selected: any; onS
     // leur façade est élargie (ex: colSpan 1.5 + extendLeft) — colSpanCour permet
     // de surcharger la largeur uniquement côté cour, sans toucher à la façade.
     const hasCourOverride = isCour && data.colSpanCour !== undefined;
-    const sideColSpan = hasCourOverride ? data.colSpanCour : (data.colSpan || 1);
-    // Léger débordement vers l'extérieur côté cour (en mètres, indépendant de la grille de colonnes)
-    const courExtraWidth = isCour ? (data.courExtraWidth || 0) : 0;
-    const width = sideColSpan * colWidth + courExtraWidth;
+    const { width, depth } = getApartmentBoxDims(data, type, building, config)!;
     // colCour permet d'ancrer le pan cour sur une autre colonne que la façade
     // (ex: studio dont seule la moitié OUEST a un pan cour, cf. colCour: colonne+1).
     const sideCol = (isCour && data.colCour !== undefined) ? data.colCour : data.col;
     const xPos = (s as any).startX + ((s as any).leftMargin || 0) + (sideCol * colWidth) + (width / 2) - ((isExtendLeft && !hasCourOverride) ? colWidth / 2 : 0);
-
-    // Certains "pans arrière" ne sont qu'un couloir (profondeur réduite), pas une vraie pièce côté cour.
-    // courDepthMeters permet une profondeur explicite (ex: 3m d'un couloir absorbé), prioritaire sur les deux autres cas.
-    // southCorridorExtra : allonge le bloc façade vers le Sud d'une profondeur de couloir (même
-    // bloc, le front reste fixé sur la rue — donc même niveau, pas de décalage vertical).
-    // extraSouthDepth : allongement supplémentaire vers le Sud, même principe (même niveau).
-    const depth = isCour
-      ? (data.courDepthMeters ?? (data.corridorRear ? config.corridorDepth : config.courDepth))
-      : config.facadeDepth + (data.southCorridorExtra ? config.corridorDepth : 0) + (data.extraSouthDepth || 0);
 
     // 2. POSITIONNEMENT DU CENTRE (zPos)
     // Three.js positionne le centre de l'objet. 
@@ -1107,6 +1143,7 @@ export default function RenderPage() {
                 </span>
               )}
             </div>
+            <ApartmentDimensions apt={selected} />
           </>
         ) : (
           <>
