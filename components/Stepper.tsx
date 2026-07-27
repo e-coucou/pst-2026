@@ -5,12 +5,21 @@ import React from 'react';
 
 interface StepperProps {
   currentStatus: string;
-  // Format "10 équipes" : pas de demi-finales, l'étape 'Demis' n'existe pas dans ce cycle.
-  skipDemi?: boolean;
+  // Pilote la liste d'étapes affichée : 'classique' (6 étapes), '10_equipes' (5, pas de
+  // Demis), 'ronde' (5, 4 rondes suisses puis une ronde de finales classées, pas de Demis).
+  format?: string;
 }
 
-export default function RenderStepper({ currentStatus, skipDemi = false }: StepperProps) {
-  const steps = skipDemi
+export default function RenderStepper({ currentStatus, format = 'classique' }: StepperProps) {
+  const steps = format === 'ronde'
+    ? [
+        { id: 'JOUEURS', label: 'Joueurs' },
+        { id: 'EQUIPES', label: 'Equipes' },
+        { id: 'POULES', label: 'Rondes' },
+        { id: 'FINALE', label: 'Finales' },
+        { id: 'TERMINE', label: 'Podium' }
+      ]
+    : format === '10_equipes'
     ? [
         { id: 'JOUEURS', label: 'Joueurs' },
         { id: 'EQUIPES', label: 'Equipes' },

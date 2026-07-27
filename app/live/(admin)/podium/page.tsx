@@ -129,7 +129,7 @@ export default function PodiumPage() {
           <p className="text-zinc-500 font-bold uppercase text-3xl md:text-4xl tracking-widest">• été {season[0].year} •</p>
         </header>
 
-        <RenderStepper currentStatus = {status} skipDemi={format === '10_equipes'} />
+        <RenderStepper currentStatus = {status} format={format} />
 
         {/* 1. CLASSEMENT DES 8 ÉQUIPES */}
         <section className="mb-20">
@@ -183,7 +183,8 @@ export default function PodiumPage() {
           </div>
         </section>
 
-        {/* 2. MATCHES DES FINALES */}
+        {/* 2. MATCHES DES FINALES (absent en format Ronde) */}
+        {matches.length > 0 && (
         <section className="mb-16">
           <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Scores des Finales <div className="h-[1px] flex-1 bg-zinc-800"></div>
@@ -225,8 +226,9 @@ export default function PodiumPage() {
             })}
           </div>
         </section>
+        )}
 
-        {/* 3. MATCHES DES DEMIS (absent en format 10 équipes) */}
+        {/* 3. MATCHES DES DEMIS (absent en format 10 équipes / ronde) */}
         {demiMatches.length > 0 && (
         <section className="mb-16">
           <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
@@ -280,8 +282,12 @@ export default function PodiumPage() {
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Classement de Poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderStandingsMini('Gassin', 'orange')}
-            {renderStandingsMini('Ramatuelle', 'purple')}
+            {format === 'ronde' ? renderStandingsMini('Ronde', 'orange') : (
+              <>
+                {renderStandingsMini('Gassin', 'orange')}
+                {renderStandingsMini('Ramatuelle', 'purple')}
+              </>
+            )}
           </div>
         </section>
 
@@ -290,8 +296,8 @@ export default function PodiumPage() {
           <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Détail des matches de poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {['Gassin', 'Ramatuelle'].map((poule) => (
+          <div className={`grid grid-cols-1 gap-8 ${format === 'ronde' ? '' : 'md:grid-cols-2'}`}>
+            {(format === 'ronde' ? ['Ronde'] : ['Gassin', 'Ramatuelle']).map((poule) => (
               <div key={poule} className="space-y-2">
                 <div className="text-md font-black uppercase text-zinc-400 mb-3 ml-1 tracking-[0.2em]">{poule}</div>
                 {pouleMatches.filter(m => m.poule === poule).map(m => {

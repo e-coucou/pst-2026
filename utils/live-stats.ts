@@ -51,6 +51,47 @@ export const calculatePouleStandings = (
   return standings.sort((a, b) => (b.pts - a.pts) || (b.diff - a.diff) || (b.pour - a.pour));
 };
 
+/**
+ * Clé normalisée (ordre alphabétique) pour identifier une paire d'équipes, indépendamment
+ * de l'ordre team1/team2.
+ */
+const pairKey = (a: string, b: string) => [a, b].sort().join('-');
+
+/**
+ * Reconstruit l'ensemble des duels déjà joués (toutes rondes confondues) à partir des
+ * matchs existants d'un format "Ronde", pour l'anti-rematch de generateRondePairing.
+ */
+export const buildPlayedPairs = (matches: any[]): Set<string> => {
+  const played = new Set<string>();
+  matches.forEach(m => played.add(pairKey(m.team1_id, m.team2_id)));
+  return played;
+};
+
+/**
+ * Appariement suisse glouton pour une ronde du format "Ronde" : à partir du classement
+ * cumulé courant (déjà trié pts/diff/pour par calculatePouleStandings), apparie les équipes
+ * par rang adjacent en évitant les rematchs. Pas de garantie d'optimalité façon FIDE (pas de
+ * backtracking complet), mais suffisant pour 5 rondes / 10 équipes où le risque de blocage
+ * est marginal — en cas de blocage, retombe sur le premier adversaire disponible (rematch).
+ */
+export const generateRondePairing = (
+  standings: PouleStanding[],
+  playedPairs: Set<string>
+): [string, string][] => {
+  const pool = [...standings];
+  const pairs: [string, string][] = [];
+
+  while (pool.length > 0) {
+    const a = pool.shift()!;
+    let idx = pool.findIndex(b => !playedPairs.has(pairKey(a.id, b.id)));
+    if (idx === -1) idx = 0;
+    const [b] = pool.splice(idx, 1);
+    pairs.push([a.id, b.id]);
+  }
+
+  return pairs;
+};
+
 export interface TeamStats {
   id: string;
   delta_elo: number;

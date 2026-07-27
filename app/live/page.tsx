@@ -192,7 +192,6 @@ export default function PodiumPage() {
       });
       return results.sort((a, b) => a.rank - b.rank);
     }, [matches, stepValues, teams, stepLabelMap]);
-  
 
   const calculateStandings = (pouleName: string) => calculatePouleStandings(pouleName, teams, pouleMatches, playersMap);
 
@@ -336,7 +335,7 @@ export default function PodiumPage() {
           })()}
         </header>
 
-        <RenderStepper currentStatus = {status} skipDemi={format === '10_equipes'} />
+        <RenderStepper currentStatus = {status} format={format} />
 
         {/* 1. CLASSEMENT DES 8 ÉQUIPES */}
 		{currentStepIndex >= statusSteps.findIndex(s => s.id === 'TERMINE') && (
@@ -392,8 +391,8 @@ export default function PodiumPage() {
         </section>
         )}
 
-        {/* 2. MATCHES DES FINALES */}
-        {currentStepIndex >= statusSteps.findIndex(s => s.id === 'FINALE') && (
+        {/* 2. MATCHES DES FINALES (absent en format Ronde, gate data-driven comme les demis) */}
+        {matches.length > 0 && (
         <section className="mb-16">
           <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Scores des Finales <div className="h-[1px] flex-1 bg-zinc-800"></div>
@@ -530,8 +529,12 @@ export default function PodiumPage() {
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Classement de Poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderStandingsMini('Gassin', 'orange')}
-            {renderStandingsMini('Ramatuelle', 'purple')}
+            {format === 'ronde' ? renderStandingsMini('Ronde', 'orange') : (
+              <>
+                {renderStandingsMini('Gassin', 'orange')}
+                {renderStandingsMini('Ramatuelle', 'purple')}
+              </>
+            )}
           </div>
         </section>
         )}
@@ -542,8 +545,8 @@ export default function PodiumPage() {
           <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Détail des matches de poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {['Gassin', 'Ramatuelle'].map((poule) => (
+          <div className={`grid grid-cols-1 gap-8 ${format === 'ronde' ? '' : 'md:grid-cols-2'}`}>
+            {(format === 'ronde' ? ['Ronde'] : ['Gassin', 'Ramatuelle']).map((poule) => (
               <div key={poule} className="space-y-2">
                 <div className="text-md font-black uppercase text-zinc-400 mb-3 ml-1 tracking-[0.2em]">{poule}</div>
                 {pouleMatches.filter(m => m.poule === poule).map(m => {
