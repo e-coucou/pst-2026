@@ -10,6 +10,7 @@
 - [ ] **Data :** Vérifier l'intégrité des schémas de base de données pour la version 2026.
 - [ ] **Sécurité :** Vérifier les policies RLS de `activity_logs`, `photos_import` et la fonction `get_popularity_stats` dans un schéma SQL versionné (rien n'est commité à ce jour, tout vit dans le dashboard Supabase).
 - [ ] **Live :** Graphique ELO en bas de `/app/live` — le tooltip ne fonctionne pas correctement. Mis de côté pour l'instant (priorité au plan format 10 équipes, cf. `documents/plan_10_teams.md`).
+- [ ] **Sécurité :** `lib/auth-actions.ts` non importé nulle part (`verifyInvitationCode` semble remplacée par le RPC Supabase `verify_invitation_code`, `isAdmin` inutilisée aussi) — **à revérifier avant suppression**, sujet sensible car même thématique que la faille d'inscription Google OAuth déjà corrigée (code d'invitation non revérifié côté serveur). Ne pas supprimer tant que ce point n'est pas confirmé.
 
 ## 🛠️ EN COURS (Sprint Actuel)
 - [ ] **Archivage :** À la fin du tournoi 2026, l'archivage de la saison (`teams`/`games`, page `tournois/[year]`) devra gérer le format utilisé (8 équipes+demies vs 10 équipes+5 finales classées, cf. `documents/plan_10_teams.md`) — les années auront des structures différentes selon le format choisi. Pas encore traité, à reprendre après l'uniformisation des tableaux de résultats.
@@ -19,7 +20,6 @@
 ## 🕒 BACKLOG
 - [ ] **Communication :** Système de push messages exclusif aux admins et super, avec affichage sur la première page.
 - [ ] **Documentation :** Générer un fichier `notes.md` basé sur le `README.md` et les logs de commit GitHub.
-- [ ] **Nettoyage :** Supprimer les fichiers morts non importés nulle part (audit complet du 27/07 sur `components/lib/utils/hooks`, 32 fichiers vérifiés un par un) : `components/PredictionModal-bayer.tsx`, `components/PredictionModal-cp1.tsx`, `components/PredictionModal-cp2.tsx`, `components/Logo_anc.tsx`, `components/AdminSettings.tsx` (remplacé par la logique inline de `app/live/(super)/params_elo/page.tsx`), `lib/auth-actions.ts` (vérification du code d'invitation réécrite via le RPC Supabase `verify_invitation_code`). Pas concernés (scripts autonomes légitimes, pas du code mort) : `migration-pst.ts`, `scripts/live-elo.ts`, `scripts/recompute-elo.ts`, `proxy.ts` (convention Next.js 16, remplace `middleware.ts`).
 - [ ] **Vidéos :** Tracking "vidéo lue" mis de côté (contrainte iframe YouTube cross-origin — nécessiterait l'API IFrame officielle de YouTube, hors scope pour l'instant).
 - [ ] **Stockage :** Suivre l'usage du bucket `photos_import` (quota 1 Go / plan Supabase free) à mesure que la galerie grossit.
 
@@ -57,4 +57,5 @@
 - [x] **Résidence :** Rapprochement nom/lot du Bâtiment B entre `data/residence.ts` et la convocation d'AG (`documents/private/`, non commité).
 - [x] **Live :** Tableau de palmarès/résultats de poules unifié sur toutes les pages (poules, finale, podium, live public, archives `tournois/[year]`) via un composant partagé `PouleStandingsTable` + utilitaire `calculatePouleStandings` — colonnes V/D/N, Pour/Contre, Diff, Pts identiques partout (au lieu de versions "mini" appauvries ailleurs que sur la page poules).
 - [x] **UI :** Cohérence tireur=orange/pointeur=violet appliquée sur ~10 fichiers (tournois, stats, SeasonHistory, tout le cycle live admin, PredictionModal, admin_teams) — plusieurs endroits affichaient les noms sans couleur ou avec une couleur incorrecte (rouge/blanc/bleu).
+- [x] **Nettoyage :** Suppression des fichiers morts confirmés (audit du 27/07, 32 fichiers de `components/lib/utils/hooks` vérifiés un par un) : `PredictionModal-bayer.tsx`, `PredictionModal-cp1.tsx`, `PredictionModal-cp2.tsx`, `Logo_anc.tsx`, `AdminSettings.tsx`. `lib/auth-actions.ts` volontairement conservé pour revérification sécurité (cf. Priorités Critiques).
 - [x] **Favoris :** Étoile favori (`components/FavoriStar.tsx` + `utils/favori.ts` serveur + `hooks/useFavoriId.ts` client) étendue à ~12 pages où un nom de joueur apparaît (au-delà de la seule fiche joueur) : stats, tournois, cycle live admin, admin_joueurs, GlobalProgressionChart. Non traité : `SeasonHistory.tsx` (le nom du partenaire n'a pas d'id de profil disponible dans les données actuelles) et les `<option>` natifs d'`admin_teams` (impossible d'y insérer une icône).
