@@ -6,17 +6,21 @@ import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
 import PredictionModal from '@/components/PredictionModal';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
-import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Swords, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Swords, CheckCircle2, Dices } from 'lucide-react';
 import { logActivity } from '@/utils/log-activity';
 import { calculatePouleStandings } from '@/utils/live-stats';
+import { simulateRandomScores } from '@/utils/simulate';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
 import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
+import { useIsSuper } from '@/hooks/useIsSuper';
 
 export default function LiveDemiPage() {
   const supabase = createClient();
   const router = useRouter();
   const favoriId = useFavoriId();
+  const isSuper = useIsSuper();
+  const [simulating, setSimulating] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
@@ -158,6 +162,25 @@ export default function LiveDemiPage() {
     setSavingMatch(null);
   };
 
+  // Outil de test (super admins) : remplit tous les matchs de finales non terminés avec des
+  // scores aléatoires, via le même pipeline que la saisie manuelle (ELO inclus).
+  const handleSimulate = async () => {
+    const pendingCount = matches.filter(m => m.status !== 'TERMINE').length;
+    if (pendingCount === 0) return;
+    if (!confirm(`Simuler des scores aléatoires pour ${pendingCount} finale(s) non terminée(s) ?`)) return;
+    setSimulating(true);
+    try {
+      await simulateRandomScores(supabase, matches, eloSettings);
+      await fetchData();
+      executeAction('/api/admin/live-elo');
+      logActivity(supabase, 'ADMIN_SIMULATE_SCORES', { context: 'finale', count: pendingCount });
+    } catch (err: any) {
+      alert("Erreur simulation : " + err.message);
+    } finally {
+      setSimulating(false);
+    }
+  };
+
   const renderStandingsMini = (pouleName: string, accentColor: 'orange' | 'purple') => (
     <PouleStandingsTable pouleName={pouleName} standings={calculateStandings(pouleName)} accentColor={accentColor} />
   );
@@ -287,6 +310,16 @@ export default function LiveDemiPage() {
             Live <span className="text-red-600 group-hover:text-white">Finales</span>
           </h1>
 			 <div className="flex flex-cols">
+			   {isSuper && (
+			     <button
+			       onClick={handleSimulate}
+			       disabled={simulating}
+			       title="Simuler des scores aléatoires (test)"
+			       className="flex items-center gap-2 text-[10px] font-black uppercase text-amber-500 hover:text-amber-300 bg-amber-500/10 px-4 py-2 rounded-full border border-dashed border-amber-500/40 disabled:opacity-40"
+			     >
+			       {simulating ? <Loader2 size={14} className="animate-spin" /> : <Dices size={14} />} <span className="hidden md:inline">Simuler</span>
+			     </button>
+			   )}
 			   <button onClick={() => router.push(format === '10_equipes' ? '/live/poules' : '/live/demi')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
 			     <ArrowLeft size={14} /> <span className="hidden md:inline">{format === '10_equipes' ? 'poules' : 'demi'}</span>
 			   </button>

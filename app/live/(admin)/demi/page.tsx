@@ -156,6 +156,25 @@ export default function LiveDemiPage() {
     setSavingMatch(null);
   };
 
+  // Outil de test (super admins) : remplit tous les matchs de demis non terminés avec des
+  // scores aléatoires, via le même pipeline que la saisie manuelle (ELO inclus).
+  const handleSimulate = async () => {
+    const pendingCount = matches.filter(m => m.status !== 'TERMINE').length;
+    if (pendingCount === 0) return;
+    if (!confirm(`Simuler des scores aléatoires pour ${pendingCount} demi(s) non terminée(s) ?`)) return;
+    setSimulating(true);
+    try {
+      await simulateRandomScores(supabase, matches, eloSettings);
+      await fetchData();
+      executeAction('/api/admin/live-elo');
+      logActivity(supabase, 'ADMIN_SIMULATE_SCORES', { context: 'demi', count: pendingCount });
+    } catch (err: any) {
+      alert("Erreur simulation : " + err.message);
+    } finally {
+      setSimulating(false);
+    }
+  };
+
 
   const renderStandingsMini = (pouleName: string) => {
     const standings = calculateStandings(pouleName);
@@ -354,6 +373,16 @@ export default function LiveDemiPage() {
             Live <span className="text-red-600 group-hover:text-white">Demis</span>
           </h1>
 			 <div className="flex flex-cols">
+			   {isSuper && (
+			     <button
+			       onClick={handleSimulate}
+			       disabled={simulating}
+			       title="Simuler des scores aléatoires (test)"
+			       className="flex items-center gap-2 text-[10px] font-black uppercase text-amber-500 hover:text-amber-300 bg-amber-500/10 px-4 py-2 rounded-full border border-dashed border-amber-500/40 disabled:opacity-40"
+			     >
+			       {simulating ? <Loader2 size={14} className="animate-spin" /> : <Dices size={14} />} <span className="hidden md:inline">Simuler</span>
+			     </button>
+			   )}
 			   <button onClick={() => router.push('/live/poules')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
 			     <ArrowLeft size={14} /> <span className="hidden md:inline">poules</span>
 			   </button>
