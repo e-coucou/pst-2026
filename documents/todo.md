@@ -17,10 +17,9 @@
 - [ ] **Photos :** Prévoir une politique de rétention/migration pour les photos uploadées avant l'introduction du système vignette + version complète (chemin plat, non listées par la galerie actuelle).
 
 ## 🕒 BACKLOG
-- [ ] **UI :** Étendre la case à cocher "Favoris" au-delà de la fiche joueur (`/joueurs/[id]`) — actuellement la seule page qui l'expose.
 - [ ] **Communication :** Système de push messages exclusif aux admins et super, avec affichage sur la première page.
 - [ ] **Documentation :** Générer un fichier `notes.md` basé sur le `README.md` et les logs de commit GitHub.
-- [ ] **Nettoyage :** Supprimer les fichiers morts non importés nulle part : `PredictionModal-bayer.tsx`, `PredictionModal-cp1.tsx`, `PredictionModal-cp2.tsx`, `Logo_anc.tsx`.
+- [ ] **Nettoyage :** Supprimer les fichiers morts non importés nulle part (audit complet du 27/07 sur `components/lib/utils/hooks`, 32 fichiers vérifiés un par un) : `components/PredictionModal-bayer.tsx`, `components/PredictionModal-cp1.tsx`, `components/PredictionModal-cp2.tsx`, `components/Logo_anc.tsx`, `components/AdminSettings.tsx` (remplacé par la logique inline de `app/live/(super)/params_elo/page.tsx`), `lib/auth-actions.ts` (vérification du code d'invitation réécrite via le RPC Supabase `verify_invitation_code`). Pas concernés (scripts autonomes légitimes, pas du code mort) : `migration-pst.ts`, `scripts/live-elo.ts`, `scripts/recompute-elo.ts`, `proxy.ts` (convention Next.js 16, remplace `middleware.ts`).
 - [ ] **Vidéos :** Tracking "vidéo lue" mis de côté (contrainte iframe YouTube cross-origin — nécessiterait l'API IFrame officielle de YouTube, hors scope pour l'instant).
 - [ ] **Stockage :** Suivre l'usage du bucket `photos_import` (quota 1 Go / plan Supabase free) à mesure que la galerie grossit.
 
