@@ -320,8 +320,8 @@ export default function LiveDemiPage() {
 			       {simulating ? <Loader2 size={14} className="animate-spin" /> : <Dices size={14} />} <span className="hidden md:inline">Simuler</span>
 			     </button>
 			   )}
-			   <button onClick={() => router.push(format === '10_equipes' ? '/live/poules' : '/live/demi')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
-			     <ArrowLeft size={14} /> <span className="hidden md:inline">{format === '10_equipes' ? 'poules' : 'demi'}</span>
+			   <button onClick={() => router.push(format === '10_equipes' ? '/live/poules' : format === 'ronde' ? '/live/ronde' : '/live/demi')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
+			     <ArrowLeft size={14} /> <span className="hidden md:inline">{format === '10_equipes' ? 'poules' : format === 'ronde' ? 'rondes' : 'demi'}</span>
 			   </button>
 			   <button onClick={() => router.push('/live/podium')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
 			     <ArrowRight size={14} /> <span className="hidden md:inline">podium</span>
@@ -351,9 +351,13 @@ export default function LiveDemiPage() {
 
         {demiMatches.length > 0 && renderDemiSummary()}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {renderStandingsMini('Gassin', 'orange')}
-          {renderStandingsMini('Ramatuelle', 'purple')}
+        <div className={`grid grid-cols-1 gap-6 mb-8 ${format === 'ronde' ? '' : 'md:grid-cols-2'}`}>
+          {format === 'ronde' ? renderStandingsMini('Ronde', 'orange') : (
+            <>
+              {renderStandingsMini('Gassin', 'orange')}
+              {renderStandingsMini('Ramatuelle', 'purple')}
+            </>
+          )}
         </div>
 		{/* MODALE DE PREDICTION */}
         {matchToPredict && (

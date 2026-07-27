@@ -157,7 +157,7 @@ export default function LivePoulesPage() {
     if (!confirm(`Simuler des scores aléatoires pour ${pendingCount} match(s) de poules non terminé(s) ?`)) return;
     setSimulating(true);
     try {
-      await simulateRandomScores(supabase, matches, eloSettings);
+      await simulateRandomScores(supabase, matches, eloSettings, 'poule');
       await fetchData();
       executeAction('/api/admin/live-elo');
       logActivity(supabase, 'ADMIN_SIMULATE_SCORES', { context: 'poules', count: pendingCount });

@@ -15,7 +15,9 @@ import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
 import { useIsSuper } from '@/hooks/useIsSuper';
 
-const TOTAL_ROUNDS = 5;
+// 4 rondes suisses ; la 5ème "ronde" est en réalité une ronde de finales classées (cf.
+// generateNextRound), gérée sur /live/finale comme pour le format 10 équipes.
+const TOTAL_SWISS_ROUNDS = 4;
 
 export default function LiveRondePage() {
   const supabase = createClient();
@@ -36,7 +38,6 @@ export default function LiveRondePage() {
   const [eloSettings, setEloSettings] = useState<any>(null);
   const [matchToPredict, setMatchToPredict] = useState<{match: any, t1: any, t2: any} | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [completing, setCompleting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -147,7 +148,7 @@ export default function LiveRondePage() {
     if (!confirm(`Simuler des scores aléatoires pour ${pendingCount} match(s) de la Ronde ${currentRound} ?`)) return;
     setSimulating(true);
     try {
-      await simulateRandomScores(supabase, roundMatches, eloSettings);
+      await simulateRandomScores(supabase, roundMatches, eloSettings, 'poule');
       await fetchData();
       executeAction('/api/admin/live-elo');
       logActivity(supabase, 'ADMIN_SIMULATE_SCORES', { context: 'ronde', round: currentRound, count: pendingCount });
@@ -158,18 +159,39 @@ export default function LiveRondePage() {
     }
   };
 
-  // Ronde 1 à 4 terminée -> génère la ronde suivante par appariement suisse. Ronde 5 terminée
-  // -> plus de ronde à générer, ce même bouton termine directement le tournoi.
+  // Rondes 1 à 3 terminées -> génère la ronde suivante par appariement suisse. Ronde 4 (dernière
+  // ronde suisse) terminée -> génère les finales classées : appariement par rang adjacent sur
+  // le classement cumulé (1v2, 3v4, ...), en réutilisant les types 'Finale Rang1'..'Finale
+  // Rang5' déjà utilisés par le format 10 équipes (bonus ELO "Finale" et libellés hérités
+  // automatiquement, aucune nouvelle ligne `steps` nécessaire), puis redirige vers /live/finale
+  // qui prend le relais (saisie des scores, palmarès, fin de tournoi).
   const generateNextRound = async () => {
-    if (currentRound >= TOTAL_ROUNDS) {
-      if (!confirm("Terminer le tournoi ? Le classement final sera basé sur le cumul des 5 rondes.")) return;
-      setCompleting(true);
-      const { error } = await supabase.from('live_tournament').update({ status: 'TERMINE' }).eq('id', 1);
-      if (!error) {
-        logActivity(supabase, 'ADMIN_COMPLETE_TOURNAMENT');
-        router.push('/live/podium');
-      } else {
-        setCompleting(false);
+    if (currentRound >= TOTAL_SWISS_ROUNDS) {
+      if (!confirm("Générer les finales classées ? Cette action verrouille les rondes.")) return;
+      setGenerating(true);
+      try {
+        const finalesMatchs = [];
+        for (let i = 0; i < standings.length; i += 2) {
+          finalesMatchs.push({
+            poule: '',
+            tableau: 'Principal',
+            type: `Finale Rang${i / 2 + 1}`,
+            team1_id: standings[i].id,
+            team2_id: standings[i + 1].id,
+            status: 'EN_COURS'
+          });
+        }
+
+        const { error: insertError } = await supabase.from('live_matches').insert(finalesMatchs);
+        if (insertError) throw insertError;
+
+        await supabase.from('live_tournament').update({ status: 'FINALE' }).eq('id', 1);
+        logActivity(supabase, 'ADMIN_GENERATE_FINALES_RONDE');
+        router.push('/live/finale');
+      } catch (err: any) {
+        alert("Erreur lors de la génération : " + err.message);
+      } finally {
+        setGenerating(false);
       }
       return;
     }
@@ -300,8 +322,8 @@ export default function LiveRondePage() {
             <button onClick={() => router.push('/live/admin')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
               <ArrowLeft size={14} /> <span className="hidden md:inline">équipes</span>
             </button>
-            <button onClick={() => router.push('/live/podium')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
-              <ArrowRight size={14} /> <span className="hidden md:inline">podium</span>
+            <button onClick={() => router.push('/live/finale')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
+              <ArrowRight size={14} /> <span className="hidden md:inline">finales</span>
             </button>
           </div>
         </header>
@@ -312,21 +334,21 @@ export default function LiveRondePage() {
           <div className="mb-12 p-8 rounded-[2.5rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(220,38,38,0.3)] animate-bounce-subtle">
             <div className="text-center md:text-left">
               <h3 className="text-2xl font-black uppercase italic text-white leading-none mb-2">
-                {currentRound >= TOTAL_ROUNDS ? 'Rondes Terminées !' : `Ronde ${currentRound} Terminée !`}
+                {currentRound >= TOTAL_SWISS_ROUNDS ? 'Rondes Suisses Terminées !' : `Ronde ${currentRound} Terminée !`}
               </h3>
               <p className="text-red-100 font-bold text-sm">
-                {currentRound >= TOTAL_ROUNDS
-                  ? "Le classement cumulé est définitif. Prêt à consulter le palmarès ?"
+                {currentRound >= TOTAL_SWISS_ROUNDS
+                  ? "Le classement est définitif. Prêt pour les finales classées ?"
                   : `Prêt pour la Ronde ${currentRound + 1} ? L'appariement suivra le classement actuel.`}
               </p>
             </div>
             <button
               onClick={generateNextRound}
-              disabled={generating || completing}
+              disabled={generating}
               className="w-full md:w-auto bg-black text-white px-10 py-4 rounded-2xl font-black uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all active:scale-95 disabled:opacity-50"
             >
-              {generating || completing ? <Loader2 size={20} className="animate-spin" /> : <Trophy size={20} />}
-              {currentRound >= TOTAL_ROUNDS ? 'Consulter le Palmarès' : `Générer la Ronde ${currentRound + 1}`}
+              {generating ? <Loader2 size={20} className="animate-spin" /> : <Trophy size={20} />}
+              {currentRound >= TOTAL_SWISS_ROUNDS ? 'Générer les Finales' : `Générer la Ronde ${currentRound + 1}`}
             </button>
           </div>
         )}
@@ -334,7 +356,7 @@ export default function LiveRondePage() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 mb-8 md:mb-12">
           <div className="p-4 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] border border-white/5 bg-white/5">
             <h2 className="text-xl md:text-2xl font-black uppercase italic text-red-600 flex items-center gap-3 mb-6 md:mb-8">
-              <Swords size={20} className="md:w-6 md:h-6" /> Ronde {currentRound} / {TOTAL_ROUNDS}
+              <Swords size={20} className="md:w-6 md:h-6" /> Ronde {currentRound} / {TOTAL_SWISS_ROUNDS}
             </h2>
             <div className="space-y-3 md:space-y-4">
               {roundMatches.map(m => renderMatchRow(m, true))}

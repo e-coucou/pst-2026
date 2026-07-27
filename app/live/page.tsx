@@ -193,15 +193,6 @@ export default function PodiumPage() {
       return results.sort((a, b) => a.rank - b.rank);
     }, [matches, stepValues, teams, stepLabelMap]);
 
-  // Format "Ronde" : pas de bracket demi/finale, le classement final = classement cumulé
-  // des 5 rondes (calculatePouleStandings), remappé sur la même forme que finalTop8 pour
-  // réutiliser le rendu existant tel quel.
-  const rankedList = useMemo(() => {
-    if (format !== 'ronde') return finalTop8;
-    const standings = calculatePouleStandings('Ronde', teams, pouleMatches, playersMap);
-    return standings.map((s, idx) => ({ rank: idx + 1, team: teams.find(t => t.id === s.id), label: 'Cumul Rondes' }));
-  }, [format, finalTop8, teams, pouleMatches, playersMap]);
-
   const calculateStandings = (pouleName: string) => calculatePouleStandings(pouleName, teams, pouleMatches, playersMap);
 
   const renderStandingsMini = (pouleName: string, accentColor: 'orange' | 'purple') => (
@@ -355,7 +346,7 @@ export default function PodiumPage() {
               <h2 className="text-xl font-black uppercase italic">Classement Final</h2>
             </div>
             <div className="p-4 md:p-8 space-y-2">
-              {rankedList.map((r, idx) => (
+              {finalTop8.map((r, idx) => (
                 <div key={idx} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${r.rank === 1 ? 'bg-red-600/20 border-red-600' : 'bg-black/40 border-white/5'}`}>
                   <div className={`text-2xl font-black italic w-10 ${r.rank <= 3 ? 'text-red-600' : 'text-zinc-400'}`}>
                     #{r.rank}
