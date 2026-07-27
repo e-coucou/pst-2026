@@ -67,8 +67,10 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
 			    }`}>{s.role}</span>
 			  </div>
 
-			  {/* Partenaire */}
-			  <div className="col-span-5 md:col-span-3 text-sm md:text-xl font-black italic text-white truncate">
+			  {/* Partenaire : rôle inverse de celui du joueur courant (s.role) */}
+			  <div className={`col-span-5 md:col-span-3 text-sm md:text-xl font-black italic truncate ${
+			    s.role === 'Tireur' ? 'text-purple-400' : 'text-orange-400'
+			  }`}>
 			    {s.partenaire}
 			  </div>
 

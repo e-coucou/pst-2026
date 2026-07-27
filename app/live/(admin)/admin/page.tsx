@@ -6,6 +6,8 @@
 	import RenderStepper from '@/components/Stepper'
 	import { ArrowRight, ArrowLeft, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
 	 import { logActivity } from '@/utils/log-activity';
+	 import FavoriStar from '@/components/FavoriStar';
+	 import { useFavoriId } from '@/hooks/useFavoriId';
 
 	// --- HELPERS FORMAT DE TOURNOI ---
 	// 'classique' = 8 équipes / 2 poules de 4 (demies puis 4 finales)
@@ -50,6 +52,7 @@
 	export default function LiveAdminWizard() {
 	 const supabase = createClient();
 	 const router = useRouter(); // <-- INITIALISATION DU ROUTER
+	 const favoriId = useFavoriId();
 	 
 	 const [isAdmin, setIsAdmin] = useState(false);
 	 const [loading, setLoading] = useState(true);
@@ -429,7 +432,7 @@
 	                 return (
 	                   <div key={p.id} className={`p-3 rounded-2xl border transition-all ${isP || isT ? 'opacity-20 bg-black' : 'bg-zinc-900 border-white/5 hover:border-red-600'}`}>
 	                     <div className="flex justify-between items-center">
-	                       <span className="font-bold text-sm uppercase">{p.nom} <span className="text-zinc-400 ml-2 text-[11px]">{p.elo.toFixed(0)} / {p.modern.toFixed(0)}</span></span>
+	                       <span className="font-bold text-sm uppercase">{p.nom} <FavoriStar active={p.id === favoriId} size={10} /> <span className="text-zinc-400 ml-2 text-[11px]">{p.elo.toFixed(0)} / {p.modern.toFixed(0)}</span></span>
 	                       <div className="flex gap-2">
 	                         <button
 	                           onClick={() => withPending(keyP, async () => {
@@ -481,7 +484,7 @@
 	                       ? <CheckCircle2 size={18} className="text-green-500" />
 	                       : <Circle size={18} className="text-zinc-400 hover:text-white transition-colors" />}
 	                   </button>
-	                   <span className="text-xs font-bold uppercase flex-1 truncate">{p.nom}</span>
+	                   <span className="text-xs font-bold uppercase flex-1 truncate">{p.nom} <FavoriStar active={p.id === favoriId} size={10} /></span>
 	                   <button
 	                     onClick={() => withPending(rmKey, async () => { setSelectedPointeurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); })}
 	                     disabled={pendingRm}
@@ -517,7 +520,7 @@
 	                       ? <CheckCircle2 size={18} className="text-green-500" />
 	                       : <Circle size={18} className="text-zinc-400 hover:text-white transition-colors" />}
 	                   </button>
-	                   <span className="text-xs font-bold uppercase flex-1 truncate">{p.nom}</span>
+	                   <span className="text-xs font-bold uppercase flex-1 truncate">{p.nom} <FavoriStar active={p.id === favoriId} size={10} /></span>
 	                   <button
 	                     onClick={() => withPending(rmKey, async () => { setSelectedTireurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); })}
 	                     disabled={pendingRm}
@@ -573,7 +576,7 @@
 	                   <p className="text-center text-[10px] font-black text-purple-500 uppercase mb-4 tracking-tighter underline decoration-2 underline-offset-4">Pointeurs</p>
 	                   {draftP.map((p, i) => (
 	                     <div key={p.id} className="flex items-center justify-between p-3 bg-black rounded-xl border border-white/5">
-	                       <span className="text-[10px] font-bold uppercase truncate max-w-[80px]">{p.nom}</span>
+	                       <span className="text-[10px] font-bold uppercase truncate max-w-[80px] text-purple-400">{p.nom} <FavoriStar active={p.id === favoriId} size={10} /></span>
 	                       <div className="flex gap-1">
 	                         <button onClick={() => movePlayer(i, -1, draftP, setDraftP)} className="p-1 hover:text-red-600 transition-colors"><ChevronUp size={16}/></button>
 	                         <button onClick={() => movePlayer(i, 1, draftP, setDraftP)} className="p-1 hover:text-red-600 transition-colors"><ChevronDown size={16}/></button>
@@ -582,14 +585,14 @@
 	                   ))}
 	                 </div>
 	                 <div className="space-y-2">
-	                   <p className="text-center text-[10px] font-black text-red-500 uppercase mb-4 tracking-tighter underline decoration-2 underline-offset-4">Tireurs</p>
+	                   <p className="text-center text-[10px] font-black text-orange-500 uppercase mb-4 tracking-tighter underline decoration-2 underline-offset-4">Tireurs</p>
 	                   {draftT.map((t, i) => (
 	                     <div key={t.id} className="flex items-center justify-between p-3 bg-black rounded-xl border border-white/5">
 	                       <div className="flex gap-1">
 	                         <button onClick={() => movePlayer(i, -1, draftT, setDraftT)} className="p-1 hover:text-red-600 transition-colors"><ChevronUp size={16}/></button>
 	                         <button onClick={() => movePlayer(i, 1, draftT, setDraftT)} className="p-1 hover:text-red-600 transition-colors"><ChevronDown size={16}/></button>
 	                       </div>
-	                       <span className="text-[10px] font-bold uppercase truncate max-w-[80px]">{t.nom}</span>
+	                       <span className="text-[10px] font-bold uppercase truncate max-w-[80px] text-orange-400">{t.nom} <FavoriStar active={t.id === favoriId} size={10} /></span>
 	                     </div>
 	                   ))}
 	                 </div>
@@ -605,9 +608,9 @@
 	                     <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border ${isGassin ? 'border-blue-900/30 bg-blue-900/5' : 'border-red-900/30 bg-red-900/5'}`}>
 	                       <span className="font-black italic text-red-600 w-8">#{tId}</span>
 	                       <div className="flex-1 flex justify-center gap-4 text-[11px] font-black uppercase">
-	                         <span className="text-white">{p.nom}</span>
+	                         <span className="text-purple-400">{p.nom} <FavoriStar active={p.id === favoriId} size={10} /></span>
 	                         <span className="text-zinc-400">& {((p.elo+draftT[i].elo)/2).toFixed(1)} &</span>
-	                         <span className="text-white">{draftT[i].nom}</span>
+	                         <span className="text-orange-400">{draftT[i].nom} <FavoriStar active={draftT[i].id === favoriId} size={10} /></span>
 	                       </div>
 	                       <span className="text-[8px] font-black text-zinc-500 w-16 text-right uppercase tracking-tighter">
 	                         {isGassin ? 'Gassin' : 'Ramatuelle'}

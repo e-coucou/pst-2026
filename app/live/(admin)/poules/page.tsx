@@ -10,10 +10,13 @@ import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2 } from 'luci
 import { logActivity } from '@/utils/log-activity';
 import { calculatePouleStandings } from '@/utils/live-stats';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
+import FavoriStar from '@/components/FavoriStar';
+import { useFavoriId } from '@/hooks/useFavoriId';
 
 export default function LivePoulesPage() {
   const supabase = createClient();
   const router = useRouter();
+  const favoriId = useFavoriId();
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
@@ -268,9 +271,9 @@ export default function LivePoulesPage() {
                   <div className="flex-1 text-right min-w-0">
                     <div className="text-[10px] text-zinc-500 font-black">#{m.team1_id}</div>
                     <div className="text-[11px] md:text-[14px] font-bold uppercase truncate leading-tight">
-                        {playersMap[t1?.pointeur_id] || t1?.pointeur_id}<br className="md:hidden" /> 
-                        <span className="hidden md:inline"> & </span> 
-                        {playersMap[t1?.tireur_id] || t1?.tireur_id}
+                        <span className="text-purple-500">{playersMap[t1?.pointeur_id] || t1?.pointeur_id} <FavoriStar active={t1?.pointeur_id === favoriId} /></span><br className="md:hidden" />
+                        <span className="hidden md:inline"> & </span>
+                        <span className="text-orange-500">{playersMap[t1?.tireur_id] || t1?.tireur_id} <FavoriStar active={t1?.tireur_id === favoriId} /></span>
                     </div>
                   </div>
 
@@ -299,9 +302,9 @@ export default function LivePoulesPage() {
                   <div className="flex-1 text-left min-w-0">
                     <div className="text-[10px] text-zinc-500 font-black">#{m.team2_id}</div>
                     <div className="text-[11px] md:text-[14px] font-bold uppercase truncate leading-tight">
-                        {playersMap[t2?.pointeur_id] || t2?.pointeur_id}<br className="md:hidden" />
-                        <span className="hidden md:inline"> & </span> 
-                        {playersMap[t2?.tireur_id] || t2?.tireur_id}
+                        <span className="text-purple-500">{playersMap[t2?.pointeur_id] || t2?.pointeur_id} <FavoriStar active={t2?.pointeur_id === favoriId} /></span><br className="md:hidden" />
+                        <span className="hidden md:inline"> & </span>
+                        <span className="text-orange-500">{playersMap[t2?.tireur_id] || t2?.tireur_id} <FavoriStar active={t2?.tireur_id === favoriId} /></span>
                     </div>
                   </div>
 

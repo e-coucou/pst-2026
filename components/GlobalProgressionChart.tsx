@@ -8,13 +8,15 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer 
+  ResponsiveContainer
 } from 'recharts'
+import FavoriStar from '@/components/FavoriStar';
+import { useFavoriId } from '@/hooks/useFavoriId';
 
 /**
  * Tooltip avec pastilles de couleurs synchronisées et tri Top 16
  */
-const Top16Tooltip = ({ active, payload }: any) => {
+const Top16Tooltip = ({ active, payload, favoriId }: any) => {
   if (active && payload && payload[0]) {
     const data = payload[0].payload;
     const topPlayers = data.top16 || [];
@@ -36,7 +38,7 @@ const Top16Tooltip = ({ active, payload }: any) => {
                   style={{ backgroundColor: player.color }} 
                 />
                 <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-tight">
-                  {player.nom}
+                  {player.nom} <FavoriStar active={(player.id ?? player.player_id) === favoriId} size={10} />
                 </span>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
@@ -58,10 +60,11 @@ const Top16Tooltip = ({ active, payload }: any) => {
 export default function GlobalProgressionChart({ 
   timeline = [], 
   allPlayerNames = [] 
-}: { 
-  timeline: any[], 
-  allPlayerNames: string[] 
+}: {
+  timeline: any[],
+  allPlayerNames: string[]
 }) {
+  const favoriId = useFavoriId();
   const [isClient, setIsClient] = useState(false);
 
   // Sécurité pour l'hydratation Next.js
@@ -145,8 +148,8 @@ export default function GlobalProgressionChart({
           <XAxis dataKey="index" hide />
           <YAxis domain={['auto', 'auto']} hide />
           
-          <Tooltip 
-            content={<Top16Tooltip />} 
+          <Tooltip
+            content={(props: any) => <Top16Tooltip {...props} favoriId={favoriId} />}
             isAnimationActive={false}
             cursor={{ stroke: '#dc2626', strokeWidth: 1, strokeDasharray: '4 4' }}
           />

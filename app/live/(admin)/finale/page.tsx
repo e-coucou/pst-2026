@@ -10,10 +10,13 @@ import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Swords, Che
 import { logActivity } from '@/utils/log-activity';
 import { calculatePouleStandings } from '@/utils/live-stats';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
+import FavoriStar from '@/components/FavoriStar';
+import { useFavoriId } from '@/hooks/useFavoriId';
 
 export default function LiveDemiPage() {
   const supabase = createClient();
   const router = useRouter();
+  const favoriId = useFavoriId();
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
@@ -174,16 +177,16 @@ export default function LiveDemiPage() {
                 const win1 = m.score_team1 > m.score_team2;
                 return (
                   <div key={m.id} className="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-white/5 text-[11px]">
-                    <span className={`flex-1 truncate uppercase ${win1 ? 'text-white font-bold' : 'text-zinc-500'}`}>
-                      {playersMap[t1?.pointeur_id]?.split(' ')[0]} / {playersMap[t1?.tireur_id]?.split(' ')[0]}
-                    </span>                    
+                    <span className={`flex-1 truncate uppercase ${win1 ? 'font-bold' : 'opacity-50'}`}>
+                      <span className="text-purple-400">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span> <FavoriStar active={t1?.pointeur_id === favoriId} size={10} /> / <span className="text-orange-400">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span> <FavoriStar active={t1?.tireur_id === favoriId} size={10} />
+                    </span>
                     <div className="flex items-center gap-2 px-3 font-black italic">
                       <span className={win1 ? 'text-red-500' : 'text-zinc-400'}>{m.score_team1}</span>
                       <span className="text-zinc-500">-</span>
                       <span className={!win1 ? 'text-red-500' : 'text-zinc-400'}>{m.score_team2}</span>
                     </div>
-                    <span className={`flex-1 truncate text-right uppercase ${!win1 ? 'text-white font-bold' : 'text-zinc-500'}`}>
-                      {playersMap[t2?.pointeur_id]?.split(' ')[0]} / {playersMap[t2?.tireur_id]?.split(' ')[0]}
+                    <span className={`flex-1 truncate text-right uppercase ${!win1 ? 'font-bold' : 'opacity-50'}`}>
+                      <span className="text-purple-400">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span> <FavoriStar active={t2?.pointeur_id === favoriId} size={10} /> / <span className="text-orange-400">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span> <FavoriStar active={t2?.tireur_id === favoriId} size={10} />
                     </span>
                   </div>
                 );
@@ -220,9 +223,9 @@ export default function LiveDemiPage() {
                   <div className="flex-1 text-right min-w-0">
                     <div className="text-sm text-red-500 font-black">#{m.team1_id}</div>
                     <div className="text-xs md:text-lg font-bold uppercase truncate leading-tight">
-                        {playersMap[t1?.pointeur_id] || t1?.pointeur_id}<br className="md:hidden" /> 
-                        <span className="hidden md:inline"> & </span> 
-                        {playersMap[t1?.tireur_id] || t1?.tireur_id}
+                        <span className="text-purple-500">{playersMap[t1?.pointeur_id] || t1?.pointeur_id} <FavoriStar active={t1?.pointeur_id === favoriId} /></span><br className="md:hidden" />
+                        <span className="hidden md:inline"> & </span>
+                        <span className="text-orange-500">{playersMap[t1?.tireur_id] || t1?.tireur_id} <FavoriStar active={t1?.tireur_id === favoriId} /></span>
                     </div>
                   </div>
                 <div className="items-center text-center text-sm text-zinc-500">{stepLabelMap[m.type] || m.type}
@@ -235,9 +238,9 @@ export default function LiveDemiPage() {
                   <div className="flex-1 text-left min-w-0">
                     <div className="text-sm text-red-500 font-black">#{m.team2_id}</div>
                     <div className="text-xs md:text-lg font-bold uppercase truncate leading-tight">
-                        {playersMap[t2?.pointeur_id] || t2?.pointeur_id}<br className="md:hidden" />
-                        <span className="hidden md:inline"> & </span> 
-                        {playersMap[t2?.tireur_id] || t2?.tireur_id}
+                        <span className="text-purple-500">{playersMap[t2?.pointeur_id] || t2?.pointeur_id} <FavoriStar active={t2?.pointeur_id === favoriId} /></span><br className="md:hidden" />
+                        <span className="hidden md:inline"> & </span>
+                        <span className="text-orange-500">{playersMap[t2?.tireur_id] || t2?.tireur_id} <FavoriStar active={t2?.tireur_id === favoriId} /></span>
                     </div>
                   </div>
                   <div className="flex shrink-0 group">

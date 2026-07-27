@@ -2,22 +2,25 @@ import { createClient } from '@/utils/supabase/server';
 import { Trophy, Target, Swords, Users, ChevronLeft, Star, Medal, Zap, User } from 'lucide-react';
 import Link from 'next/link';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
+import FavoriStar from '@/components/FavoriStar';
+import { getFavoriId } from '@/utils/favori';
 import { PouleStanding } from '@/utils/live-stats';
 
-export default async function TournamentDetailPage({ 
-  params 
-}: { 
-  params: Promise<{ year: string }> 
+export default async function TournamentDetailPage({
+  params
+}: {
+  params: Promise<{ year: string }>
 }) {
   const supabase = await createClient();
   const { year } = await params;
+  const favoriId = await getFavoriId();
 
   const { data: matches } = await supabase
     .from('games')
     .select(`
       id, poule, type, tableau, score_1, score_2,
-      team_1:team_1_id ( id, nom, tireur:profiles!fk_teams_tireur(nom, photo_url), pointeur:profiles!fk_teams_pointeur(nom, photo_url) ),
-      team_2:team_2_id ( id, nom, tireur:profiles!fk_teams_tireur(nom, photo_url), pointeur:profiles!fk_teams_pointeur(nom, photo_url) )
+      team_1:team_1_id ( id, nom, tireur:profiles!fk_teams_tireur(id, nom, photo_url), pointeur:profiles!fk_teams_pointeur(id, nom, photo_url) ),
+      team_2:team_2_id ( id, nom, tireur:profiles!fk_teams_tireur(id, nom, photo_url), pointeur:profiles!fk_teams_pointeur(id, nom, photo_url) )
     `)
     .eq('year', year)
     .order('id', { ascending: true });
@@ -172,7 +175,7 @@ const finalTop8 = rankedTeams
               <div className="flex-1 w-full">
                 <div className="mb-8">
                   <p className="text-red-600 font-black italic uppercase text-2xl mb-1 tracking-tighter">Champions Officiels {year}</p>
-                  <h3 className="text-5xl md:text-7xl font-black uppercase italic leading-tight tracking-tighter text-purple-600">{winnerTeam.pointeur.nom} <br/><span className="text-white">&</span><span className="text-orange-600"> {winnerTeam.tireur.nom}</span></h3>
+                  <h3 className="text-5xl md:text-7xl font-black uppercase italic leading-tight tracking-tighter text-purple-600">{winnerTeam.pointeur.nom} <FavoriStar active={winnerTeam.pointeur.id === favoriId} size={28} /><br/><span className="text-white">&</span><span className="text-orange-600"> {winnerTeam.tireur.nom} <FavoriStar active={winnerTeam.tireur.id === favoriId} size={28} /></span></h3>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-black/40 border border-white/5 p-4 rounded-2xl"><p className="text-[10px] font-black text-gray-500 uppercase mb-2 flex items-center gap-2"><Zap size={12} className="text-red-600"/> Points +</p><p className="text-3xl font-black italic">{winnerStats.plus}</p></div>
@@ -218,10 +221,10 @@ const finalTop8 = rankedTeams
 
 		        <div className="flex justify-between space-y-1">
 		          <span className="text-purple-600 font-black uppercase text-xs truncate items-start">
-		            {item.team?.pointeur?.nom}
+		            {item.team?.pointeur?.nom} <FavoriStar active={item.team?.pointeur?.id === favoriId} />
 		          </span>
 		          <span className="text-orange-600 font-bold uppercase text-xs leading-none truncate items-end">
-		            {item.team?.tireur?.nom}
+		            {item.team?.tireur?.nom} <FavoriStar active={item.team?.tireur?.id === favoriId} />
 		          </span>
 		        </div>
 
@@ -261,7 +264,7 @@ const finalTop8 = rankedTeams
           {laFinale && (
             <div className="relative group bg-zinc-900 border-2 border-red-600 rounded-2xl p-8 shadow-2xl">
                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-600 text-white px-6 py-1 rounded-full text-xs font-black uppercase tracking-[0.3em]">LA FINALE</div>
-               <MatchRow match={laFinale} size="lg" />
+               <MatchRow match={laFinale} size="lg" favoriId={favoriId} />
             </div>
           )}
 		<div className="grid md:grid-cols-3 gap-6">
@@ -277,7 +280,7 @@ const finalTop8 = rankedTeams
 		        </div>
 
 		        <div className="p-5">
-		           <MatchRow match={m} size="md" />
+		           <MatchRow match={m} size="md" favoriId={favoriId} />
 		        </div>
 		        
 		        <div className="px-4 py-1.5 bg-black/40 text-center">
@@ -320,7 +323,7 @@ const finalTop8 = rankedTeams
 		          </div>
 
 		          <div className="p-6">
-		             <MatchRow match={m} size="md" />
+		             <MatchRow match={m} size="md" favoriId={favoriId} />
 		          </div>
 		        </div>
 		      </div>
@@ -362,7 +365,7 @@ const finalTop8 = rankedTeams
       <div className="p-4 space-y-3">
         {gassin.map(m => (
           <div key={m.id} className="bg-black/40 border border-orange-600/10 p-3 rounded-xl hover:border-orange-600/40 transition-colors">
-            <MatchRow match={m} size="xs" />
+            <MatchRow match={m} size="xs" favoriId={favoriId} />
           </div>
         ))}
       </div>
@@ -385,7 +388,7 @@ const finalTop8 = rankedTeams
       <div className="p-4 space-y-3">
         {ramatuelle.map(m => (
           <div key={m.id} className="bg-black/40 border border-purple-600/10 p-3 rounded-xl hover:border-purple-600/40 transition-colors">
-            <MatchRow match={m} size="xs" />
+            <MatchRow match={m} size="xs" favoriId={favoriId} />
           </div>
         ))}
       </div>
@@ -403,14 +406,14 @@ const finalTop8 = rankedTeams
   );
 }
 
-function MatchRow({ match, size = 'md' }: { match: any, size?: 'xs' | 'sm' | 'md' | 'lg' }) {
+function MatchRow({ match, size = 'md', favoriId }: { match: any, size?: 'xs' | 'sm' | 'md' | 'lg', favoriId?: number | null }) {
   const isLarge = size === 'lg';
   return (
     <div className="flex justify-between items-center gap-4">
       <div className="flex-1 text-center">
         <div className={`flex flex-col ${isLarge ? 'md:text-2xl text-md' : 'text-[11px]'} font-bold items-end`}>
-          <span className="text-red-500 uppercase">{match.team_1?.tireur?.nom}</span>
-          <span className="text-white uppercase leading-none">{match.team_1?.pointeur?.nom}</span>
+          <span className="text-orange-500 uppercase">{match.team_1?.tireur?.nom} <FavoriStar active={match.team_1?.tireur?.id === favoriId} /></span>
+          <span className="text-purple-500 uppercase leading-none">{match.team_1?.pointeur?.nom} <FavoriStar active={match.team_1?.pointeur?.id === favoriId} /></span>
         </div>
       </div>
       <div className={`font-mono font-black italic bg-black border border-red-600/20 rounded px-3 py-1 ${isLarge ? 'md:text-4xl text-xl' : 'text-sm'}`}>
@@ -418,8 +421,8 @@ function MatchRow({ match, size = 'md' }: { match: any, size?: 'xs' | 'sm' | 'md
       </div>
       <div className="flex-1 text-center">
         <div className={`flex flex-col ${isLarge ? 'md:text-2xl text-md' : 'text-[11px]'} font-bold items-start`}>
-          <span className="text-red-500 uppercase">{match.team_2?.tireur?.nom}</span>
-          <span className="text-white uppercase leading-none">{match.team_2?.pointeur?.nom}</span>
+          <span className="text-orange-500 uppercase"><FavoriStar active={match.team_2?.tireur?.id === favoriId} /> {match.team_2?.tireur?.nom}</span>
+          <span className="text-purple-500 uppercase leading-none"><FavoriStar active={match.team_2?.pointeur?.id === favoriId} /> {match.team_2?.pointeur?.nom}</span>
         </div>
       </div>
     </div>

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Loader2, X, Zap, TrendingUp, Target, Swords, Clock } from 'lucide-react';
+import FavoriStar from '@/components/FavoriStar';
+import { useFavoriId } from '@/hooks/useFavoriId';
 
 // ============================================================================
 // CONFIGURATION DU MODÈLE DE PRÉDICTION
@@ -113,6 +115,7 @@ export default function PredictionModal({
   playersMap: Record<number, string>;
 }) {
   const supabase = createClient();
+  const favoriId = useFavoriId();
   const [loading, setLoading] = useState(true);
   const [prediction, setPrediction] = useState<any>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null); // Pour audit/logs
@@ -415,6 +418,8 @@ export default function PredictionModal({
         scoreB,
         namesA: `${getPlayerName(t1.pointeur_id)} / ${getPlayerName(t1.tireur_id)}`,
         namesB: `${getPlayerName(t2.pointeur_id)} / ${getPlayerName(t2.tireur_id)}`,
+        pointeurAId: t1.pointeur_id, tireurAId: t1.tireur_id,
+        pointeurBId: t2.pointeur_id, tireurBId: t2.tireur_id,
         formA: ((pointeurTeam1.formBonus + tireurTeam1.formBonus) / 2).toFixed(0),
         formB: ((pointeurTeam2.formBonus + tireurTeam2.formBonus) / 2).toFixed(0),
         confidence: String(Math.min(98, confidence)), // Max 98% (jamais 100%)
@@ -476,8 +481,10 @@ export default function PredictionModal({
                   {prediction.probA}%
                 </div>
                 <div className="flex flex-col gap-1">
-                  <div className="text-[10px] font-bold text-zinc-300 leading-tight uppercase min-h-[32px] flex items-center justify-center px-1">
-                    {prediction.namesA}
+                  <div className="text-[10px] font-bold leading-tight uppercase min-h-[32px] flex items-center justify-center px-1 gap-1">
+                    <span className="text-purple-400">{getPlayerName(prediction.pointeurAId)}</span> <FavoriStar active={prediction.pointeurAId === favoriId} size={10} />
+                    <span className="text-zinc-500">/</span>
+                    <span className="text-orange-400">{getPlayerName(prediction.tireurAId)}</span> <FavoriStar active={prediction.tireurAId === favoriId} size={10} />
                   </div>
                   {Number(prediction.formA) > 0 && (
                     <div className="flex items-center justify-center gap-1 text-[8px] text-green-500 font-black uppercase italic">
@@ -501,8 +508,10 @@ export default function PredictionModal({
                   {prediction.probB}%
                 </div>
                 <div className="flex flex-col gap-1">
-                  <div className="text-[10px] font-bold text-zinc-300 leading-tight uppercase min-h-[32px] flex items-center justify-center px-1">
-                    {prediction.namesB}
+                  <div className="text-[10px] font-bold leading-tight uppercase min-h-[32px] flex items-center justify-center px-1 gap-1">
+                    <span className="text-purple-400">{getPlayerName(prediction.pointeurBId)}</span> <FavoriStar active={prediction.pointeurBId === favoriId} size={10} />
+                    <span className="text-zinc-500">/</span>
+                    <span className="text-orange-400">{getPlayerName(prediction.tireurBId)}</span> <FavoriStar active={prediction.tireurBId === favoriId} size={10} />
                   </div>
                   {Number(prediction.formB) > 0 && (
                     <div className="flex items-center justify-center gap-1 text-[8px] text-green-500 font-black uppercase italic">

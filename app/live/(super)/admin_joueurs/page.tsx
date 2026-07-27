@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { Trash2, UserPlus, Loader2, ArrowLeft, Camera, AlertCircle, Upload, X } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
+import FavoriStar from '@/components/FavoriStar';
+import { useFavoriId } from '@/hooks/useFavoriId';
 
 export default function ManagePlayersPage() {
+  const favoriId = useFavoriId();
   const supabase = createClient();
   const router = useRouter();
   
@@ -232,7 +235,7 @@ export default function ManagePlayersPage() {
                       {isUploading && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 size={12} className="animate-spin" /></div>}
                     </div>
                     <div>
-                      <div className="font-bold uppercase leading-tight text-sm md:text-base">{player.nom}</div>
+                      <div className="font-bold uppercase leading-tight text-sm md:text-base">{player.nom} <FavoriStar active={player.id === favoriId} /></div>
                       <div className="text-[10px] text-zinc-400 font-mono italic">ID: {player.id}</div>
                     </div>
                   </div>

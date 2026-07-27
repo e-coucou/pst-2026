@@ -7,8 +7,11 @@ import RenderStepper from '@/components/Stepper';
 import { Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List } from 'lucide-react';
 import { calculateTeamsStats, calculatePouleStandings } from '@/utils/live-stats';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
+import FavoriStar from '@/components/FavoriStar';
+import { useFavoriId } from '@/hooks/useFavoriId';
 
 export default function PodiumPage() {
+  const favoriId = useFavoriId();
   const supabase = createClient();
   const router = useRouter();
 
@@ -144,7 +147,7 @@ export default function PodiumPage() {
                   <div className="flex-1">
                     <div className="text-[9px] font-black uppercase text-zinc-500 mb-1">{r.label}</div>
                     <div className="text-sm md:text-lg font-bold uppercase truncate">
-                      {playersMap[r.team?.pointeur_id]?.split(' ')[0]} <span className="text-red-600">&</span> {playersMap[r.team?.tireur_id]?.split(' ')[0]}
+                      <span className="text-purple-400">{playersMap[r.team?.pointeur_id]?.split(' ')[0]} <FavoriStar active={r.team?.pointeur_id === favoriId} /></span> <span className="text-red-600">&</span> <span className="text-orange-400">{playersMap[r.team?.tireur_id]?.split(' ')[0]} <FavoriStar active={r.team?.tireur_id === favoriId} /></span>
                     </div>
 
 {/* Affichage des stats ELO */}
@@ -199,8 +202,8 @@ export default function PodiumPage() {
 				      {/* ÉQUIPE 1 - Bloc de gauche */}
 				      {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
 				      <div className="flex flex-col flex-1 text-right truncate space-y-0">
-				        <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
-				        <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
+				        <span className="truncate text-purple-400">{playersMap[t1?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t1?.pointeur_id === favoriId} /></span>
+				        <span className="truncate text-orange-400">{playersMap[t1?.tireur_id]?.split(' ')[0]} <FavoriStar active={t1?.tireur_id === favoriId} /></span>
 				      </div>
 
 				      {/* SCORE - Bloc central */}
@@ -212,8 +215,8 @@ export default function PodiumPage() {
 				      {/* ÉQUIPE 2 - Bloc de droite */}
 				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
 				      <div className="flex flex-col flex-1 text-left truncate space-y-0">
-				        <span className="truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span>
-				        <span className="truncate">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
+				        <span className="truncate text-purple-400">{playersMap[t2?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t2?.pointeur_id === favoriId} /></span>
+				        <span className="truncate text-orange-400">{playersMap[t2?.tireur_id]?.split(' ')[0]} <FavoriStar active={t2?.tireur_id === favoriId} /></span>
 				      </div>
 
 				    </div>
@@ -245,8 +248,8 @@ export default function PodiumPage() {
 				      {/* ÉQUIPE 1 - Bloc de gauche */}
 				      {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
 				      <div className="flex flex-col flex-1 text-right truncate space-y-0">
-				        <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
-				        <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
+				        <span className="truncate text-purple-400">{playersMap[t1?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t1?.pointeur_id === favoriId} /></span>
+				        <span className="truncate text-orange-400">{playersMap[t1?.tireur_id]?.split(' ')[0]} <FavoriStar active={t1?.tireur_id === favoriId} /></span>
 				      </div>
 
 				      {/* SCORE - Bloc central */}
@@ -258,8 +261,8 @@ export default function PodiumPage() {
 				      {/* ÉQUIPE 2 - Bloc de droite */}
 				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
 				      <div className="flex flex-col flex-1 text-left truncate space-y-0">
-				        <span className="truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span>
-				        <span className="truncate">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
+				        <span className="truncate text-purple-400">{playersMap[t2?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t2?.pointeur_id === favoriId} /></span>
+				        <span className="truncate text-orange-400">{playersMap[t2?.tireur_id]?.split(' ')[0]} <FavoriStar active={t2?.tireur_id === favoriId} /></span>
 				      </div>
 
 				    </div>
@@ -303,8 +306,8 @@ export default function PodiumPage() {
 				       {/* ÉQUIPE 1 - Bloc de gauche */}
 				       {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
 				       <div className="flex flex-col flex-1 text-right truncate">
-				         <span className="truncate">{playersMap[t1?.pointeur_id]?.split(' ')[0]}</span>
-				         <span className="truncate">{playersMap[t1?.tireur_id]?.split(' ')[0]}</span>
+				         <span className="truncate text-purple-400">{playersMap[t1?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t1?.pointeur_id === favoriId} /></span>
+				         <span className="truncate text-orange-400">{playersMap[t1?.tireur_id]?.split(' ')[0]} <FavoriStar active={t1?.tireur_id === favoriId} /></span>
 				       </div>
 
 				       {/* SCORE - Bloc central */}
@@ -316,8 +319,8 @@ export default function PodiumPage() {
 				       {/* ÉQUIPE 2 - Bloc de droite */}
 				       {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
 				       <div className="flex flex-col flex-1 text-left truncate">
-				         <span className="truncate">{playersMap[t2?.pointeur_id]?.split(' ')[0]}</span>
-				         <span className="truncate">{playersMap[t2?.tireur_id]?.split(' ')[0]}</span>
+				         <span className="truncate text-purple-400">{playersMap[t2?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t2?.pointeur_id === favoriId} /></span>
+				         <span className="truncate text-orange-400">{playersMap[t2?.tireur_id]?.split(' ')[0]} <FavoriStar active={t2?.tireur_id === favoriId} /></span>
 				       </div>
 
 				     </div>

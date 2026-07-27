@@ -17,6 +17,8 @@ import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logActivity } from '@/utils/log-activity';
+import FavoriStar from '@/components/FavoriStar';
+import { useFavoriId } from '@/hooks/useFavoriId';
 
 // Traduit un chemin brut en libellé lisible (même logique que /live/activity)
 function prettyPath(pathname: string): string {
@@ -60,6 +62,7 @@ interface PopularityStats {
 //export const revalidate = 0;
 
 export default function StatsPage() {
+  const favoriId = useFavoriId();
   const [matches, setMatches] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('global');
   const [loading, setLoading] = useState(true);
@@ -474,40 +477,45 @@ export default function StatsPage() {
         {activeTab === 'records' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in zoom-in-95 duration-300">
             
-            <RecordCard 
-              title="Série d'Invincibilité" 
+            <RecordCard
+              title="Série d'Invincibilité"
               icon={<Flame className="text-orange-500" size={24} />}
               data={topByMetric(playerStats, p => p.maxWinStreak)}
               valueKey="maxWinStreak"
               suffix="Matchs sans défaite"
               color="border-orange-500/30 bg-orange-500/5 text-orange-500"
+              favoriId={favoriId}
             />
 
-            <RecordCard 
-              title="Le Chat Noir" 
+            <RecordCard
+              title="Le Chat Noir"
               icon={<Skull className="text-zinc-500" size={24} />}
               data={topByMetric(playerStats, p => p.maxLossStreak)}
               valueKey="maxLossStreak"
               suffix="Matchs sans victoire"
               color="border-zinc-700 bg-zinc-900 text-zinc-400"
+              favoriId={favoriId}
             />
 
-            <RecordCard 
-              title="Nerfs d'Acier" 
+            <RecordCard
+              title="Nerfs d'Acier"
               icon={<HeartPulse className="text-red-500" size={24} />}
               data={topByMetric(playerStats, p => p.clutchWins)}
               valueKey="clutchWins"
               suffix="Victoires sur le fil (13-12)"
               color="border-red-500/30 bg-red-500/5 text-red-500"
+              favoriId={favoriId}
             />
 
-            <RecordCard 
-              title="Tireur d'Élite" 
-              icon={<Crosshair className="text-blue-500" size={24} />}
+            <RecordCard
+              title="Tireur d'Élite"
+              icon={<Crosshair className="text-orange-500" size={24} />}
               data={playerStats.filter(p => p.tireurMatches >= 5).sort((a, b) => Number(b.tireurWinrate) - Number(a.tireurWinrate))[0]}
               valueKey="tireurWinrate"
               suffix="% de victoire au tir"
-              color="border-blue-500/30 bg-blue-500/5 text-blue-500"
+              color="border-orange-500/30 bg-orange-500/5 text-orange-500"
+              nameColor="text-orange-500"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -517,6 +525,7 @@ export default function StatsPage() {
               valueKey="peakElo"
               suffix="Record ELO absolu"
               color="border-yellow-500/30 bg-yellow-500/5 text-yellow-500"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -526,6 +535,7 @@ export default function StatsPage() {
               valueKey="pointsPour"
               suffix="Points marqués au total"
               color="border-green-500/30 bg-green-500/5 text-green-500"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -535,6 +545,7 @@ export default function StatsPage() {
               valueKey="pointsContre"
               suffix="Points encaissés au total"
               color="border-rose-500/30 bg-rose-500/5 text-rose-500"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -544,6 +555,7 @@ export default function StatsPage() {
               valueKey="fannyGiven"
               suffix="Fanny infligées (13-0)"
               color="border-red-600/30 bg-red-600/5 text-red-600"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -553,6 +565,7 @@ export default function StatsPage() {
               valueKey="fannyTaken"
               suffix="Fanny subies (0-13)"
               color="border-slate-500/30 bg-slate-500/5 text-slate-400"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -562,6 +575,8 @@ export default function StatsPage() {
               valueKey="pointeurWinrate"
               suffix="% de victoire au pointage"
               color="border-purple-500/30 bg-purple-500/5 text-purple-500"
+              nameColor="text-purple-500"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -571,6 +586,7 @@ export default function StatsPage() {
               valueKey="matches"
               suffix="Matchs joués au total"
               color="border-white/10 bg-white/5 text-white"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -580,6 +596,7 @@ export default function StatsPage() {
               valueKey="draws"
               suffix="Matchs nuls"
               color="border-cyan-500/30 bg-cyan-500/5 text-cyan-400"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -589,6 +606,7 @@ export default function StatsPage() {
               valueKey="wins"
               suffix="Victoires au total"
               color="border-amber-500/30 bg-amber-500/5 text-amber-500"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -598,6 +616,7 @@ export default function StatsPage() {
               valueKey="losses"
               suffix="Défaites au total"
               color="border-red-900/30 bg-red-900/10 text-red-400"
+              favoriId={favoriId}
             />
 
             <RecordCard
@@ -607,6 +626,7 @@ export default function StatsPage() {
               valueKey="closeLosses"
               suffix="Défaites sur le fil (11 ou 12-13)"
               color="border-orange-500/30 bg-orange-500/5 text-orange-500"
+              favoriId={favoriId}
             />
 
           </div>
@@ -678,7 +698,7 @@ export default function StatsPage() {
                         }`}>
                           {idx + 1}
                         </span>
-                        <span className="font-black italic uppercase text-sm">{p.nom}</span>
+                        <span className="font-black italic uppercase text-sm">{p.nom} <FavoriStar active={p.id === favoriId} /></span>
                       </div>
                       <div className="flex items-center gap-2 text-zinc-500 group-hover:text-red-600 transition-colors">
                         <span className="text-sm font-bold">{p.count}</span>
@@ -763,7 +783,7 @@ function StatCard({ label, value, icon, color }: any) {
   );
 }
 
-function RecordCard({ title, icon, data, valueKey, suffix, color }: any) {
+function RecordCard({ title, icon, data, valueKey, suffix, color, nameColor, favoriId }: any) {
   if (!data) return null; // Sécurité si aucune donnée
 
   // Déduit la couleur de la vague de lumière à partir de la classe text-{couleur}-{nuance}
@@ -784,8 +804,8 @@ function RecordCard({ title, icon, data, valueKey, suffix, color }: any) {
       </div>
 
       <div>
-        <div className="text-3xl font-black italic tracking-tighter text-white uppercase">
-          {data.name}
+        <div className={`text-3xl font-black italic tracking-tighter uppercase ${nameColor || 'text-white'}`}>
+          {data.name} <FavoriStar active={data.id === favoriId} size={18} />
         </div>
         <div className="text-lg font-bold mt-1">
           {data[valueKey]} <span className="text-xs font-normal uppercase tracking-widest opacity-70">{suffix}</span>

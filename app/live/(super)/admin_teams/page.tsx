@@ -144,7 +144,7 @@ export default function AdminTeamsPage() {
                       <select 
                         value={team.tireur_id}
                         onChange={(e) => handleUpdateMember(team.id, 'tireur_id', e.target.value)}
-                        className="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer hover:text-orange-500 transition-colors outline-none"
+                        className="bg-transparent border-none text-sm font-bold text-orange-500 focus:ring-0 cursor-pointer hover:text-orange-400 transition-colors outline-none"
                       >
                         {profiles.map(p => (
                           <option key={p.id} value={p.id} className="bg-zinc-900">{p.nom}</option>
@@ -157,7 +157,7 @@ export default function AdminTeamsPage() {
                       <select 
                         value={team.pointeur_id}
                         onChange={(e) => handleUpdateMember(team.id, 'pointeur_id', e.target.value)}
-                        className="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer hover:text-purple-500 transition-colors outline-none"
+                        className="bg-transparent border-none text-sm font-bold text-purple-500 focus:ring-0 cursor-pointer hover:text-purple-400 transition-colors outline-none"
                       >
                         {profiles.map(p => (
                           <option key={p.id} value={p.id} className="bg-zinc-900">{p.nom}</option>

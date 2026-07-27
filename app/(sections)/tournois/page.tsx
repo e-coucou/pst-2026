@@ -2,9 +2,12 @@ import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 import { Trophy, Swords, ChevronRight, Zap } from 'lucide-react';
 import Image from 'next/image';
+import FavoriStar from '@/components/FavoriStar';
+import { getFavoriId } from '@/utils/favori';
 
 export default async function TournamentsPage() {
   const supabase = await createClient();
+  const favoriId = await getFavoriId();
 
   // 1. Récupération des données augmentée des IDs pour les photos
   const { data: seasonsData, error } = await supabase
@@ -64,7 +67,9 @@ export default async function TournamentsPage() {
       year: game.year,
       winnerTeam: winner?.nom || "Équipe Inconnue",
       tireur: winner?.tireur?.nom || "Inconnu",
+      tireurId: winner?.tireur?.id,
       pointeur: winner?.pointeur?.nom || "Inconnu",
+      pointeurId: winner?.pointeur?.id,
       photoTireur: winner?.tireur?.photo_url ? signedUrls[winner.tireur.photo_url] : null,
       photoPointeur: winner?.pointeur?.photo_url ? signedUrls[winner.pointeur.photo_url] : null,
       score: `${game.score_1} - ${game.score_2}`,
@@ -140,9 +145,9 @@ export default async function TournamentsPage() {
                     <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Champions {t.year}</span>
                   </div>
                   
-                  <h3 className="text-3xl font-black italic uppercase text-white group-hover:text-red-500 transition-colors leading-tight">
-                    {t.pointeur} <br />
-                    <span className="text-red-600">&</span> {t.tireur}
+                  <h3 className="text-3xl font-black italic uppercase transition-colors leading-tight">
+                    <span className="text-purple-500 group-hover:text-purple-400">{t.pointeur}</span> <FavoriStar active={t.pointeurId === favoriId} size={20} /><br />
+                    <span className="text-red-600">&</span> <span className="text-orange-500 group-hover:text-orange-400">{t.tireur}</span> <FavoriStar active={t.tireurId === favoriId} size={20} />
                   </h3>
                   
                   <div className="mt-4 inline-flex items-center gap-2 bg-black/50 border border-white/10 px-4 py-1 rounded-lg">
