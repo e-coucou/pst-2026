@@ -142,7 +142,7 @@ function LoginForm() {
             disabled={loading}
             required={!loading}
           />
-          <input 
+          <input
             type="password"
             className="w-full bg-black border border-white/5 rounded-2xl px-6 py-4 outline-none focus:border-red-600 transition-all text-white"
             placeholder="Mot de passe"
@@ -151,6 +151,12 @@ function LoginForm() {
             disabled={loading}
             required={!loading}
           />
+
+          <div className="text-right">
+            <Link href="/reset-password" className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors">
+              Mot de passe oublié ?
+            </Link>
+          </div>
 
           {error && (
             <p className="text-red-600 text-[10px] font-black uppercase text-center italic tracking-widest">
