@@ -296,7 +296,7 @@ export default function LiveDemiPage() {
 			 </div>
         </header>
 
-        <RenderStepper currentStatus = {status} skipDemi={format === '10_equipes'} />
+        <RenderStepper currentStatus = {status} format={format} />
 
         {allFinished && (
            <div className="mb-12 p-6 rounded-[2rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_0_40px_rgba(220,38,38,0.3)] animate-in fade-in slide-in-from-bottom-4 duration-700">

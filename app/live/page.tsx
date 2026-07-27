@@ -192,7 +192,15 @@ export default function PodiumPage() {
       });
       return results.sort((a, b) => a.rank - b.rank);
     }, [matches, stepValues, teams, stepLabelMap]);
-  
+
+  // Format "Ronde" : pas de bracket demi/finale, le classement final = classement cumulé
+  // des 5 rondes (calculatePouleStandings), remappé sur la même forme que finalTop8 pour
+  // réutiliser le rendu existant tel quel.
+  const rankedList = useMemo(() => {
+    if (format !== 'ronde') return finalTop8;
+    const standings = calculatePouleStandings('Ronde', teams, pouleMatches, playersMap);
+    return standings.map((s, idx) => ({ rank: idx + 1, team: teams.find(t => t.id === s.id), label: 'Cumul Rondes' }));
+  }, [format, finalTop8, teams, pouleMatches, playersMap]);
 
   const calculateStandings = (pouleName: string) => calculatePouleStandings(pouleName, teams, pouleMatches, playersMap);
 
@@ -336,7 +344,7 @@ export default function PodiumPage() {
           })()}
         </header>
 
-        <RenderStepper currentStatus = {status} skipDemi={format === '10_equipes'} />
+        <RenderStepper currentStatus = {status} format={format} />
 
         {/* 1. CLASSEMENT DES 8 ÉQUIPES */}
 		{currentStepIndex >= statusSteps.findIndex(s => s.id === 'TERMINE') && (
@@ -347,7 +355,7 @@ export default function PodiumPage() {
               <h2 className="text-xl font-black uppercase italic">Classement Final</h2>
             </div>
             <div className="p-4 md:p-8 space-y-2">
-              {finalTop8.map((r, idx) => (
+              {rankedList.map((r, idx) => (
                 <div key={idx} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${r.rank === 1 ? 'bg-red-600/20 border-red-600' : 'bg-black/40 border-white/5'}`}>
                   <div className={`text-2xl font-black italic w-10 ${r.rank <= 3 ? 'text-red-600' : 'text-zinc-400'}`}>
                     #{r.rank}
@@ -392,8 +400,8 @@ export default function PodiumPage() {
         </section>
         )}
 
-        {/* 2. MATCHES DES FINALES */}
-        {currentStepIndex >= statusSteps.findIndex(s => s.id === 'FINALE') && (
+        {/* 2. MATCHES DES FINALES (absent en format Ronde, gate data-driven comme les demis) */}
+        {matches.length > 0 && (
         <section className="mb-16">
           <h3 className="text-sm font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Scores des Finales <div className="h-[1px] flex-1 bg-zinc-800"></div>
@@ -530,8 +538,12 @@ export default function PodiumPage() {
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Classement de Poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderStandingsMini('Gassin', 'orange')}
-            {renderStandingsMini('Ramatuelle', 'purple')}
+            {format === 'ronde' ? renderStandingsMini('Ronde', 'orange') : (
+              <>
+                {renderStandingsMini('Gassin', 'orange')}
+                {renderStandingsMini('Ramatuelle', 'purple')}
+              </>
+            )}
           </div>
         </section>
         )}
@@ -542,8 +554,8 @@ export default function PodiumPage() {
           <h3 className="text-xs font-black uppercase italic text-zinc-500 mb-6 flex items-center gap-3">
             <div className="h-[1px] flex-1 bg-zinc-800"></div> Détail des matches de poules <div className="h-[1px] flex-1 bg-zinc-800"></div>
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {['Gassin', 'Ramatuelle'].map((poule) => (
+          <div className={`grid grid-cols-1 gap-8 ${format === 'ronde' ? '' : 'md:grid-cols-2'}`}>
+            {(format === 'ronde' ? ['Ronde'] : ['Gassin', 'Ramatuelle']).map((poule) => (
               <div key={poule} className="space-y-2">
                 <div className="text-md font-black uppercase text-zinc-400 mb-3 ml-1 tracking-[0.2em]">{poule}</div>
                 {pouleMatches.filter(m => m.poule === poule).map(m => {

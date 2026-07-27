@@ -6,17 +6,21 @@ import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
 import PredictionModal from '@/components/PredictionModal';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
-import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Dices } from 'lucide-react';
 import { logActivity } from '@/utils/log-activity';
 import { calculatePouleStandings } from '@/utils/live-stats';
+import { simulateRandomScores } from '@/utils/simulate';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
 import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
+import { useIsSuper } from '@/hooks/useIsSuper';
 
 export default function LivePoulesPage() {
   const supabase = createClient();
   const router = useRouter();
   const favoriId = useFavoriId();
+  const isSuper = useIsSuper();
+  const [simulating, setSimulating] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
@@ -144,6 +148,25 @@ export default function LivePoulesPage() {
 
   const calculateStandings = (pouleName: string) => calculatePouleStandings(pouleName, teams, matches, playersMap);
 
+  // Outil de test (super admins) : remplit tous les matchs de poules non terminés avec des
+  // scores aléatoires, via le même pipeline que la saisie manuelle (ELO inclus). Réutilisable
+  // pour observer l'évolution des classements au fil des saisies.
+  const handleSimulate = async () => {
+    const pendingCount = matches.filter(m => m.status !== 'TERMINE').length;
+    if (pendingCount === 0) return;
+    if (!confirm(`Simuler des scores aléatoires pour ${pendingCount} match(s) de poules non terminé(s) ?`)) return;
+    setSimulating(true);
+    try {
+      await simulateRandomScores(supabase, matches, eloSettings);
+      await fetchData();
+      executeAction('/api/admin/live-elo');
+      logActivity(supabase, 'ADMIN_SIMULATE_SCORES', { context: 'poules', count: pendingCount });
+    } catch (err: any) {
+      alert("Erreur simulation : " + err.message);
+    } finally {
+      setSimulating(false);
+    }
+  };
 
   const generateDemis = async () => {
     const message = status === 'DEMI' || status === 'FINALE' 
@@ -358,6 +381,16 @@ export default function LivePoulesPage() {
             Live <span className="text-red-600 group-hover:text-white">Poules</span>
           </h1>
           <div className="flex flex-cols">
+            {isSuper && (
+              <button
+                onClick={handleSimulate}
+                disabled={simulating}
+                title="Simuler des scores aléatoires (test)"
+                className="flex items-center gap-2 text-[10px] font-black uppercase text-amber-500 hover:text-amber-300 bg-amber-500/10 px-4 py-2 rounded-full border border-dashed border-amber-500/40 disabled:opacity-40"
+              >
+                {simulating ? <Loader2 size={14} className="animate-spin" /> : <Dices size={14} />} <span className="hidden md:inline">Simuler</span>
+              </button>
+            )}
             <button onClick={() => router.push('/live/admin')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
               <ArrowLeft size={14} /> <span className="hidden md:inline">équipes</span>
             </button>
@@ -367,7 +400,7 @@ export default function LivePoulesPage() {
           </div>
         </header>
 
-		<RenderStepper currentStatus = {status} skipDemi={format === '10_equipes'} />
+		<RenderStepper currentStatus = {status} format={format} />
 
         {/* SECTION BOUTON POUR LANCER LES DEMIS (classique) OU LES FINALES CLASSÉES (10 équipes) */}
         {allFinished && (

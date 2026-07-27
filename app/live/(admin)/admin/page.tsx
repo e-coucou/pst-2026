@@ -12,11 +12,12 @@
 	// --- HELPERS FORMAT DE TOURNOI ---
 	// 'classique' = 8 équipes / 2 poules de 4 (demies puis 4 finales)
 	// '10_equipes' = 10 équipes / 2 poules de 5 (pas de demies, 5 finales classées)
-	const getRequiredCount = (format: string) => (format === '10_equipes' ? 10 : 8);
+	// 'ronde' = 10 équipes / système suisse (5 rondes, appariement par classement, pas de poules)
+	const getRequiredCount = (format: string) => (format === 'classique' ? 8 : 10);
 	const getTeamIds = (format: string) =>
-	  format === '10_equipes'
-	    ? ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-	    : ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+	  format === 'classique'
+	    ? ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+	    : ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 	const getGassinIds = (format: string) =>
 	  format === '10_equipes' ? ['A', 'C', 'E', 'G', 'I'] : ['A', 'C', 'E', 'G'];
 
@@ -236,7 +237,7 @@
 	     elo_start_pointeur: p.elo,
 	     elo_start_tireur: tList[i].elo,
 	     modern_start: (tList[i].modern + p.modern) / 2 || 100,
-	     poule: gassinIds.includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle'
+	     poule: format === 'ronde' ? 'Ronde' : (gassinIds.includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle')
 	   }));
 
 	   // On utilise upsert pour mettre à jour les lignes existantes A, B, C...
@@ -295,33 +296,51 @@
 	       elo_start_pointeur: p.elo,
 	       elo_start_tireur: draftT[i].elo,
 	       modern_start: (draftT[i].modern + p.modern) / 2 || 100,
-	       poule: gassinIds.includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle'
+	       poule: format === 'ronde' ? 'Ronde' : (gassinIds.includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle')
 	     }));
 
 	     const { error: teamsError } = await supabase.from('live_teams').insert(teamsToInsert);
 	     if (teamsError) throw new Error("Insertion des équipes échouée : " + teamsError.message);
 
-	     // 3. Génération ordonnée des matches (round-robin générique, cf. generateRoundRobinPairs)
+	     // 3. Génération des matches
 	     const pouleMatches: any[] = [];
 
-	     const generateOrderedMatches = (ids: string[], village: string) => {
-	       const pairs = generateRoundRobinPairs(ids.length);
-	       pairs.forEach(([idx1, idx2]) => {
+	     if (format === 'ronde') {
+	       // Ronde 1 : tirage aléatoire, appariement séquentiel. Les rondes suivantes sont
+	       // générées une par une depuis /live/ronde (appariement dépendant des résultats).
+	       const shuffled = [...teamIds].sort(() => Math.random() - 0.5);
+	       for (let i = 0; i < shuffled.length; i += 2) {
 	         pouleMatches.push({
-	           poule: village,
+	           poule: 'Ronde',
 	           type: 'Poule',
 	           tableau: 'Principal',
-	           team1_id: ids[idx1],
-	           team2_id: ids[idx2],
-	           status: 'EN_ATTENTE'
+	           team1_id: shuffled[i],
+	           team2_id: shuffled[i + 1],
+	           status: 'EN_ATTENTE',
+	           round: 1
 	         });
-	       });
-	     };
+	       }
+	     } else {
+	       // Round-robin générique (cf. generateRoundRobinPairs)
+	       const generateOrderedMatches = (ids: string[], village: string) => {
+	         const pairs = generateRoundRobinPairs(ids.length);
+	         pairs.forEach(([idx1, idx2]) => {
+	           pouleMatches.push({
+	             poule: village,
+	             type: 'Poule',
+	             tableau: 'Principal',
+	             team1_id: ids[idx1],
+	             team2_id: ids[idx2],
+	             status: 'EN_ATTENTE'
+	           });
+	         });
+	       };
 
-	     // Appel de la génération pour les deux poules
-	     const ramatuelleIds = teamIds.filter(id => !gassinIds.includes(id));
-	     generateOrderedMatches(gassinIds, 'Gassin');
-	     generateOrderedMatches(ramatuelleIds, 'Ramatuelle');
+	       // Appel de la génération pour les deux poules
+	       const ramatuelleIds = teamIds.filter(id => !gassinIds.includes(id));
+	       generateOrderedMatches(gassinIds, 'Gassin');
+	       generateOrderedMatches(ramatuelleIds, 'Ramatuelle');
+	     }
 
 	     // 4. Envoi en base
 	     const { error: matchesError } = await supabase.from('live_matches').insert(pouleMatches);
@@ -330,7 +349,7 @@
 	     logActivity(supabase, 'ADMIN_START_TOURNAMENT');
 
 	//      alert("🔥 C'est parti ! Le tournoi est en ligne.");
-	     router.push('/live/poules');
+	     router.push(format === 'ronde' ? '/live/ronde' : '/live/poules');
 	     
 	   } catch (err: any) {
 	     alert(err.message);
@@ -373,7 +392,7 @@
 	         </div>
 	       </header>
 
-		<RenderStepper currentStatus = {status} skipDemi={format === '10_equipes'} />
+		<RenderStepper currentStatus = {status} format={format} />
 
 	       {step === 1 ? (
 	         /* ÉTAPE 1 : SÉLECTION */
@@ -381,7 +400,7 @@
 
 	         {/* SÉLECTEUR DE FORMAT : verrouillé une fois qu'on a quitté l'étape JOUEURS */}
 	         <div className="md:col-span-3 flex justify-center gap-3 mb-2">
-	           {(['classique', '10_equipes'] as const).map(f => (
+	           {(['classique', '10_equipes', 'ronde'] as const).map(f => (
 	             <button
 	               key={f}
 	               onClick={() => changeFormat(f)}
@@ -390,7 +409,7 @@
 	                 format === f ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
 	               }`}
 	             >
-	               {f === 'classique' ? 'Classique (8 équipes)' : '10 équipes'}
+	               {f === 'classique' ? 'Classique (8 équipes)' : f === '10_equipes' ? '10 équipes' : 'Ronde (10 équipes)'}
 	             </button>
 	           ))}
 	         </div>
@@ -603,18 +622,21 @@
 	                 <h3 className="text-[10px] font-black text-zinc-400 uppercase text-center mb-4 tracking-[0.3em]">Aperçu des Équipes</h3>
 	                 {draftP.map((p, i) => {
 	                   const tId = getTeamIds(format)[i];
-	                   const isGassin = getGassinIds(format).includes(tId);
+	                   const isRonde = format === 'ronde';
+	                   const isGassin = !isRonde && getGassinIds(format).includes(tId);
 	                   return (
-	                     <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border ${isGassin ? 'border-blue-900/30 bg-blue-900/5' : 'border-red-900/30 bg-red-900/5'}`}>
+	                     <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border ${isRonde ? 'border-white/10 bg-white/5' : isGassin ? 'border-blue-900/30 bg-blue-900/5' : 'border-red-900/30 bg-red-900/5'}`}>
 	                       <span className="font-black italic text-red-600 w-8">#{tId}</span>
 	                       <div className="flex-1 flex justify-center gap-4 text-[11px] font-black uppercase">
 	                         <span className="text-purple-400">{p.nom} <FavoriStar active={p.id === favoriId} size={10} /></span>
 	                         <span className="text-zinc-400">& {((p.elo+draftT[i].elo)/2).toFixed(1)} &</span>
 	                         <span className="text-orange-400">{draftT[i].nom} <FavoriStar active={draftT[i].id === favoriId} size={10} /></span>
 	                       </div>
-	                       <span className="text-[8px] font-black text-zinc-500 w-16 text-right uppercase tracking-tighter">
-	                         {isGassin ? 'Gassin' : 'Ramatuelle'}
-	                       </span>
+	                       {!isRonde && (
+	                         <span className="text-[8px] font-black text-zinc-500 w-16 text-right uppercase tracking-tighter">
+	                           {isGassin ? 'Gassin' : 'Ramatuelle'}
+	                         </span>
+	                       )}
 	                     </div>
 	                   )
 	                 })}

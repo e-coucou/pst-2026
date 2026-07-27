@@ -6,15 +6,19 @@ import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
 import PredictionModal from '@/components/PredictionModal';
-import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, LayoutGrid, Dices } from 'lucide-react';
 import { logActivity } from '@/utils/log-activity';
+import { simulateRandomScores } from '@/utils/simulate';
 import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
+import { useIsSuper } from '@/hooks/useIsSuper';
 
 export default function LiveDemiPage() {
   const supabase = createClient();
   const router = useRouter();
   const favoriId = useFavoriId();
+  const isSuper = useIsSuper();
+  const [simulating, setSimulating] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
