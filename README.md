@@ -14,7 +14,7 @@ Application web privée de gestion de tournois de **pétanque** entre amis, sais
 | 👤 **Fiche joueur** | Profil détaillé : courbe ELO, stats, historique saison par saison |
 | ⚔️ **Tournois** | Archives des éditions passées par année, poules, finales et résultats |
 | 📊 **Statistiques** | Tableaux de bord globaux (distribution des scores, tendances) |
-| 📡 **Live** | Suivi du tournoi en cours : poules → demies → finales → podium, en temps réel (Supabase Realtime) |
+| 📡 **Live** | Suivi du tournoi en cours en temps réel (Supabase Realtime) — 3 formats au choix : classique (8 équipes, poules → demies → finales), 10 équipes (2 poules de 5 → 5 finales classées) ou Ronde (système suisse, 4 rondes → 5 finales classées) |
 | 🧠 **Prono IA** | Prédiction probabiliste du score d'un match à venir (modèle statistique local, pas de LLM) |
 | 🎬 **Médiathèque** | Hub `/videos` (Vidéos / Photos / Contribuez) — replays YouTube, galerie photo alimentée par les membres (upload compressé côté navigateur, miniatures + version complète) |
 | 📱 **Partage** | Page plein écran avec QR code d'invitation |
@@ -100,7 +100,7 @@ Ouvrir [http://localhost:3000](http://localhost:3000)
 pst-2026/
 ├── app/
 │   ├── page.tsx                 # Page d'accueil
-│   ├── (acces)/                 # Login / Signup / Logout
+│   ├── (acces)/                 # Login / Signup / Reset mot de passe (comptes pseudo) / Logout
 │   ├── auth/callback/           # Callback OAuth Google (revérifie le code d'invitation)
 │   ├── (sections)/              # Pages publiques : classement, tournois,
 │   │                             # stats, concept, regles-elo, share, render
@@ -111,7 +111,7 @@ pst-2026/
 │   │   └── (super)/              # Administration système (rôle super)
 │   │       ├── activity/          # Journal d'activité (filtrable par section)
 │   │       └── online/            # Qui est en ligne (fenêtre glissante 1h)
-│   └── api/                     # Routes API (recalcul ELO, lecture .md)
+│   └── api/                     # Routes API (recalcul ELO, reset mot de passe, lecture .md)
 ├── components/                  # Navbar, Footer, EloChart, Stepper,
 │                                 # GlobalLoadingBar, PageViewTracker,
 │                                 # PredictionModal, SeasonHistory, ...
@@ -136,7 +136,8 @@ pst-2026/
 
 ## 📚 Documentation approfondie
 
-- [`documents/architecture.md`](./documents/architecture.md) — routes, modèle de données Supabase, moteur ELO, machine à états du live, module de prédiction, dette technique connue
+- [`documents/architecture.md`](./documents/architecture.md) — routes, modèle de données Supabase, moteur ELO, machine à états du live (3 formats), module de prédiction, dette technique connue
+- [`documents/rondes.md`](./documents/rondes.md) — format "Ronde" (système suisse à 10 équipes) : appariement, anti-rematch, finales classées
 - [`documents/design-system.md`](./documents/design-system.md) — palette, typographie, composants UI, écarts avec `charte.md`
 - [`charte.md`](./charte.md) — charte graphique narrative d'origine (consultable dans l'app via `/live/charte`)
 
@@ -159,6 +160,8 @@ Ces scripts CLI ont un équivalent accessible depuis l'app (rôle super) via les
 ## 🔐 Accès & authentification
 
 L'application est réservée aux membres inscrits (inscription protégée par un code d'invitation). Un middleware (`proxy.ts`) redirige tout visiteur non connecté vers `/login`. Trois niveaux de rôle, vérifiés côté serveur via des fonctions RPC Supabase (`get_my_role`, `is_super`) :
+
+Les comptes créés avec un pseudo (email synthétique `@pst.net`, pas de vraie boîte mail) peuvent réinitialiser leur mot de passe via `/reset-password`, vérifié par le même code d'invitation (voir `documents/architecture.md` §4d pour le compromis de sécurité accepté).
 
 | Rôle | Accès |
 |---|---|

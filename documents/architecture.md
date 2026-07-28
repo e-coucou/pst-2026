@@ -33,7 +33,8 @@ app/
 │
 ├── (acces)/                       Groupe de routes — authentification
 │   ├── login/page.tsx
-│   ├── signup/page.tsx             (code d'invitation requis, cf. lib/auth-actions.ts)
+│   ├── signup/page.tsx             (code d'invitation requis, RPC verify_invitation_code)
+│   ├── reset-password/page.tsx     Reset mdp des comptes pseudo (@pst.net), voir §4d
 │   └── logout/page.tsx
 │
 ├── auth/callback/route.ts         Callback OAuth/Magic Link Supabase
@@ -63,10 +64,11 @@ app/
 │   ├── progression/page.tsx
 │   ├── (admin)/                    Groupe protégé : rôle admin OU super
 │   │   ├── layout.tsx               Garde d'accès via RPC get_my_role()
-│   │   ├── admin/page.tsx           Panel de pilotage du tournoi
-│   │   ├── poules/page.tsx          Saisie des scores de poules
-│   │   ├── demi/page.tsx            Saisie des demi-finales
-│   │   ├── finale/page.tsx          Saisie des finales
+│   │   ├── admin/page.tsx           Panel de pilotage du tournoi — choix du format (classique/10_equipes/ronde)
+│   │   ├── poules/page.tsx          Saisie des scores de poules (classique/10_equipes)
+│   │   ├── ronde/page.tsx           Saisie ronde par ronde, système suisse (format ronde), voir §7
+│   │   ├── demi/page.tsx            Saisie des demi-finales (format classique uniquement)
+│   │   ├── finale/page.tsx          Saisie des finales (les 3 formats, réutilisée telle quelle pour ronde)
 │   │   └── podium/page.tsx          Palmarès final (classement, historique, graph)
 │   └── (super)/                    Groupe protégé : rôle super uniquement
 │       ├── layout.tsx               Garde d'accès via RPC is_super()
@@ -84,6 +86,7 @@ app/
 └── api/
     ├── admin/recompute-elo/route.ts   Recalcul complet de l'historique ELO (toutes saisons)
     ├── admin/live-elo/route.ts        Recalcul de l'historique ELO du tournoi live en cours
+    ├── auth/reset-password/route.ts   Reset mdp comptes pseudo (client service-role), voir §4d
     └── dev/charte/, dev/todo/route.ts Lecture de fichiers .md locaux (debug/admin)
 ```
 
@@ -101,14 +104,15 @@ app/
 | `GlobalProgressionChart.tsx` | Courbe multi-joueurs (jusqu'à ~31 lignes colorées en HSL), tooltip Top 16 |
 | `SeasonHistory.tsx` | Accordéon historique saison par saison avec détail des matchs |
 | `StatsCard.tsx` | Tuile de statistique générique (label/valeur/couleur) |
-| `Stepper.tsx` (`RenderStepper`) | Frise de progression du tournoi (`JOUEURS → EQUIPES → POULES → DEMI → FINALE → TERMINE`) |
-| `AdminSettings.tsx` | Déclenche `/api/admin/recompute-elo` |
+| `Stepper.tsx` (`RenderStepper`) | Frise de progression du tournoi, liste d'étapes pilotée par le prop `format` : `classique` (6 étapes, avec Demis), `10_equipes` (5, sans Demis), `ronde` (5, "Rondes" puis "Finales" au lieu de "Poules"/"Demis") |
+| `PouleStandingsTable.tsx` | Tableau de classement de poule partagé (Rk/Équipe/J/V-D-N/Pour-Contre/Diff/Pts), réutilisé par `poules`/`finale`/`podium`/`live`/`tournois/[year]` via `utils/live-stats.ts#calculatePouleStandings` — un seul calcul/rendu au lieu de versions "mini" divergentes |
+| `FavoriStar.tsx` | Étoile affichée à côté du nom d'un joueur quand c'est le favori de l'utilisateur courant (`utils/favori.ts` côté serveur, `hooks/useFavoriId.ts` côté client) |
 | `FavoriteButton.tsx` | Toggle "joueur favori" (Client Component isolé pour préserver le Server Component parent) |
 | `MarkdownDisplay.tsx` | Rendu stylisé de contenu Markdown (react-markdown + typography PST) |
 | `GlobalLoadingBar.tsx` | Barre rouge fine en haut de l'écran, pilotée par un compteur incrémenté/décrémenté via un `fetch` custom posé sur le client Supabase navigateur (`utils/supabase/client.ts`) — s'affiche automatiquement pendant toute requête, sans instrumenter chaque appel |
 | `PageViewTracker.tsx` | Composant invisible monté dans `layout.tsx`, logue un `PAGE_VIEW` à chaque changement de route (`usePathname`/`useSearchParams`) |
-| `PredictionModal*.tsx` | Moteur de "prono IA" (probabiliste), voir §7. Plusieurs variantes historiques (`-bayer`, `-cp1`, `-cp2`) coexistent dans le dépôt à côté de la version active `PredictionModal.tsx` |
-| `Logo.tsx` / `Logo_anc.tsx` | Logo SVG (tour + boule + cochonnet). `Logo_anc.tsx` est une version antérieure conservée |
+| `PredictionModal.tsx` | Moteur de "prono IA" (probabiliste), voir §8. Variantes historiques (`-bayer`, `-cp1`, `-cp2`) supprimées (dead code confirmé, cf. `todo.md`) |
+| `Logo.tsx` | Logo SVG (tour + boule + cochonnet). `Logo_anc.tsx` (version antérieure) supprimé (dead code confirmé) |
 
 ---
 
@@ -150,6 +154,11 @@ flowchart TD
 
 Le bouton Google de `/login` (qui ne transmet aucun code) est protégé par la même logique : toute création de compte qui y transiterait est rejetée exactement comme via `/signup`.
 
+### d) Réinitialisation de mot de passe (comptes pseudo uniquement)
+Les comptes créés via `/signup` (hors Google) utilisent un email **synthétique** `${nickname}@pst.net` — pas de vraie boîte mail, donc le flux Supabase standard (`resetPasswordForEmail`, lien par email) est inutilisable. `/reset-password` + `app/api/auth/reset-password/route.ts` proposent une alternative : le formulaire demande pseudo + code d'invitation + nouveau mot de passe ; la route (client `SUPABASE_SERVICE_ROLE_KEY`) revérifie le code via le même RPC `verify_invitation_code`, retrouve l'utilisateur via l'email déterministe (`auth.admin.listUsers` puis recherche par email — pas de filtre serveur disponible sur ce SDK, un seul appel large suffit vu la taille du club), et appelle `auth.admin.updateUserById`. Erreur générique commune (code invalide *ou* pseudo introuvable) pour ne pas laisser deviner les pseudos existants. Action tracée dans `session_logs` (`PASSWORD_RESET`).
+
+> ⚠️ **Le code d'invitation est un secret unique partagé par tous les membres.** L'utiliser comme seule vérification de reset signifie que n'importe quel membre le connaissant peut réinitialiser le mot de passe d'un autre membre s'il connaît son pseudo (contrairement à l'inscription, où le code n'autorise qu'à créer un compte pour soi-même). Risque documenté et accepté vu le contexte (club fermé) — voir `todo.md` (section Sécurité).
+
 ---
 
 ## 5. Modèle de données (Supabase / PostgreSQL)
@@ -170,12 +179,12 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 - **`history_all`** — même chronologie mais **tous les joueurs à chaque match** (sert aux graphes globaux `GlobalProgressionChart`)
 
 ### Tournoi en direct (saison courante)
-- **`live_tournament`** — ligne unique (`id=1`) avec `status` = étape courante du stepper
-- **`live_teams`** — doublettes du jour : `elo_start_pointeur`, `elo_start_tireur`, `modern_start`, `poule`
-- **`live_matches`** — match du jour : `team1_id`, `team2_id`, `score_team1/2`, `status` (`EN_COURS`/`TERMINE`), `type`, `delta_elo_team1/2`, `delta_modern_team1/2`
+- **`live_tournament`** — ligne unique (`id=1`) avec `status` = étape courante du stepper, `format` (`classique`/`10_equipes`/`ronde`, voir §7)
+- **`live_teams`** — doublettes du jour : `elo_start_pointeur`, `elo_start_tireur`, `modern_start`, `poule` (`Gassin`/`Ramatuelle`, ou `Ronde` en format suisse — CHECK constraint étendue en conséquence)
+- **`live_matches`** — match du jour : `team1_id`, `team2_id`, `score_team1/2`, `status` (`EN_COURS`/`TERMINE`), `type`, `poule`, `round` (entier, uniquement renseigné en format `ronde` pour distinguer les 4 rondes suisses), `delta_elo_team1/2`, `delta_modern_team1/2` — `type` porte une **FK vers `steps.id`** (non documentée par Supabase, découverte en pratique)
 - **`live_selected`** — joueurs convoqués pour la journée, avec `role` (`Pointeur`/`Tireur`), ELO figé au moment de la sélection
 - **`live_history`** — équivalent de `history_all` mais pour le tournoi live (reconstruit par `/api/admin/live-elo`)
-- **`steps`** — barème de points (rang) par `type` de match (finale, demi, etc.)
+- **`steps`** — barème par `type` de match : `value` (rang de base pour `finalTop8`, ex. `Finale Rang1` → 1), `label` (libellé lisible affiché à la place du `type` brut, ex. `Finale Rang2` → "Petite Finale")
 
 ### Configuration
 - **`settings`** — paramètres du moteur ELO (`elo_init`, `bonus_point`, `bonus_seuil`, `seuil`, `max_ecart`, `poids_finale`, `poids_finaliste`, `k_factor`) — voir §6
@@ -232,15 +241,25 @@ Les réglages (`EloSettings`) sont stockés en base (table `settings`) et parsé
 
 ---
 
-## 7. Machine à états du tournoi live
+## 7. Machine à états du tournoi live — 3 formats
 
-Toutes les pages `live/*` partagent le même vocabulaire de statut, stocké dans `live_tournament.status` :
+Toutes les pages `live/*` partagent le même vocabulaire de statut, stocké dans `live_tournament.status`, choisi une fois pour toutes à l'étape `JOUEURS` via `live_tournament.format` (verrouillé dès qu'on avance) :
 
 ```
 JOUEURS → EQUIPES → POULES → DEMI → FINALE → TERMINE
 ```
 
-`components/Stepper.tsx` affiche visuellement la progression ; chaque page conditionne l'affichage de ses sections à `currentStepIndex >= statusSteps.findIndex(...)` pour ne montrer que ce qui est pertinent à l'étape courante (ex : le classement final n'apparaît qu'à `TERMINE`).
+Les 3 formats empruntent des chemins différents dans cette même machine à états (aucun nouveau statut introduit — seules certaines étapes sont sautées ou réinterprétées) :
+
+| Format | Équipes | Chemin | Détail |
+|---|---|---|---|
+| `classique` | 8 (2 poules de 4) | `POULES → DEMI → FINALE` | Round-robin par poule, demies (Principal/Honneur), 4 finales spécifiques (`Finale`, `Petite Finale`, `Toute petite Finale`, `Finale d'Honneur`) |
+| `10_equipes` | 10 (2 poules de 5) | `POULES → FINALE` (saute `DEMI`) | Round-robin par poule, puis 5 finales classées 1er×1er…5e×5e (`Finale Rang1`…`Rang5`) directement depuis `poules/page.tsx` |
+| `ronde` | 10 (1 seul groupe) | `POULES → FINALE` (saute `DEMI`) | Système suisse (voir `documents/rondes.md`) : 4 rondes générées une par une sur `/live/ronde` (appariement par classement cumulé, anti-rematch), puis une 5ème ronde = 5 finales classées par rang adjacent (1v2, 3v4…), réutilisant le même mécanisme `Finale RangX` que `10_equipes` — `finale/page.tsx` et `podium/page.tsx` sont donc réutilisées telles quelles, sans branche de code dédiée |
+
+`generateRoundRobinPairs(n)` (`admin/page.tsx`) génère le round-robin de façon générique (méthode du cercle, avec bye si impair) pour `classique`/`10_equipes`. `generateRondePairing`/`buildPlayedPairs` (`utils/live-stats.ts`) gèrent l'appariement suisse du format `ronde`.
+
+`components/Stepper.tsx` affiche visuellement la progression, sa liste d'étapes dépend du prop `format` (cf. §3). Chaque page conditionne l'affichage de ses sections à l'étape courante — soit via l'index du statut (`currentStepIndex >= statusSteps.findIndex(...)`), soit, de façon plus robuste et indépendante du format, en testant directement la présence de données (`demiMatches.length > 0`, `matches.length > 0` pour la section "Finales").
 
 ## 8. Module de prédiction IA (`PredictionModal.tsx`)
 
@@ -271,10 +290,9 @@ Un bouton "IA Prono" sur chaque match non terminé ouvre une modale qui calcule 
 
 ## 11. Dette technique observée
 
-- Doublons de composants non nettoyés : `PredictionModal-bayer.tsx`, `PredictionModal-cp1.tsx`, `PredictionModal-cp2.tsx` à côté de `PredictionModal.tsx` actif ; `Logo_anc.tsx` à côté de `Logo.tsx`. Ces 4 fichiers ne sont importés nulle part (vérifié) — candidats à la suppression pure.
+- `lib/auth-actions.ts` (`verifyInvitationCode`, `isAdmin`) n'est importé nulle part — remplacé respectivement par le RPC `verify_invitation_code` (appelé directement) et par `get_my_role`/`is_super`. Conservé volontairement en attendant une revérification de sécurité avant suppression (cf. `todo.md`).
 - Deux configurations Tailwind qui ne correspondent plus au thème réellement appliqué : `tailwind.config.ts` (racine, style v3, quasiment vide) et `files/tailwind.config.ts` (variante commentée avec palette `pst-*`) — le thème réel vit dans `app/globals.css` via `@theme` (Tailwind v4). Voir `design-system.md` §"Écart entre doc et implémentation".
 - `migration-pst.ts` (racine) contient du code Python, pas du TypeScript — fichier probablement mal nommé ou déplacé par erreur.
-- `app/live/(super)/charte/page.tsx` : le lien "Retour" renvoie vers `/` (accueil) au lieu de `/live/super`, et n'est pas dans le style icône `X` utilisé partout ailleurs dans le panel super — bug connu, toujours ouvert (voir `todo.md`).
 - Pas de schéma SQL versionné (migrations Supabase) dans le dépôt — le modèle de données du §5 est déduit du code applicatif, pas d'une source canonique. Les RPC/policies créées pendant cette session (`get_popularity_stats`, policies RLS de `activity_logs` et `photos_import`) ne sont pas non plus versionnées.
 - `app/(sections)/videos/photos/page.tsx` liste les photos dans `private/thumbs/` : les photos uploadées **avant** l'introduction du système vignette+complet (chemin plat `private/{fichier}.webp`, sans sous-dossier) ne sont plus listées — pas de code de migration/rétrocompatibilité.
 - `documents/private/` contient des données personnelles/financières réelles (convocation d'AG, rapprochement nom/lot du Bâtiment B) — ajouté à `.gitignore`, jamais commité, à traiter avec précaution.
