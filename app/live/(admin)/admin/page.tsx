@@ -4,7 +4,8 @@
 	import { useRouter } from 'next/navigation'; // <-- AJOUT POUR LE ROUTING
 	import { createClient } from '@/utils/supabase/client';
 	import RenderStepper from '@/components/Stepper'
-	import { ArrowRight, ArrowLeft, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
+import LiveDraftDraw from '@/components/LiveDraftDraw'
+	import { ArrowRight, ArrowLeft, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown, CheckCircle2, Circle, ArrowLeftRight } from 'lucide-react';
 	 import { logActivity } from '@/utils/log-activity';
 	 import FavoriStar from '@/components/FavoriStar';
 	 import { useFavoriId } from '@/hooks/useFavoriId';
@@ -87,18 +88,22 @@
 	 const [step, setStep] = useState(1);
 	 const [status, setStatus] = useState<string>('JOUEURS');
 	 const [format, setFormat] = useState<string>('classique');
+	 // 'auto' = mélange instantané (comportement historique) ; 'live' = tirage au sort
+	 // révélé pair par pair (cf. components/LiveDraftDraw.tsx), pour un tirage en direct.
+	 const [teamMode, setTeamMode] = useState<string>('auto');
 
 	 useEffect(() => {
 	   async function init() {
 	     const { data: { user } } = await supabase.auth.getUser();
 	     if (!user) { setLoading(false); return; }
 
-	  const { data: tournoi } = await supabase.from('live_tournament').select('status, format').eq('id', 1).single();
+	  const { data: tournoi } = await supabase.from('live_tournament').select('status, format, team_mode').eq('id', 1).single();
 	  if (tournoi?.status) {
 	    setStatus(tournoi.status);
 	    setStep(1);
 	  }
 	  setFormat(tournoi?.format || 'classique');
+	  setTeamMode(tournoi?.team_mode || 'auto');
 
 	     await fetchPlayersWithElo();
 	     
@@ -199,23 +204,28 @@
 	     if (error) throw error;
 
 	     // 3. Initialisation du draft visuel
-	  await supabase.from('live_teams').delete().neq('id', 'Z'); 
-	//	  handleInitialShuffle(); // Cette fonction appellera maintenant syncTeamsToDatabase
+	  await supabase.from('live_teams').delete().neq('id', 'Z');
 
-	     // On prépare le mélange initial
-	     const sP = [...selectedPointeurs].sort((a, b) => b.elo - a.elo);
-	     const sT = [...selectedTireurs].sort((a, b) => b.elo - a.elo);
-	     const shuffle = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
-	     const half = requiredCount / 2;
+	     if (teamMode === 'live') {
+	       // Mode tirage en direct : le draft démarre vide, LiveDraftDraw le peuple pair par pair.
+	       setDraftP([]);
+	       setDraftT([]);
+	     } else {
+	       // On prépare le mélange initial
+	       const sP = [...selectedPointeurs].sort((a, b) => b.elo - a.elo);
+	       const sT = [...selectedTireurs].sort((a, b) => b.elo - a.elo);
+	       const shuffle = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
+	       const half = requiredCount / 2;
 
-	     const newP = [...shuffle(sP.slice(0, half)), ...shuffle(sP.slice(half, requiredCount))];
-	     const newT = [...shuffle(sT.slice(half, requiredCount)), ...shuffle(sT.slice(0, half))];
+	       const newP = [...shuffle(sP.slice(0, half)), ...shuffle(sP.slice(half, requiredCount))];
+	       const newT = [...shuffle(sT.slice(half, requiredCount)), ...shuffle(sT.slice(0, half))];
 
-	     setDraftP(newP);
-	     setDraftT(newT);
+	       setDraftP(newP);
+	       setDraftT(newT);
 
-	     // CRUCIAL : On enregistre immédiatement en base pour que le refresh fonctionne
-	     await syncTeamsToDatabase(newP, newT);
+	       // CRUCIAL : On enregistre immédiatement en base pour que le refresh fonctionne
+	       await syncTeamsToDatabase(newP, newT);
+	     }
 	  logActivity(supabase, 'ADMIN_FINALIZE_TEAMS', { nb_pointeurs: selectedPointeurs.length, nb_tireurs: selectedTireurs.length });
 	  setStep(2);
 	  
@@ -276,6 +286,30 @@
 	 } else {
 	   await syncTeamsToDatabase(draftP, newList);
 	 }
+	};
+
+	// Échange les rôles P/T d'une équipe déjà formée (même équipe/index, sans toucher aux
+	// autres) : utile après un tirage en direct pour corriger une inversion.
+	const swapRoles = async (index: number) => {
+	 const newP = [...draftP];
+	 const newT = [...draftT];
+	 [newP[index], newT[index]] = [newT[index], newP[index]];
+	 setDraftP(newP);
+	 setDraftT(newT);
+	 await syncTeamsToDatabase(newP, newT);
+	 logActivity(supabase, 'ADMIN_SWAP_ROLES', { team_index: index });
+	};
+
+	// Callback du tirage en direct (LiveDraftDraw) : une paire vient d'être révélée,
+	// on l'ajoute au draft et on sauvegarde immédiatement (même pattern que les autres
+	// mutations du draft, pour survivre à un rafraîchissement en plein tirage).
+	const handlePairComplete = async (pointeur: any, tireur: any) => {
+	 const newP = [...draftP, pointeur];
+	 const newT = [...draftT, tireur];
+	 setDraftP(newP);
+	 setDraftT(newT);
+	 await syncTeamsToDatabase(newP, newT);
+	 logActivity(supabase, 'ADMIN_DRAW_PAIR', { pointeur_id: pointeur.id, tireur_id: tireur.id });
 	};
 
 	 const confirmAndCreateTournament = async () => {
@@ -362,6 +396,14 @@
 	//  const selectionOK = false;
 	 const requiredCount = getRequiredCount(format);
 	 const selectionOK = (selectedPointeurs.length === requiredCount && selectedTireurs.length === requiredCount);
+	 // En mode tirage en direct, le draft se peuple pair par pair : on bloque le lancement
+	 // tant qu'il n'est pas complet (en mode auto, toujours vrai instantanément).
+	 const draftComplete = draftP.length === requiredCount / 2;
+	 // Pools restants pour le tirage en direct (joueurs sélectionnés pas encore dans le draft).
+	 const drawnPIds = new Set(draftP.map(p => p.id));
+	 const drawnTIds = new Set(draftT.map(t => t.id));
+	 const pointeurPool = selectedPointeurs.filter(p => !drawnPIds.has(p.id));
+	 const tireurPool = selectedTireurs.filter(t => !drawnTIds.has(t.id));
 
 	 const backSelection = async () => {
 	 	setStep(1);
@@ -373,6 +415,12 @@
 	   setFormat(next);
 	   await supabase.from('live_tournament').update({ format: next }).eq('id', 1);
 	   logActivity(supabase, 'ADMIN_SET_FORMAT', { format: next });
+	 };
+
+	 const changeTeamMode = async (next: string) => {
+	   setTeamMode(next);
+	   await supabase.from('live_tournament').update({ team_mode: next }).eq('id', 1);
+	   logActivity(supabase, 'ADMIN_SET_TEAM_MODE', { team_mode: next });
 	 };
 
 	 return (
@@ -410,6 +458,22 @@
 	               }`}
 	             >
 	               {f === 'classique' ? 'Classique (8 équipes)' : f === '10_equipes' ? '10 équipes' : 'Ronde (10 équipes)'}
+	             </button>
+	           ))}
+	         </div>
+
+	         {/* SÉLECTEUR DE CONSTITUTION DES ÉQUIPES : verrouillé une fois qu'on a quitté l'étape JOUEURS */}
+	         <div className="md:col-span-3 flex justify-center gap-3 mb-6">
+	           {(['auto', 'live'] as const).map(m => (
+	             <button
+	               key={m}
+	               onClick={() => changeTeamMode(m)}
+	               disabled={status !== 'JOUEURS'}
+	               className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 ${
+	                 teamMode === m ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
+	               }`}
+	             >
+	               {m === 'auto' ? 'Équipes automatiques' : 'Tirage en direct'}
 	             </button>
 	           ))}
 	         </div>
@@ -561,7 +625,7 @@
 
 	         <div className="md:col-span-3 flex justify-center mt-1">
 	      {/* SECTION BOUTON POUR LANCER LES DEMIS */}
-	       {selectionOK && (
+	       {selectionOK && draftComplete && (
 	         <div className="mb-12 p-8 rounded-[2.5rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(220,38,38,0.3)] animate-bounce-subtle">
 	           <div className="text-center md:text-left">
 	             <h3 className="text-2xl font-black uppercase italic text-white leading-none mb-2">En Lice !</h3>
@@ -583,13 +647,23 @@
 	                 <h2 className="text-3xl font-black italic uppercase">Doublettes</h2>
 	                 <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-2">Utilise les flèches pour déplacer un joueur et changer son partenaire</p>
 	              </div>
-	              <button onClick={handleInitialShuffle} className="bg-zinc-900 hover:bg-zinc-800 p-4 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase transition-colors">
-	                <RefreshCw size={14} className="text-red-600"/> Re-mélanger Aléatoirement
-	              </button>
+	              {teamMode === 'auto' && (
+	                <button onClick={handleInitialShuffle} className="bg-zinc-900 hover:bg-zinc-800 p-4 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase transition-colors">
+	                  <RefreshCw size={14} className="text-red-600"/> Re-mélanger Aléatoirement
+	                </button>
+	              )}
 	           </div>
 
 	           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-	              {/* PANNEAU DE CONTRÔLE MANUEL (FLÈCHES) */}
+	              {/* PANNEAU DE CONTRÔLE : flèches manuelles (auto) ou tirage en direct (live) */}
+	              {teamMode === 'live' ? (
+	                <LiveDraftDraw
+	                  pointeurPool={pointeurPool}
+	                  tireurPool={tireurPool}
+	                  favoriId={favoriId}
+	                  onPairComplete={handlePairComplete}
+	                />
+	              ) : (
 	              <div className="grid grid-cols-2 gap-4 bg-zinc-900/30 p-8 rounded-[3rem] border border-white/5">
 	                 <div className="space-y-2">
 	                   <p className="text-center text-[10px] font-black text-purple-500 uppercase mb-4 tracking-tighter underline decoration-2 underline-offset-4">Pointeurs</p>
@@ -616,6 +690,7 @@
 	                   ))}
 	                 </div>
 	              </div>
+	              )}
 
 	              {/* RÉCAPITULATIF VISUEL PAR ÉQUIPE / POULE */}
 	              <div className="space-y-3">
@@ -632,6 +707,13 @@
 	                         <span className="text-zinc-400">& {((p.elo+draftT[i].elo)/2).toFixed(1)} &</span>
 	                         <span className="text-orange-400">{draftT[i].nom} <FavoriStar active={draftT[i].id === favoriId} size={10} /></span>
 	                       </div>
+	                       <button
+	                         onClick={() => swapRoles(i)}
+	                         title="Échanger les rôles P/T de cette équipe"
+	                         className="text-zinc-500 hover:text-red-600 p-1 transition-colors shrink-0"
+	                       >
+	                         <ArrowLeftRight size={14} />
+	                       </button>
 	                       {!isRonde && (
 	                         <span className="text-[8px] font-black text-zinc-500 w-16 text-right uppercase tracking-tighter">
 	                           {isGassin ? 'Gassin' : 'Ramatuelle'}
