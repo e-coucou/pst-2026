@@ -20,7 +20,7 @@ Application web privée de gestion de tournois de **pétanque** entre amis, sais
 | 📱 **Partage** | Page plein écran avec QR code d'invitation |
 | 📖 **Le Concept** | Organisation des poules, tirage au sort et route vers la finale |
 | 📐 **L'Algorithme** | Explication pédagogique du calcul ELO Classic vs Modern |
-| 🔧 **Panel Admin / Super** | Pilotage du tournoi live, gestion des joueurs/équipes, réglages ELO, recalcul d'historique (accès par rôle) |
+| 🔧 **Panel Admin / Super** | Pilotage du tournoi live, gestion des joueurs/équipes, réglages ELO, recalcul d'historique (accès par rôle). Constitution des équipes automatique ou en tirage au sort révélé en direct |
 | 🕵️ **Journal d'activité** *(super)* | Traçabilité des actions admin et des consultations (pages, joueurs, tournois, photos) + page "Qui est en ligne" + stats de popularité |
 
 ---

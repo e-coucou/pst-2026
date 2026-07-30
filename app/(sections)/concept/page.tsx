@@ -1,4 +1,4 @@
-import { Clock, Users, Swords, Trophy, MapPin, GitBranch, Heart, Star } from 'lucide-react';
+import { Clock, Users, Swords, Trophy, MapPin, GitBranch, Heart, Star, Layers, Shuffle } from 'lucide-react';
 
 export default function ConceptPage() {
   return (
@@ -168,6 +168,45 @@ export default function ConceptPage() {
               </span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* SECTION 6: VARIANTES À 10 ÉQUIPES (NEW) */}
+      <div className="space-y-8 pb-20">
+        <h2 className="text-3xl font-black uppercase italic border-b border-zinc-800 pb-4 flex items-center gap-3">
+          <Layers className="text-red-600" /> Si la Tablée s'Agrandit
+        </h2>
+        <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl">
+          Certaines éditions rassemblent plus de monde que les 8 doublettes historiques. Quand le nombre d'équipes atteint <span className="text-white font-bold">10</span>, deux formats alternatifs prennent le relais — choisis par les Organisateurs avant le début du tournoi.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* 10 ÉQUIPES */}
+          <div className="space-y-4 bg-zinc-900/50 p-6 rounded-2xl border border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="bg-red-600/10 p-2 rounded-xl text-red-600"><Layers size={20} /></div>
+              <h3 className="text-xl font-black uppercase italic">10 Équipes</h3>
+            </div>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              Même principe que le format classique, avec deux poules élargies à <span className="text-white font-bold">5 équipes</span> (au lieu de 4). Chaque équipe y dispute 4 matches de poule.
+            </p>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              Pas de demi-finales ici : la phase de poules débouche directement sur <span className="text-white font-bold">5 finales classées</span>, opposant l'équipe de chaque rang d'une poule à celle de même rang dans l'autre (1ère de Gassin contre 1ère de Ramatuelle, 2ème contre 2ème... jusqu'à la 5ème place).
+            </p>
+          </div>
+
+          {/* RONDE */}
+          <div className="space-y-4 bg-zinc-900/50 p-6 rounded-2xl border border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="bg-red-600/10 p-2 rounded-xl text-red-600"><Shuffle size={20} /></div>
+              <h3 className="text-xl font-black uppercase italic">La Ronde</h3>
+            </div>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              Un format inspiré des tournois d'échecs : plus de poules fixes, mais <span className="text-white font-bold">4 rondes</span> successives où chaque équipe affronte un adversaire choisi selon le classement du moment (jamais deux fois le même) — la 1ère ronde, elle, est tirée au hasard.
+            </p>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              Après ces 4 rondes de brassage, une <span className="text-white font-bold">5ème ronde décisive</span> reprend le principe des finales classées : les équipes s'affrontent par paires de rangs consécutifs (1ère contre 2ème, 3ème contre 4ème...) pour établir le classement définitif de 1 à 10.
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -106,6 +106,7 @@ app/
 | `StatsCard.tsx` | Tuile de statistique générique (label/valeur/couleur) |
 | `Stepper.tsx` (`RenderStepper`) | Frise de progression du tournoi, liste d'étapes pilotée par le prop `format` : `classique` (6 étapes, avec Demis), `10_equipes` (5, sans Demis), `ronde` (5, "Rondes" puis "Finales" au lieu de "Poules"/"Demis") |
 | `PouleStandingsTable.tsx` | Tableau de classement de poule partagé (Rk/Équipe/J/V-D-N/Pour-Contre/Diff/Pts), réutilisé par `poules`/`finale`/`podium`/`live`/`tournois/[year]` via `utils/live-stats.ts#calculatePouleStandings` — un seul calcul/rendu au lieu de versions "mini" divergentes |
+| `LiveDraftDraw.tsx` | Tirage des équipes "en direct" (`admin/page.tsx`, étape EQUIPES, `live_tournament.team_mode = 'live'`) : révèle les joueurs par paire en cliquant sur celui annoncé (aucune randomisation côté app), mode "Présélection P/T" (respecte les pools JOUEURS) ou "Rôles aléatoires" (pool unique, rôle alterné par position de tirage) |
 | `FavoriStar.tsx` | Étoile affichée à côté du nom d'un joueur quand c'est le favori de l'utilisateur courant (`utils/favori.ts` côté serveur, `hooks/useFavoriId.ts` côté client) |
 | `FavoriteButton.tsx` | Toggle "joueur favori" (Client Component isolé pour préserver le Server Component parent) |
 | `MarkdownDisplay.tsx` | Rendu stylisé de contenu Markdown (react-markdown + typography PST) |
@@ -179,7 +180,7 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 - **`history_all`** — même chronologie mais **tous les joueurs à chaque match** (sert aux graphes globaux `GlobalProgressionChart`)
 
 ### Tournoi en direct (saison courante)
-- **`live_tournament`** — ligne unique (`id=1`) avec `status` = étape courante du stepper, `format` (`classique`/`10_equipes`/`ronde`, voir §7)
+- **`live_tournament`** — ligne unique (`id=1`) avec `status` = étape courante du stepper, `format` (`classique`/`10_equipes`/`ronde`, voir §7), `team_mode` (`auto`/`live`, voir §7 — indépendant du format)
 - **`live_teams`** — doublettes du jour : `elo_start_pointeur`, `elo_start_tireur`, `modern_start`, `poule` (`Gassin`/`Ramatuelle`, ou `Ronde` en format suisse — CHECK constraint étendue en conséquence)
 - **`live_matches`** — match du jour : `team1_id`, `team2_id`, `score_team1/2`, `status` (`EN_COURS`/`TERMINE`), `type`, `poule`, `round` (entier, uniquement renseigné en format `ronde` pour distinguer les 4 rondes suisses), `delta_elo_team1/2`, `delta_modern_team1/2` — `type` porte une **FK vers `steps.id`** (non documentée par Supabase, découverte en pratique)
 - **`live_selected`** — joueurs convoqués pour la journée, avec `role` (`Pointeur`/`Tireur`), ELO figé au moment de la sélection
@@ -261,6 +262,13 @@ Les 3 formats empruntent des chemins différents dans cette même machine à ét
 
 `components/Stepper.tsx` affiche visuellement la progression, sa liste d'étapes dépend du prop `format` (cf. §3). Chaque page conditionne l'affichage de ses sections à l'étape courante — soit via l'index du statut (`currentStepIndex >= statusSteps.findIndex(...)`), soit, de façon plus robuste et indépendante du format, en testant directement la présence de données (`demiMatches.length > 0`, `matches.length > 0` pour la section "Finales").
 
+### Constitution des équipes : `team_mode` (orthogonal au format)
+Indépendamment du format choisi, `live_tournament.team_mode` (`'auto'` | `'live'`) contrôle *comment* les paires pointeur/tireur sont formées à l'étape EQUIPES, dans `admin/page.tsx` :
+- `'auto'` — mélange instantané historique (`handleInitialShuffle`), résultat modifiable ensuite via les flèches de réordonnancement.
+- `'live'` — tirage révélé pair par pair via `components/LiveDraftDraw.tsx` : le tirage au sort a lieu physiquement hors de l'app (boules, tombola), qui se contente d'enregistrer le joueur cliqué (aucune randomisation côté client). Deux sous-modes choisis dans le composant : "Présélection P/T" (respecte les pools Pointeurs/Tireurs constitués à l'étape JOUEURS) ou "Rôles aléatoires" (ignore cette présélection, pool unique, le rôle alterne automatiquement selon la position de tirage — un seul réglage global "les impairs sont Tireurs/Pointeurs" fixé une fois).
+
+Un bouton "↔" sur l'aperçu des équipes (les deux modes) permet d'inverser après coup les rôles P/T d'une paire déjà formée (`swapRoles`). Le bouton "Lancement du Tournoi" est bloqué tant que le draft n'est pas complet (`draftP.length === requiredCount / 2`), pour éviter un lancement prématuré en mode `'live'`.
+
 ## 8. Module de prédiction IA (`PredictionModal.tsx`)
 
 Un bouton "IA Prono" sur chaque match non terminé ouvre une modale qui calcule une probabilité de victoire **côté client**, sans appel à un LLM :
@@ -294,5 +302,6 @@ Un bouton "IA Prono" sur chaque match non terminé ouvre une modale qui calcule 
 - Deux configurations Tailwind qui ne correspondent plus au thème réellement appliqué : `tailwind.config.ts` (racine, style v3, quasiment vide) et `files/tailwind.config.ts` (variante commentée avec palette `pst-*`) — le thème réel vit dans `app/globals.css` via `@theme` (Tailwind v4). Voir `design-system.md` §"Écart entre doc et implémentation".
 - `migration-pst.ts` (racine) contient du code Python, pas du TypeScript — fichier probablement mal nommé ou déplacé par erreur.
 - Pas de schéma SQL versionné (migrations Supabase) dans le dépôt — le modèle de données du §5 est déduit du code applicatif, pas d'une source canonique. Les RPC/policies créées pendant cette session (`get_popularity_stats`, policies RLS de `activity_logs` et `photos_import`) ne sont pas non plus versionnées.
+- **Piège rencontré plusieurs fois** : un `select(...)` ciblant une colonne pas encore créée en base (ex. `team_mode` avant sa migration) échoue silencieusement si le code ne vérifie pas `error` — `data` devient `null` et le code retombe sur ses valeurs par défaut (`format: 'classique'`) sans rien signaler, ce qui ressemble à un bug fonctionnel alors que c'est un schéma désynchronisé. Corrigé pour cette requête précise dans `admin/page.tsx` (affiche une alerte si `error`) ; à garder en tête pour toute nouvelle colonne ajoutée manuellement en base avant que le code qui la lit ne soit déployé.
 - `app/(sections)/videos/photos/page.tsx` liste les photos dans `private/thumbs/` : les photos uploadées **avant** l'introduction du système vignette+complet (chemin plat `private/{fichier}.webp`, sans sous-dossier) ne sont plus listées — pas de code de migration/rétrocompatibilité.
 - `documents/private/` contient des données personnelles/financières réelles (convocation d'AG, rapprochement nom/lot du Bâtiment B) — ajouté à `.gitignore`, jamais commité, à traiter avec précaution.
