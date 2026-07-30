@@ -466,48 +466,45 @@
 	         </div>
 	       </header>
 
-		<RenderStepper currentStatus = {status} format={format} />
-
-	       {step === 1 ? (
-	         /* ÉTAPE 1 : SÉLECTION */
-	         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-
-	         {/* SÉLECTEUR DE FORMAT : verrouillé une fois qu'on a quitté l'étape JOUEURS. Grisé si
-	              la sélection en cours dépasse déjà le nombre requis par ce format (ex: 10 joueurs
-	              sélectionnés en Ronde, retour impossible vers Classique tant qu'on n'est pas
-	              redescendu à 8 via les croix de suppression). */}
-	         <div className="md:col-span-3 space-y-2">
-	           <p className="text-center text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em]">Format du tournoi</p>
-	           <div className="flex flex-wrap justify-center gap-2">
+	       {/* BARRE DE RÉGLAGES : Format + Constitution des équipes, traités comme des réglages
+	            de page (au même niveau que les actions d'en-tête) plutôt que comme un bloc de
+	            contenu — évite d'empiler encore une section pleine largeur avant le Stepper.
+	            Grisage du format : verrouillé une fois qu'on a quitté l'étape JOUEURS, ou si la
+	            sélection en cours dépasse déjà le nombre requis par ce format (ex: 10 joueurs
+	            sélectionnés en Ronde, retour impossible vers Classique tant qu'on n'est pas
+	            redescendu à 8 via les croix de suppression). */}
+	       {step === 1 && (
+	         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mb-8 md:mb-10">
+	           <div className="flex items-center gap-2 flex-wrap justify-center">
+	             <span className="text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em]">Format</span>
 	             {(['classique', '10_equipes', 'ronde'] as const).map(f => (
 	               <button
 	                 key={f}
 	                 onClick={() => changeFormat(f)}
 	                 disabled={status !== 'JOUEURS' || selectedPointeurs.length > getRequiredCount(f) || selectedTireurs.length > getRequiredCount(f)}
 	                 title={selectedPointeurs.length > getRequiredCount(f) || selectedTireurs.length > getRequiredCount(f) ? `Réduis la sélection à ${getRequiredCount(f)} pointeurs/tireurs pour choisir ce format` : undefined}
-	                 className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30 ${
+	                 className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30 ${
 	                   format === f ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
 	                 }`}
 	               >
 	                 {f === 'classique' ? 'Classique' : f === '10_equipes' ? '10 équipes' : 'Ronde'}
-	                 <span className="hidden sm:inline text-zinc-500">
+	                 <span className="hidden lg:inline text-zinc-500">
 	                   {f === 'classique' ? ' (8 équipes)' : f === 'ronde' ? ' (10 équipes)' : ''}
 	                 </span>
 	               </button>
 	             ))}
 	           </div>
-	         </div>
 
-	         {/* SÉLECTEUR DE CONSTITUTION DES ÉQUIPES : verrouillé une fois qu'on a quitté l'étape JOUEURS */}
-	         <div className="md:col-span-3 space-y-2">
-	           <p className="text-center text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em]">Constitution des équipes</p>
-	           <div className="flex flex-wrap justify-center gap-2">
+	           <div className="hidden sm:block w-px h-5 bg-white/10" />
+
+	           <div className="flex items-center gap-2 flex-wrap justify-center">
+	             <span className="text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em]">Équipes</span>
 	             {(['auto', 'live'] as const).map(m => (
 	               <button
 	                 key={m}
 	                 onClick={() => changeTeamMode(m)}
 	                 disabled={status !== 'JOUEURS'}
-	                 className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 ${
+	                 className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 ${
 	                   teamMode === m ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
 	                 }`}
 	               >
@@ -516,6 +513,13 @@
 	             ))}
 	           </div>
 	         </div>
+	       )}
+
+		<RenderStepper currentStatus = {status} format={format} />
+
+	       {step === 1 ? (
+	         /* ÉTAPE 1 : SÉLECTION */
+	         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
 	         {/* SECTION BOUTON POUR LANCER LES EQUIPES : pas de div englobante quand caché, pour
 	              ne pas laisser une ligne de grille vide (gap-8) créer un grand espace mort. */}
