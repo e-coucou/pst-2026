@@ -4,11 +4,11 @@
 	import { useRouter } from 'next/navigation'; // <-- AJOUT POUR LE ROUTING
 	import { createClient } from '@/utils/supabase/client';
 	import RenderStepper from '@/components/Stepper'
-import LiveDraftDraw from '@/components/LiveDraftDraw'
+	import LiveDraftDraw from '@/components/LiveDraftDraw'
 	import { ArrowRight, ArrowLeft, Trophy, ShieldAlert, RefreshCw, Loader2, ChevronUp, ChevronDown, CheckCircle2, Circle, ArrowLeftRight } from 'lucide-react';
-	 import { logActivity } from '@/utils/log-activity';
-	 import FavoriStar from '@/components/FavoriStar';
-	 import { useFavoriId } from '@/hooks/useFavoriId';
+	import { logActivity } from '@/utils/log-activity';
+	import FavoriStar from '@/components/FavoriStar';
+	import { useFavoriId } from '@/hooks/useFavoriId';
 
 	// --- HELPERS FORMAT DE TOURNOI ---
 	// 'classique' = 8 équipes / 2 poules de 4 (demies puis 4 finales)
@@ -91,13 +91,27 @@ import LiveDraftDraw from '@/components/LiveDraftDraw'
 	 // 'auto' = mélange instantané (comportement historique) ; 'live' = tirage au sort
 	 // révélé pair par pair (cf. components/LiveDraftDraw.tsx), pour un tirage en direct.
 	 const [teamMode, setTeamMode] = useState<string>('auto');
+	 const [refreshing, setRefreshing] = useState(false);
 
 	 useEffect(() => {
-	   async function init() {
+	   init();
+	   // eslint-disable-next-line react-hooks/exhaustive-deps
+	 }, [router]); // Ajout de router dans les dépendances
+
+	 // Extrait de l'effet pour être réutilisable par le bouton "Actualiser" : sans lui, un
+	 // changement fait ailleurs (autre onglet, autre admin, ou en base directement) sur
+	 // format/team_mode/status restait invisible tant que la page n'était pas rechargée.
+	 async function init() {
 	     const { data: { user } } = await supabase.auth.getUser();
 	     if (!user) { setLoading(false); return; }
 
-	  const { data: tournoi } = await supabase.from('live_tournament').select('status, format, team_mode').eq('id', 1).single();
+	  const { data: tournoi, error: tournoiError } = await supabase.from('live_tournament').select('status, format, team_mode').eq('id', 1).single();
+	  if (tournoiError) {
+	    // Échec silencieux sinon : ex. colonne pas encore créée en base -> tout retombe sur
+	    // les valeurs par défaut ('classique'/'auto') sans que rien ne l'indique à l'écran.
+	    console.error('Erreur lecture live_tournament:', tournoiError.message);
+	    alert("Erreur de lecture du tournoi : " + tournoiError.message);
+	  }
 	  if (tournoi?.status) {
 	    setStatus(tournoi.status);
 	    setStep(1);
@@ -133,9 +147,7 @@ import LiveDraftDraw from '@/components/LiveDraftDraw'
 	       }
 	  }
 	     setLoading(false);
-	   }
-	   init();
-	 }, [router]); // Ajout de router dans les dépendances
+	 }
 
 	 const fetchPlayersWithElo = async () => {
 	   const { data: profiles } = await supabase.from('profiles').select('id, nom');
@@ -405,6 +417,12 @@ import LiveDraftDraw from '@/components/LiveDraftDraw'
 	 const pointeurPool = selectedPointeurs.filter(p => !drawnPIds.has(p.id));
 	 const tireurPool = selectedTireurs.filter(t => !drawnTIds.has(t.id));
 
+	 const handleRefresh = async () => {
+	   setRefreshing(true);
+	   await init();
+	   setRefreshing(false);
+	 };
+
 	 const backSelection = async () => {
 	 	setStep(1);
 	   await supabase.from('live_tournament').update({ status: 'JOUEURS' }).eq('id', 1);
@@ -430,7 +448,15 @@ import LiveDraftDraw from '@/components/LiveDraftDraw'
 	         <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter group-hover:text-red-600">
 	           Live <span className="text-red-600 group-hover:text-white">équipe</span>
 	         </h1>
-	         <div className="flex flex-cols">
+	         <div className="flex items-center gap-2 flex-wrap justify-end">
+	           <button
+	             onClick={handleRefresh}
+	             disabled={refreshing}
+	             title="Réactualiser"
+	             className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5 disabled:opacity-40"
+	           >
+	             <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} /> <span className="hidden md:inline">Actualiser</span>
+	           </button>
 	           <button onClick={() => backSelection()} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
 	             <ArrowLeft size={14} /> <span className="hidden md:inline">Sélection</span>
 	           </button>
@@ -446,56 +472,70 @@ import LiveDraftDraw from '@/components/LiveDraftDraw'
 	         /* ÉTAPE 1 : SÉLECTION */
 	         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
-	         {/* SÉLECTEUR DE FORMAT : verrouillé une fois qu'on a quitté l'étape JOUEURS */}
-	         <div className="md:col-span-3 flex justify-center gap-3 mb-2">
-	           {(['classique', '10_equipes', 'ronde'] as const).map(f => (
-	             <button
-	               key={f}
-	               onClick={() => changeFormat(f)}
-	               disabled={status !== 'JOUEURS'}
-	               className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 ${
-	                 format === f ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
-	               }`}
-	             >
-	               {f === 'classique' ? 'Classique (8 équipes)' : f === '10_equipes' ? '10 équipes' : 'Ronde (10 équipes)'}
-	             </button>
-	           ))}
+	         {/* SÉLECTEUR DE FORMAT : verrouillé une fois qu'on a quitté l'étape JOUEURS. Grisé si
+	              la sélection en cours dépasse déjà le nombre requis par ce format (ex: 10 joueurs
+	              sélectionnés en Ronde, retour impossible vers Classique tant qu'on n'est pas
+	              redescendu à 8 via les croix de suppression). */}
+	         <div className="md:col-span-3 space-y-2">
+	           <p className="text-center text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em]">Format du tournoi</p>
+	           <div className="flex flex-wrap justify-center gap-2">
+	             {(['classique', '10_equipes', 'ronde'] as const).map(f => (
+	               <button
+	                 key={f}
+	                 onClick={() => changeFormat(f)}
+	                 disabled={status !== 'JOUEURS' || selectedPointeurs.length > getRequiredCount(f) || selectedTireurs.length > getRequiredCount(f)}
+	                 title={selectedPointeurs.length > getRequiredCount(f) || selectedTireurs.length > getRequiredCount(f) ? `Réduis la sélection à ${getRequiredCount(f)} pointeurs/tireurs pour choisir ce format` : undefined}
+	                 className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30 ${
+	                   format === f ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
+	                 }`}
+	               >
+	                 {f === 'classique' ? 'Classique' : f === '10_equipes' ? '10 équipes' : 'Ronde'}
+	                 <span className="hidden sm:inline text-zinc-500">
+	                   {f === 'classique' ? ' (8 équipes)' : f === 'ronde' ? ' (10 équipes)' : ''}
+	                 </span>
+	               </button>
+	             ))}
+	           </div>
 	         </div>
 
 	         {/* SÉLECTEUR DE CONSTITUTION DES ÉQUIPES : verrouillé une fois qu'on a quitté l'étape JOUEURS */}
-	         <div className="md:col-span-3 flex justify-center gap-3 mb-6">
-	           {(['auto', 'live'] as const).map(m => (
-	             <button
-	               key={m}
-	               onClick={() => changeTeamMode(m)}
-	               disabled={status !== 'JOUEURS'}
-	               className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 ${
-	                 teamMode === m ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
-	               }`}
-	             >
-	               {m === 'auto' ? 'Équipes automatiques' : 'Tirage en direct'}
-	             </button>
-	           ))}
+	         <div className="md:col-span-3 space-y-2">
+	           <p className="text-center text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em]">Constitution des équipes</p>
+	           <div className="flex flex-wrap justify-center gap-2">
+	             {(['auto', 'live'] as const).map(m => (
+	               <button
+	                 key={m}
+	                 onClick={() => changeTeamMode(m)}
+	                 disabled={status !== 'JOUEURS'}
+	                 className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 ${
+	                   teamMode === m ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
+	                 }`}
+	               >
+	                 {m === 'auto' ? 'Automatique' : 'Tirage en direct'}
+	               </button>
+	             ))}
+	           </div>
 	         </div>
 
-	         <div className="md:col-span-3 flex justify-center mt-1">
-	      {/* SECTION BOUTON POUR LANCER LES EQUIPES */}
-	       {selectionOK && (
-	         <div className="mb-12 p-8 rounded-[2.5rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(220,38,38,0.3)] animate-bounce-subtle">
+	         {/* SECTION BOUTON POUR LANCER LES EQUIPES : pas de div englobante quand caché, pour
+	              ne pas laisser une ligne de grille vide (gap-8) créer un grand espace mort. */}
+	         {selectionOK && (
+	         <div className="md:col-span-3 flex justify-center">
+	           <div className="mb-4 p-8 rounded-[2.5rem] bg-red-600 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(220,38,38,0.3)] animate-bounce-subtle">
 	           <div className="text-center md:text-left">
 	             <h3 className="text-2xl font-black uppercase italic text-white leading-none mb-2">Quorum !</h3>
 	             <p className="text-red-100 font-bold text-sm">La sélection des Joueurs est terminé. Prêt pour la constitution des équipes ?</p>
 	           </div>
-	           <button 
+	           <button
 	             onClick={finalizeSelectionAndSave}
 	             className="w-full md:w-auto bg-black text-white px-10 py-4 rounded-2xl font-black uppercase tracking-tighter flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all active:scale-95"
 	           >
 	             <Trophy size={20} />
 	             Constitution des équipes
 	           </button>
+	           </div>
 	         </div>
-	       )}
-	       </div>
+	         )}
 
 
 	            <div className="bg-zinc-900/40 p-6 rounded-[2.5rem] border border-white/5 h-[600px] flex flex-col">
@@ -546,7 +586,7 @@ import LiveDraftDraw from '@/components/LiveDraftDraw'
 	           </div>
 
 	           <div className="bg-purple-900/5 border border-purple-500/50 p-6 rounded-[2.5rem]">
-	             <h2 className="text-purple-500 text-center text-xs font-black uppercase mb-4 italic">Pointeurs ({selectedPointeurs.length}/{requiredCount})</h2>
+	             <h2 className={`text-center text-xs font-black uppercase mb-4 italic py-1 rounded-xl transition-colors ${selectedPointeurs.length > requiredCount ? 'bg-red-600 text-white' : 'text-purple-500'}`}>Pointeurs ({selectedPointeurs.length}/{requiredCount})</h2>
 	             <div className="space-y-2">
 	               {selectedPointeurs.map(p => {
 	                 const confKey = `conf-${p.id}`;
@@ -582,7 +622,7 @@ import LiveDraftDraw from '@/components/LiveDraftDraw'
 	           </div>
 
 	           <div className="bg-orange-900/5 border border-orange-500/50 p-6 rounded-[2.5rem]">
-	             <h2 className="text-orange-500 text-center text-xs font-black uppercase mb-4 italic">Tireurs ({selectedTireurs.length}/{requiredCount})</h2>
+	             <h2 className={`text-center text-xs font-black uppercase mb-4 italic py-1 rounded-xl transition-colors ${selectedTireurs.length > requiredCount ? 'bg-red-600 text-white' : 'text-orange-500'}`}>Tireurs ({selectedTireurs.length}/{requiredCount})</h2>
 	             <div className="space-y-2">
 	               {selectedTireurs.map(p => {
 	                 const confKey = `conf-${p.id}`;

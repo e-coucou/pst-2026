@@ -94,23 +94,26 @@ export default function LiveDraftDraw({
   return (
     <div className="bg-zinc-900/30 p-8 rounded-[3rem] border border-white/5 space-y-6">
       {/* MODE D'ATTRIBUTION DES RÔLES */}
-      <div className="flex justify-center gap-2">
-        {(['normal', 'aleatoire'] as const).map(m => (
-          <button
-            key={m}
-            onClick={() => setRoleMode(m)}
-            className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-              roleMode === m ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
-            }`}
-          >
-            {m === 'normal' ? 'Présélection Pointeur/Tireur' : 'Rôles aléatoires'}
-          </button>
-        ))}
+      <div className="space-y-2">
+        <p className="text-center text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em]">Attribution des rôles</p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {(['normal', 'aleatoire'] as const).map(m => (
+            <button
+              key={m}
+              onClick={() => setRoleMode(m)}
+              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                roleMode === m ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'
+              }`}
+            >
+              {m === 'normal' ? 'Présélection P/T' : 'Rôles aléatoires'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {roleMode === 'aleatoire' && !pendingFirst && (
-        <div className="flex justify-center items-center gap-3">
-          <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Les impairs (1er, 3e...) sont</span>
+        <div className="flex flex-wrap justify-center items-center gap-2">
+          <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Les impairs sont</span>
           {(['Tireur', 'Pointeur'] as const).map(r => (
             <button
               key={r}

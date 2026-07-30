@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
 import PredictionModal from '@/components/PredictionModal';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
-import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Swords, CheckCircle2, Dices } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Swords, CheckCircle2, Dices, RefreshCw } from 'lucide-react';
 import { logActivity } from '@/utils/log-activity';
 import { calculatePouleStandings } from '@/utils/live-stats';
 import { simulateRandomScores } from '@/utils/simulate';
@@ -21,6 +21,7 @@ export default function LiveDemiPage() {
   const favoriId = useFavoriId();
   const isSuper = useIsSuper();
   const [simulating, setSimulating] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<any[]>([]);
@@ -160,6 +161,13 @@ export default function LiveDemiPage() {
       logActivity(supabase, 'ADMIN_UNLOCK_MATCH', { match_id: matchId });
     }
     setSavingMatch(null);
+  };
+
+  // Pas de Realtime sur cette page : un autre admin peut avoir saisi un score entre-temps.
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
   };
 
   // Outil de test (super admins) : remplit tous les matchs de finales non terminés avec des
@@ -309,7 +317,15 @@ export default function LiveDemiPage() {
           <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter group-hover:text-red-600">
             Live <span className="text-red-600 group-hover:text-white">Finales</span>
           </h1>
-			 <div className="flex flex-cols">
+			 <div className="flex items-center gap-2 flex-wrap justify-end">
+			   <button
+			     onClick={handleRefresh}
+			     disabled={refreshing}
+			     title="Réactualiser"
+			     className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5 disabled:opacity-40"
+			   >
+			     <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} /> <span className="hidden md:inline">Actualiser</span>
+			   </button>
 			   {isSuper && (
 			     <button
 			       onClick={handleSimulate}

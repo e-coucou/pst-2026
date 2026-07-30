@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
-import { Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List } from 'lucide-react';
+import { Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List, RefreshCw } from 'lucide-react';
 import { calculateTeamsStats, calculatePouleStandings } from '@/utils/live-stats';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
 import FavoriStar from '@/components/FavoriStar';
@@ -118,7 +118,19 @@ export default function PodiumPage() {
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-12 pb-32">
       <div className="max-w-4xl mx-auto">
-        
+
+        {/* Pas de Realtime sur cette page : un autre admin peut avoir saisi un score entre-temps. */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={fetchData}
+            disabled={loading}
+            title="Réactualiser"
+            className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5 disabled:opacity-40"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Actualiser
+          </button>
+        </div>
+
         <header className="mb-12 text-center">
           <div className="flex justify-center mb-4">
             <Trophy size={48} className="text-red-600" />
