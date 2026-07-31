@@ -306,7 +306,9 @@ Un bouton "IA Prono" sur chaque match non terminé ouvre une modale qui calcule 
 Sous-arbre gardé par un `layout.tsx` dédié (même principe que `live/(super)/layout.tsx` : RPC `is_super()`, redirect vers `/render` sinon — dupliqué plutôt que partagé car `/render` n'est pas sous l'arborescence `/live`). Accessible depuis `/render` via un bouton "Accès réservé" affiché uniquement si `userRole === 'super'` (état déjà présent dans la page, alimenté par `get_my_role`).
 
 Page hub (3 tuiles, gabarit repris de `/videos`) vers :
-- **`contacts/`** — coordonnées du Conseil Syndical (`residence_contacts`), CRUD inline, `apartment_num` affiché en badge quand renseigné (lien purement déclaratif avec le plan pour l'instant, pas d'intégration dans la scène 3D).
+- **`contacts/`** — coordonnées du Conseil Syndical (`residence_contacts`), CRUD inline, `apartment_num` affiché en badge quand renseigné. Téléphone/email sont des liens `tel:`/`mailto:` (ouvrent directement l'app Téléphone/Mail sur iPhone).
+
+Sur la scène 3D publique (`render/page.tsx`), la fiche d'un appartement sélectionné par double-clic affiche désormais, **en mode `super` uniquement**, le téléphone/email du contact `residence_contacts` dont `apartment_num` correspond (chargés une fois en mémoire au montage si `role === 'super'`, mappés par n° d'appartement). Le gizmo de coordonnées XYZ (hover, mode super) est masqué pour l'instant côté UI — la mécanique de hover (`CoordinateProbe`) reste en place, prête à être réaffichée.
 - **`documents/`** — bibliothèque de PDF (convocations, comptes-rendus...), upload vers le bucket privé `residence_documents` + métadonnées en base, téléchargement par URL signée, suppression (fichier + ligne).
 - **`codes/`** — codes d'accès (portails, digicodes) avec bouton copier.
 
