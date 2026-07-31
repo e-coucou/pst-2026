@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { ArrowLeft, Loader2, Plus, Pencil, Trash2, Check, X, Home } from 'lucide-react';
 
-type Category = 'conseil_syndical' | 'gardien' | 'coproprietaire' | 'locataire';
+type Category = 'conseil_syndical' | 'gardien' | 'coproprietaire' | 'locataire' | 'fournisseur';
 
 interface Contact {
   id: string;
   category: Category;
   nom: string;
+  contrat: string | null;
   telephone: string | null;
   email: string | null;
   apartment_num: string | null;
@@ -22,6 +23,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: 'gardien', label: 'Gardien' },
   { value: 'coproprietaire', label: 'Copropriétaire' },
   { value: 'locataire', label: 'Locataire' },
+  { value: 'fournisseur', label: 'Fournisseur' },
 ];
 
 const CATEGORY_STYLES: Record<Category, string> = {
@@ -29,13 +31,14 @@ const CATEGORY_STYLES: Record<Category, string> = {
   gardien: 'bg-blue-600/10 border-blue-600/20 text-blue-400',
   coproprietaire: 'bg-purple-600/10 border-purple-600/20 text-purple-400',
   locataire: 'bg-amber-600/10 border-amber-600/20 text-amber-400',
+  fournisseur: 'bg-emerald-600/10 border-emerald-600/20 text-emerald-400',
 };
 
 function categoryLabel(cat: Category) {
   return CATEGORIES.find(c => c.value === cat)?.label || cat;
 }
 
-const emptyForm = { category: 'conseil_syndical' as Category, nom: '', telephone: '', email: '', apartment_num: '', notes: '' };
+const emptyForm = { category: 'conseil_syndical' as Category, nom: '', contrat: '', telephone: '', email: '', apartment_num: '', notes: '' };
 
 export default function ResidenceContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -66,6 +69,7 @@ export default function ResidenceContactsPage() {
     const { error } = await supabase.from('residence_contacts').insert({
       category: addForm.category,
       nom: addForm.nom.trim(),
+      contrat: addForm.contrat.trim() || null,
       telephone: addForm.telephone.trim() || null,
       email: addForm.email.trim() || null,
       apartment_num: addForm.apartment_num.trim() || null,
@@ -84,6 +88,7 @@ export default function ResidenceContactsPage() {
     setEditForm({
       category: c.category,
       nom: c.nom,
+      contrat: c.contrat || '',
       telephone: c.telephone || '',
       email: c.email || '',
       apartment_num: c.apartment_num || '',
@@ -96,6 +101,7 @@ export default function ResidenceContactsPage() {
     const { error } = await supabase.from('residence_contacts').update({
       category: editForm.category,
       nom: editForm.nom.trim(),
+      contrat: editForm.contrat.trim() || null,
       telephone: editForm.telephone.trim() || null,
       email: editForm.email.trim() || null,
       apartment_num: editForm.apartment_num.trim() || null,
@@ -146,7 +152,7 @@ export default function ResidenceContactsPage() {
             Contacts <span className="text-red-600">Résidence</span>
           </h1>
           <p className="text-zinc-500 mt-2 font-bold uppercase tracking-widest text-[10px]">
-            Conseil syndical, gardien, copropriétaires, locataires
+            Conseil syndical, gardien, copropriétaires, locataires, fournisseurs
           </p>
         </div>
 
@@ -176,6 +182,10 @@ export default function ResidenceContactsPage() {
             </select>
             <input placeholder="Nom" value={addForm.nom} onChange={e => setAddForm(f => ({ ...f, nom: e.target.value }))}
               className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50 md:col-span-3" />
+            {addForm.category === 'fournisseur' && (
+              <input placeholder="Contrat / prestation" value={addForm.contrat} onChange={e => setAddForm(f => ({ ...f, contrat: e.target.value }))}
+                className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50 md:col-span-5" />
+            )}
             <input placeholder="Téléphone" value={addForm.telephone} onChange={e => setAddForm(f => ({ ...f, telephone: e.target.value }))}
               className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50" />
             <input placeholder="Email" value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
@@ -209,7 +219,12 @@ export default function ResidenceContactsPage() {
               )}
               {visibleContacts.map((c) => editingId === c.id ? (
                 <tr key={c.id} className="bg-white/[0.02]">
-                  <td className="px-4 py-4"><input value={editForm.nom} onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-full outline-none focus:border-red-600/50" /></td>
+                  <td className="px-4 py-4 min-w-[10rem]">
+                    <input value={editForm.nom} onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-full outline-none focus:border-red-600/50" />
+                    {editForm.category === 'fournisseur' && (
+                      <input placeholder="Contrat / prestation" value={editForm.contrat} onChange={e => setEditForm(f => ({ ...f, contrat: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-xs w-full outline-none focus:border-red-600/50 mt-1.5" />
+                    )}
+                  </td>
                   <td className="px-4 py-4">
                     <select value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value as Category }))}
                       className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-600/50">
@@ -228,7 +243,10 @@ export default function ResidenceContactsPage() {
                 </tr>
               ) : (
                 <tr key={c.id} className="group hover:bg-white/[0.02] transition-colors">
-                  <td className="px-6 py-5 font-black text-sm uppercase italic tracking-tight text-white">{c.nom}</td>
+                  <td className="px-6 py-5">
+                    <div className="font-black text-sm uppercase italic tracking-tight text-white">{c.nom}</div>
+                    {c.contrat && <div className="text-[10px] text-zinc-500 normal-case font-medium mt-0.5 max-w-xs">{c.contrat}</div>}
+                  </td>
                   <td className="px-6 py-5">
                     <span className={`inline-flex px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${CATEGORY_STYLES[c.category]}`}>
                       {categoryLabel(c.category)}
