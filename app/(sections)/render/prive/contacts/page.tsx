@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
-import { ArrowLeft, Loader2, Plus, Pencil, Trash2, Check, X, Home } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, Pencil, Trash2, Check, X, Home, Share2 } from 'lucide-react';
 
 type Category = 'conseil_syndical' | 'gardien' | 'coproprietaire' | 'locataire' | 'fournisseur';
 
@@ -36,6 +36,42 @@ const CATEGORY_STYLES: Record<Category, string> = {
 
 function categoryLabel(cat: Category) {
   return CATEGORIES.find(c => c.value === cat)?.label || cat;
+}
+
+function vcardEscape(s: string) {
+  return s.replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n');
+}
+
+function buildVCard(c: Contact) {
+  const lines = ['BEGIN:VCARD', 'VERSION:3.0', `FN:${vcardEscape(c.nom)}`, `ORG:${vcardEscape(categoryLabel(c.category))}`];
+  if (c.telephone) lines.push(`TEL;TYPE=CELL:${c.telephone.replace(/[^\d+]/g, '')}`);
+  if (c.email) lines.push(`EMAIL:${c.email}`);
+  const noteParts = [c.contrat, c.notes].filter(Boolean) as string[];
+  if (noteParts.length) lines.push(`NOTE:${vcardEscape(noteParts.join(' — '))}`);
+  lines.push('END:VCARD');
+  return lines.join('\r\n');
+}
+
+async function shareContact(c: Contact) {
+  const vcard = buildVCard(c);
+  const fileName = `${c.nom.replace(/[^\w-]+/g, '_')}.vcf`;
+  const file = new File([vcard], fileName, { type: 'text/vcard' });
+
+  const nav = navigator as Navigator & { canShare?: (data: { files: File[] }) => boolean; share?: (data: { files: File[]; title: string }) => Promise<void> };
+  if (nav.share && (!nav.canShare || nav.canShare({ files: [file] }))) {
+    try {
+      await nav.share({ files: [file], title: c.nom });
+      return;
+    } catch (err) {
+      if ((err as { name?: string })?.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback (pas de Web Share API, ex: desktop) : navigation directe pour laisser
+  // le navigateur proposer l'ouverture/import du .vcf.
+  const url = URL.createObjectURL(new Blob([vcard], { type: 'text/vcard' }));
+  window.location.href = url;
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 const emptyForm = { category: 'conseil_syndical' as Category, nom: '', contrat: '', telephone: '', email: '', apartment_num: '', notes: '' };
@@ -270,9 +306,12 @@ export default function ResidenceContactsPage() {
                     ) : '—'}
                   </td>
                   <td className="px-6 py-5 text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => startEdit(c)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors"><Pencil size={14} /></button>
-                      <button onClick={() => handleDelete(c.id)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors"><Trash2 size={14} /></button>
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => shareContact(c)} title="Partager" className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors"><Share2 size={14} /></button>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => startEdit(c)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors"><Pencil size={14} /></button>
+                        <button onClick={() => handleDelete(c.id)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors"><Trash2 size={14} /></button>
+                      </div>
                     </div>
                   </td>
                 </tr>
