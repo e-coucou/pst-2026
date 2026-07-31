@@ -79,7 +79,7 @@ app/
 │   │   └── podium/page.tsx          Palmarès final (classement, historique, graph)
 │   └── (super)/                    Groupe protégé : rôle super uniquement
 │       ├── layout.tsx               Garde d'accès via RPC is_super()
-│       ├── super/page.tsx           Panel super admin (maintenance, navigation)
+│       ├── super/page.tsx           Panel super admin (maintenance, navigation, codes d'accès résidence en tête de page)
 │       ├── users/page.tsx           Gestion des comptes (site_users)
 │       ├── admin_joueurs/page.tsx   CRUD joueurs (profiles)
 │       ├── admin_teams/page.tsx     CRUD équipes / doublettes
@@ -307,14 +307,16 @@ Sous-arbre gardé par un `layout.tsx` dédié (même principe que `live/(super)/
 
 Page hub (3 tuiles, gabarit repris de `/videos`) vers :
 - **`contacts/`** — coordonnées (`residence_contacts`), CRUD inline, 5 catégories filtrables par pills (Conseil Syndical, Gardien, Copropriétaire, Locataire, Fournisseur — badge coloré par catégorie), `apartment_num` affiché en badge quand renseigné. Téléphone/email sont des liens `tel:`/`mailto:` (ouvrent directement l'app Téléphone/Mail sur iPhone). Catégorie `fournisseur` : champ `contrat` additionnel (prestation/référence), affiché en sous-ligne du nom, formulaire d'ajout conditionnel à cette catégorie. Bouton "Partager" (toujours visible, pas seulement au survol) génère une vCard (`.vcf`) et l'ouvre via `navigator.share` (feuille de partage native iOS — AirDrop/Messages/"Ajouter aux contacts"), avec repli sur un téléchargement direct si l'API Web Share est absente.
-
-Sur la scène 3D publique (`render/page.tsx`), la fiche d'un appartement sélectionné par double-clic affiche désormais, **en mode `super` uniquement**, le téléphone/email du contact `residence_contacts` dont `apartment_num` correspond (chargés une fois en mémoire au montage si `role === 'super'`, mappés par n° d'appartement). Le gizmo de coordonnées XYZ (hover, mode super) est masqué pour l'instant côté UI — la mécanique de hover (`CoordinateProbe`) reste en place, prête à être réaffichée.
 - **`documents/`** — bibliothèque de PDF (convocations, comptes-rendus...), upload vers le bucket privé `residence_documents` + métadonnées en base, téléchargement par URL signée, suppression (fichier + ligne).
 - **`codes/`** — codes d'accès (portails, digicodes) avec bouton copier.
 
-Les 3 tables portent une colonne `access_level` (défaut `'super'`) pour permettre plus tard d'élargir l'accès à des "membres privilégiés" sans migration de schéma — aucune UI côté membre n'existe pour l'instant.
+Intégrations transversales avec le reste de l'app :
+- Sur la scène 3D publique (`render/page.tsx`), la fiche d'un appartement sélectionné par double-clic affiche désormais, **en mode `super` uniquement**, le téléphone/email du contact `residence_contacts` dont `apartment_num` correspond (chargés une fois en mémoire au montage si `role === 'super'`, mappés par n° d'appartement). Le gizmo de coordonnées XYZ (hover, mode super) est masqué pour l'instant côté UI — la mécanique de hover (`CoordinateProbe`) reste en place, prête à être réaffichée.
+- Le panel super rapide `/live/super` (`app/live/(super)/super/page.tsx`, accessible via l'icône empreinte de la Navbar) affiche directement les `residence_codes` en tête de page, avant même les autres raccourcis de navigation — cartes tap-friendly pleine largeur, copie du code en un tap (retour visuel ✓), pensées pour une lecture rapide sur iPhone. Un lien "Gérer" renvoie vers `/render/prive/codes` pour l'édition complète.
 
-Les 6 premiers contacts du Conseil Syndical proviennent d'un extrait de `documents/private/Extranet Reveille.pdf` (export de l'extranet du syndic), saisis manuellement en base (le fichier PDF lui-même n'est pas importé dans le bucket, seules les infos structurées le sont).
+Les 3 tables (`residence_contacts`, `residence_documents`, `residence_codes`) portent une colonne `access_level` (défaut `'super'`) pour permettre plus tard d'élargir l'accès à des "membres privilégiés" sans migration de schéma — aucune UI côté membre n'existe pour l'instant.
+
+Jeux de données initiaux extraits de `documents/private/Extranet Reveille.pdf` (export de l'extranet du syndic) et saisis manuellement en base — le PDF lui-même n'est pas importé dans le bucket, seules les infos structurées le sont : les 6 membres du Conseil Syndical, et 27 fournisseurs (SQL fourni dans `documents/private/seed_fournisseurs.sql`, non versionné comme le reste de `documents/private/`).
 
 ## 10. Déploiement & configuration
 
