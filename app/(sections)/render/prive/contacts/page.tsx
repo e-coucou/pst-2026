@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { ArrowLeft, Loader2, Plus, Pencil, Trash2, Check, X, Home } from 'lucide-react';
 
+type Category = 'conseil_syndical' | 'gardien' | 'coproprietaire' | 'locataire';
+
 interface Contact {
   id: string;
-  category: string;
+  category: Category;
   nom: string;
   telephone: string | null;
   email: string | null;
@@ -15,12 +17,31 @@ interface Contact {
   notes: string | null;
 }
 
-const emptyForm = { nom: '', telephone: '', email: '', apartment_num: '', notes: '' };
+const CATEGORIES: { value: Category; label: string }[] = [
+  { value: 'conseil_syndical', label: 'Conseil Syndical' },
+  { value: 'gardien', label: 'Gardien' },
+  { value: 'coproprietaire', label: 'Copropriétaire' },
+  { value: 'locataire', label: 'Locataire' },
+];
+
+const CATEGORY_STYLES: Record<Category, string> = {
+  conseil_syndical: 'bg-red-600/10 border-red-600/20 text-red-500',
+  gardien: 'bg-blue-600/10 border-blue-600/20 text-blue-400',
+  coproprietaire: 'bg-purple-600/10 border-purple-600/20 text-purple-400',
+  locataire: 'bg-amber-600/10 border-amber-600/20 text-amber-400',
+};
+
+function categoryLabel(cat: Category) {
+  return CATEGORIES.find(c => c.value === cat)?.label || cat;
+}
+
+const emptyForm = { category: 'conseil_syndical' as Category, nom: '', telephone: '', email: '', apartment_num: '', notes: '' };
 
 export default function ResidenceContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -34,7 +55,7 @@ export default function ResidenceContactsPage() {
 
   async function fetchContacts() {
     setLoading(true);
-    const { data } = await supabase.from('residence_contacts').select('*').eq('category', 'conseil_syndical').order('nom');
+    const { data } = await supabase.from('residence_contacts').select('*').order('nom');
     if (data) setContacts(data);
     setLoading(false);
   }
@@ -43,7 +64,7 @@ export default function ResidenceContactsPage() {
     if (!addForm.nom.trim()) return;
     setSaving(true);
     const { error } = await supabase.from('residence_contacts').insert({
-      category: 'conseil_syndical',
+      category: addForm.category,
       nom: addForm.nom.trim(),
       telephone: addForm.telephone.trim() || null,
       email: addForm.email.trim() || null,
@@ -51,7 +72,7 @@ export default function ResidenceContactsPage() {
       notes: addForm.notes.trim() || null,
     });
     if (!error) {
-      setAddForm(emptyForm);
+      setAddForm({ ...emptyForm, category: addForm.category });
       setShowAddForm(false);
       await fetchContacts();
     }
@@ -61,6 +82,7 @@ export default function ResidenceContactsPage() {
   function startEdit(c: Contact) {
     setEditingId(c.id);
     setEditForm({
+      category: c.category,
       nom: c.nom,
       telephone: c.telephone || '',
       email: c.email || '',
@@ -72,6 +94,7 @@ export default function ResidenceContactsPage() {
   async function handleSaveEdit(id: string) {
     setSaving(true);
     const { error } = await supabase.from('residence_contacts').update({
+      category: editForm.category,
       nom: editForm.nom.trim(),
       telephone: editForm.telephone.trim() || null,
       email: editForm.email.trim() || null,
@@ -93,6 +116,8 @@ export default function ResidenceContactsPage() {
     if (!error) await fetchContacts();
     setSaving(false);
   }
+
+  const visibleContacts = activeCategory === 'all' ? contacts : contacts.filter(c => c.category === activeCategory);
 
   if (loading) return (
     <div className="min-h-screen bg-black flex items-center justify-center">
@@ -116,19 +141,41 @@ export default function ResidenceContactsPage() {
           </button>
         </div>
 
-        <div className="mb-10">
+        <div className="mb-8">
           <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter">
-            Conseil <span className="text-red-600">Syndical</span>
+            Contacts <span className="text-red-600">Résidence</span>
           </h1>
           <p className="text-zinc-500 mt-2 font-bold uppercase tracking-widest text-[10px]">
-            Coordonnées des membres du conseil syndical
+            Conseil syndical, gardien, copropriétaires, locataires
           </p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap mb-8">
+          <button
+            onClick={() => setActiveCategory('all')}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === 'all' ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'}`}
+          >
+            Tous ({contacts.length})
+          </button>
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat.value}
+              onClick={() => setActiveCategory(cat.value)}
+              className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === cat.value ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'}`}
+            >
+              {cat.label} ({contacts.filter(c => c.category === cat.value).length})
+            </button>
+          ))}
         </div>
 
         {showAddForm && (
           <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-6 mb-8 grid grid-cols-1 md:grid-cols-5 gap-3">
+            <select value={addForm.category} onChange={e => setAddForm(f => ({ ...f, category: e.target.value as Category }))}
+              className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50 md:col-span-2">
+              {CATEGORIES.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
+            </select>
             <input placeholder="Nom" value={addForm.nom} onChange={e => setAddForm(f => ({ ...f, nom: e.target.value }))}
-              className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50 md:col-span-2" />
+              className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50 md:col-span-3" />
             <input placeholder="Téléphone" value={addForm.telephone} onChange={e => setAddForm(f => ({ ...f, telephone: e.target.value }))}
               className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50" />
             <input placeholder="Email" value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
@@ -136,7 +183,7 @@ export default function ResidenceContactsPage() {
             <input placeholder="N° appartement" value={addForm.apartment_num} onChange={e => setAddForm(f => ({ ...f, apartment_num: e.target.value }))}
               className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50" />
             <input placeholder="Notes" value={addForm.notes} onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))}
-              className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50 md:col-span-4" />
+              className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50 md:col-span-2" />
             <button onClick={handleAdd} disabled={saving || !addForm.nom.trim()}
               className="bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-black uppercase tracking-widest text-[10px] px-4 py-2 rounded-lg transition-all">
               {saving ? <Loader2 className="animate-spin mx-auto" size={14} /> : 'Enregistrer'}
@@ -149,6 +196,7 @@ export default function ResidenceContactsPage() {
             <thead>
               <tr className="border-b border-white/5 bg-white/[0.01]">
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Nom</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Catégorie</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Téléphone</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Email</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Appt.</th>
@@ -156,12 +204,18 @@ export default function ResidenceContactsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {contacts.length === 0 && (
-                <tr><td colSpan={5} className="px-6 py-10 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">Aucun contact enregistré</td></tr>
+              {visibleContacts.length === 0 && (
+                <tr><td colSpan={6} className="px-6 py-10 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">Aucun contact enregistré</td></tr>
               )}
-              {contacts.map((c) => editingId === c.id ? (
+              {visibleContacts.map((c) => editingId === c.id ? (
                 <tr key={c.id} className="bg-white/[0.02]">
                   <td className="px-4 py-4"><input value={editForm.nom} onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-full outline-none focus:border-red-600/50" /></td>
+                  <td className="px-4 py-4">
+                    <select value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value as Category }))}
+                      className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-600/50">
+                      {CATEGORIES.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
+                    </select>
+                  </td>
                   <td className="px-4 py-4"><input value={editForm.telephone} onChange={e => setEditForm(f => ({ ...f, telephone: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-full outline-none focus:border-red-600/50" /></td>
                   <td className="px-4 py-4"><input value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-full outline-none focus:border-red-600/50" /></td>
                   <td className="px-4 py-4"><input value={editForm.apartment_num} onChange={e => setEditForm(f => ({ ...f, apartment_num: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-20 outline-none focus:border-red-600/50" /></td>
@@ -175,6 +229,11 @@ export default function ResidenceContactsPage() {
               ) : (
                 <tr key={c.id} className="group hover:bg-white/[0.02] transition-colors">
                   <td className="px-6 py-5 font-black text-sm uppercase italic tracking-tight text-white">{c.nom}</td>
+                  <td className="px-6 py-5">
+                    <span className={`inline-flex px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${CATEGORY_STYLES[c.category]}`}>
+                      {categoryLabel(c.category)}
+                    </span>
+                  </td>
                   <td className="px-6 py-5 text-sm font-mono">
                     {c.telephone ? (
                       <a href={`tel:${c.telephone.replace(/[^\d+]/g, '')}`} className="text-zinc-300 hover:text-red-500 transition-colors">{c.telephone}</a>
@@ -187,7 +246,7 @@ export default function ResidenceContactsPage() {
                   </td>
                   <td className="px-6 py-5">
                     {c.apartment_num ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-600/10 border border-red-600/20 text-red-500 text-[10px] font-black uppercase tracking-widest">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-zinc-800/80 border border-white/10 text-zinc-300 text-[10px] font-black uppercase tracking-widest">
                         <Home size={10} /> {c.apartment_num}
                       </span>
                     ) : '—'}

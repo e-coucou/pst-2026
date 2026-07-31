@@ -34,7 +34,7 @@ export default function ResidencePriveHubPage() {
             href="/render/prive/contacts"
             icon={<Users size={32} />}
             title="Contacts"
-            desc="Conseil syndical"
+            desc="Conseil syndical, gardien, résidents"
           />
           <HubTile
             href="/render/prive/documents"
