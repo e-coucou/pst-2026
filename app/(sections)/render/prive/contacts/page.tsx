@@ -1,0 +1,210 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
+import { ArrowLeft, Loader2, Plus, Pencil, Trash2, Check, X, Home } from 'lucide-react';
+
+interface Contact {
+  id: string;
+  category: string;
+  nom: string;
+  telephone: string | null;
+  email: string | null;
+  apartment_num: string | null;
+  notes: string | null;
+}
+
+const emptyForm = { nom: '', telephone: '', email: '', apartment_num: '', notes: '' };
+
+export default function ResidenceContactsPage() {
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState(emptyForm);
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchContacts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function fetchContacts() {
+    setLoading(true);
+    const { data } = await supabase.from('residence_contacts').select('*').eq('category', 'conseil_syndical').order('nom');
+    if (data) setContacts(data);
+    setLoading(false);
+  }
+
+  async function handleAdd() {
+    if (!addForm.nom.trim()) return;
+    setSaving(true);
+    const { error } = await supabase.from('residence_contacts').insert({
+      category: 'conseil_syndical',
+      nom: addForm.nom.trim(),
+      telephone: addForm.telephone.trim() || null,
+      email: addForm.email.trim() || null,
+      apartment_num: addForm.apartment_num.trim() || null,
+      notes: addForm.notes.trim() || null,
+    });
+    if (!error) {
+      setAddForm(emptyForm);
+      setShowAddForm(false);
+      await fetchContacts();
+    }
+    setSaving(false);
+  }
+
+  function startEdit(c: Contact) {
+    setEditingId(c.id);
+    setEditForm({
+      nom: c.nom,
+      telephone: c.telephone || '',
+      email: c.email || '',
+      apartment_num: c.apartment_num || '',
+      notes: c.notes || '',
+    });
+  }
+
+  async function handleSaveEdit(id: string) {
+    setSaving(true);
+    const { error } = await supabase.from('residence_contacts').update({
+      nom: editForm.nom.trim(),
+      telephone: editForm.telephone.trim() || null,
+      email: editForm.email.trim() || null,
+      apartment_num: editForm.apartment_num.trim() || null,
+      notes: editForm.notes.trim() || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id);
+    if (!error) {
+      setEditingId(null);
+      await fetchContacts();
+    }
+    setSaving(false);
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Supprimer ce contact ?')) return;
+    setSaving(true);
+    const { error } = await supabase.from('residence_contacts').delete().eq('id', id);
+    if (!error) await fetchContacts();
+    setSaving(false);
+  }
+
+  if (loading) return (
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <Loader2 className="text-red-600 animate-spin" size={40} />
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-black text-white p-6 md:p-20">
+      <div className="max-w-5xl mx-auto w-full">
+
+        <div className="flex items-center justify-between mb-10 flex-wrap gap-4">
+          <Link href="/render/prive" className="inline-flex items-center gap-2 text-white bg-zinc-900 hover:bg-red-600 border border-white/10 hover:border-red-600 transition-all px-5 py-3 rounded-full text-xs font-black uppercase tracking-widest active:scale-95">
+            <ArrowLeft size={16} /> Espace réservé
+          </Link>
+          <button
+            onClick={() => setShowAddForm(v => !v)}
+            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-widest text-[10px] px-5 py-3 rounded-xl transition-all active:scale-95"
+          >
+            <Plus size={14} /> Ajouter un contact
+          </button>
+        </div>
+
+        <div className="mb-10">
+          <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter">
+            Conseil <span className="text-red-600">Syndical</span>
+          </h1>
+          <p className="text-zinc-500 mt-2 font-bold uppercase tracking-widest text-[10px]">
+            Coordonnées des membres du conseil syndical
+          </p>
+        </div>
+
+        {showAddForm && (
+          <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-6 mb-8 grid grid-cols-1 md:grid-cols-5 gap-3">
+            <input placeholder="Nom" value={addForm.nom} onChange={e => setAddForm(f => ({ ...f, nom: e.target.value }))}
+              className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50 md:col-span-2" />
+            <input placeholder="Téléphone" value={addForm.telephone} onChange={e => setAddForm(f => ({ ...f, telephone: e.target.value }))}
+              className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50" />
+            <input placeholder="Email" value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
+              className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50" />
+            <input placeholder="N° appartement" value={addForm.apartment_num} onChange={e => setAddForm(f => ({ ...f, apartment_num: e.target.value }))}
+              className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50" />
+            <input placeholder="Notes" value={addForm.notes} onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))}
+              className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50 md:col-span-4" />
+            <button onClick={handleAdd} disabled={saving || !addForm.nom.trim()}
+              className="bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-black uppercase tracking-widest text-[10px] px-4 py-2 rounded-lg transition-all">
+              {saving ? <Loader2 className="animate-spin mx-auto" size={14} /> : 'Enregistrer'}
+            </button>
+          </div>
+        )}
+
+        <div className="bg-zinc-900/20 border border-white/5 rounded-[2rem] overflow-hidden overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-white/5 bg-white/[0.01]">
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Nom</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Téléphone</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Email</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Appt.</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {contacts.length === 0 && (
+                <tr><td colSpan={5} className="px-6 py-10 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">Aucun contact enregistré</td></tr>
+              )}
+              {contacts.map((c) => editingId === c.id ? (
+                <tr key={c.id} className="bg-white/[0.02]">
+                  <td className="px-4 py-4"><input value={editForm.nom} onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-full outline-none focus:border-red-600/50" /></td>
+                  <td className="px-4 py-4"><input value={editForm.telephone} onChange={e => setEditForm(f => ({ ...f, telephone: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-full outline-none focus:border-red-600/50" /></td>
+                  <td className="px-4 py-4"><input value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-full outline-none focus:border-red-600/50" /></td>
+                  <td className="px-4 py-4"><input value={editForm.apartment_num} onChange={e => setEditForm(f => ({ ...f, apartment_num: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-20 outline-none focus:border-red-600/50" /></td>
+                  <td className="px-4 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => handleSaveEdit(c.id)} disabled={saving} className="p-2 rounded-lg bg-green-600/20 text-green-500 hover:bg-green-600 hover:text-white transition-colors"><Check size={14} /></button>
+                      <button onClick={() => setEditingId(null)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 transition-colors"><X size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={c.id} className="group hover:bg-white/[0.02] transition-colors">
+                  <td className="px-6 py-5 font-black text-sm uppercase italic tracking-tight text-white">{c.nom}</td>
+                  <td className="px-6 py-5 text-sm font-mono">
+                    {c.telephone ? (
+                      <a href={`tel:${c.telephone.replace(/[^\d+]/g, '')}`} className="text-zinc-300 hover:text-red-500 transition-colors">{c.telephone}</a>
+                    ) : '—'}
+                  </td>
+                  <td className="px-6 py-5 text-sm">
+                    {c.email ? (
+                      <a href={`mailto:${c.email}`} className="text-zinc-300 hover:text-red-500 transition-colors">{c.email}</a>
+                    ) : '—'}
+                  </td>
+                  <td className="px-6 py-5">
+                    {c.apartment_num ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-600/10 border border-red-600/20 text-red-500 text-[10px] font-black uppercase tracking-widest">
+                        <Home size={10} /> {c.apartment_num}
+                      </span>
+                    ) : '—'}
+                  </td>
+                  <td className="px-6 py-5 text-right">
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => startEdit(c)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors"><Pencil size={14} /></button>
+                      <button onClick={() => handleDelete(c.id)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors"><Trash2 size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  );
+}

@@ -4,6 +4,8 @@ import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, Text, Edges, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import Link from 'next/link';
+import { Lock, Phone, Mail } from 'lucide-react';
 import { residenceData } from '@/data/residence';
 import { createClient } from '@/utils/supabase/client';
 
@@ -1003,15 +1005,29 @@ export default function RenderPage() {
   const [onlyCorridors, setOnlyCorridors] = useState(false);
 
   // Gizmo de coordonnées (mode super) : point 3D survolé par le curseur
+  // Masqué pour l'instant côté UI (cf. bloc plus bas), la mécanique de hover reste en place.
   const [hoverCoords, setHoverCoords] = useState<{ x: number; y: number; z: number } | null>(null);
   const groupOffsetX = -35; // doit rester synchro avec le <group position={[groupOffsetX, 0, 0]}> ci-dessous
+
+  // Contacts résidence liés à un n° d'appartement (mode super uniquement), pour la fiche double-clic
+  const [contactsByApt, setContactsByApt] = useState<Record<string, { telephone: string | null; email: string | null }>>({});
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase.rpc('get_my_role').then(({ data: role, error }) => {
-        if (!error && role) setUserRole(role);
+        if (error || !role) return;
+        setUserRole(role);
+        if (role === 'super') {
+          supabase.from('residence_contacts').select('apartment_num, telephone, email').not('apartment_num', 'is', null)
+            .then(({ data }) => {
+              if (!data) return;
+              const map: Record<string, { telephone: string | null; email: string | null }> = {};
+              data.forEach((c: any) => { map[c.apartment_num] = { telephone: c.telephone, email: c.email }; });
+              setContactsByApt(map);
+            });
+        }
       });
     });
   }, []);
@@ -1069,9 +1085,15 @@ export default function RenderPage() {
         <OrbitControls makeDefault />
       </Canvas>
 
-      {/* Flip/flop couloirs+escalier seul (réservé au mode super) */}
+      {/* Flip/flop couloirs+escalier seul + accès à l'espace réservé (mode super) */}
       {userRole === 'super' && (
-        <div className="absolute top-8 right-8">
+        <div className="absolute top-8 right-8 flex items-center gap-2">
+          <Link
+            href="/render/prive"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-red-600/90 text-white hover:bg-red-600"
+          >
+            <Lock size={12} /> Accès réservé
+          </Link>
           <button
             onClick={() => setOnlyCorridors((v) => !v)}
             className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
@@ -1087,16 +1109,7 @@ export default function RenderPage() {
 
       {/* Titre / Fiche + gizmo de coordonnées, empilés en haut à gauche */}
       <div className="absolute top-8 left-8 pointer-events-none max-w-sm flex flex-col gap-3">
-      {userRole === 'super' && (
-        <div className="inline-flex gap-3 px-3 py-2 rounded-lg bg-zinc-900/80 border border-zinc-700/50 font-mono text-xs font-bold w-fit">
-          <span className="text-zinc-500">X</span>
-          <span className="text-white">{hoverCoords ? hoverCoords.x.toFixed(2) : '—'}</span>
-          <span className="text-zinc-500">Y</span>
-          <span className="text-white">{hoverCoords ? hoverCoords.y.toFixed(2) : '—'}</span>
-          <span className="text-zinc-500">Z</span>
-          <span className="text-white">{hoverCoords ? hoverCoords.z.toFixed(2) : '—'}</span>
-        </div>
-      )}
+      {/* Gizmo de coordonnées XYZ (mode super) — masqué pour l'instant */}
       <div>
         {selected?.kind === 'cdb' ? (
           <>
@@ -1144,6 +1157,22 @@ export default function RenderPage() {
               )}
             </div>
             <ApartmentDimensions apt={selected} />
+            {userRole === 'super' && contactsByApt[selected.num] && (contactsByApt[selected.num].telephone || contactsByApt[selected.num].email) && (
+              <div className="flex flex-col gap-1.5 mt-3 pointer-events-auto w-fit">
+                {contactsByApt[selected.num].telephone && (
+                  <a href={`tel:${contactsByApt[selected.num].telephone!.replace(/[^\d+]/g, '')}`}
+                    className="inline-flex items-center gap-2 px-2 py-1 bg-red-600/10 border border-red-600/20 text-red-500 hover:bg-red-600 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-md transition-colors">
+                    <Phone size={11} /> {contactsByApt[selected.num].telephone}
+                  </a>
+                )}
+                {contactsByApt[selected.num].email && (
+                  <a href={`mailto:${contactsByApt[selected.num].email}`}
+                    className="inline-flex items-center gap-2 px-2 py-1 bg-red-600/10 border border-red-600/20 text-red-500 hover:bg-red-600 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-md transition-colors truncate">
+                    <Mail size={11} /> {contactsByApt[selected.num].email}
+                  </a>
+                )}
+              </div>
+            )}
           </>
         ) : (
           <>

@@ -1,22 +1,45 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  RefreshCw, 
-  Globe, 
-  Trash2, 
-  Users, UserPlus, 
-  Settings2, 
-  AlertTriangle, 
+import { createClient } from '@/utils/supabase/client';
+import {
+  RefreshCw,
+  Globe,
+  Trash2,
+  Users, UserPlus,
+  Settings2,
+  AlertTriangle,
   Loader2,
   ChevronRight,
-  Fingerprint, BookOpen, ListTodo, BarChart3, Gauge, Users2, Activity, Radio
+  Fingerprint, BookOpen, ListTodo, BarChart3, Gauge, Users2, Activity, Radio,
+  KeyRound, Copy, CopyCheck, Settings
 } from 'lucide-react';
+
+interface ResidenceCode {
+  id: string;
+  label: string;
+  code: string;
+}
 
 export default function AdminControlPanel() {
   const router = useRouter();
   const [status, setStatus] = useState({ loading: false, action: '' });
+  const [codes, setCodes] = useState<ResidenceCode[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.from('residence_codes').select('id, label, code').order('label').then(({ data }) => {
+      if (data) setCodes(data);
+    });
+  }, []);
+
+  const copyCode = async (id: string, code: string) => {
+    await navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
 
   // --- ACTIONS DE MAINTENANCE (API) ---
   const executeAction = async (label: string, url: string, confirmMsg: string) => {
@@ -56,6 +79,35 @@ export default function AdminControlPanel() {
           <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.2em]">Contrôle système & ELO</p>
         </div>
       </div>
+
+      {/* CODES D'ACCÈS RÉSIDENCE — visibles immédiatement, tap pour copier (optimisé iPhone) */}
+      {codes.length > 0 && (
+        <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-6 space-y-3">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 tracking-widest">
+              <KeyRound size={12} /> Codes d&apos;accès résidence
+            </h3>
+            <button onClick={() => navTo('/render/prive/codes')} className="flex items-center gap-1 text-[9px] font-black uppercase text-zinc-600 hover:text-red-500 tracking-widest transition-colors">
+              Gérer <Settings size={10} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {codes.map(c => (
+              <button
+                key={c.id}
+                onClick={() => copyCode(c.id, c.code)}
+                className="w-full flex items-center justify-between gap-3 p-5 bg-zinc-800/50 active:bg-red-600 border border-white/5 rounded-2xl transition-colors text-left"
+              >
+                <div className="min-w-0">
+                  <div className="text-[10px] font-black uppercase text-zinc-500 tracking-widest truncate">{c.label}</div>
+                  <div className="text-2xl font-black tracking-widest font-mono text-white">{c.code}</div>
+                </div>
+                {copiedId === c.id ? <CopyCheck size={22} className="text-green-500 shrink-0" /> : <Copy size={22} className="text-zinc-500 shrink-0" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* SECTION 1 : GESTION & DONNÉES */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

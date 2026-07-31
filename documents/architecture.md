@@ -54,7 +54,14 @@ app/
 │   ├── videos/photos/page.tsx      Galerie photo (vignettes signées, clic → version complète)
 │   ├── videos/upload/page.tsx      Import photo (compression + conversion WebP côté client)
 │   ├── share/page.tsx              Plein écran QR code d'invitation
-│   └── render/page.tsx             3D de la résidence (⚠️ voir §9 — non commité)
+│   └── render/                     3D de la résidence, voir §9
+│       ├── page.tsx                 Maquette 3D publique
+│       └── prive/                   Espace réservé (rôle super), voir §9
+│           ├── layout.tsx            Garde d'accès via RPC is_super()
+│           ├── page.tsx              Hub (Contacts / Documents / Codes)
+│           ├── contacts/page.tsx     CRUD résidence_contacts (Conseil Syndical)
+│           ├── documents/page.tsx    Bibliothèque PDF (bucket Storage résidence_documents)
+│           └── codes/page.tsx        CRUD résidence_codes (portails, digicodes)
 │
 ├── joueurs/[id]/page.tsx          Fiche joueur (Server Component, profil ELO complet)
 │
@@ -187,6 +194,12 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 - **`live_history`** — équivalent de `history_all` mais pour le tournoi live (reconstruit par `/api/admin/live-elo`)
 - **`steps`** — barème par `type` de match : `value` (rang de base pour `finalTop8`, ex. `Finale Rang1` → 1), `label` (libellé lisible affiché à la place du `type` brut, ex. `Finale Rang2` → "Petite Finale")
 
+### Résidence (espace réservé, voir §9)
+- **`residence_contacts`** — coordonnées (`nom`, `telephone`, `email`), `category` (`conseil_syndical` pour l'instant, champ ouvert), `apartment_num` (lien manuel optionnel vers `data/residence.ts`, exploité par la fiche double-clic de la scène 3D — voir §9), `access_level` (défaut `'super'`, prévu pour une extension "membre privilégié" future sans migration)
+- **`residence_documents`** — métadonnées des PDF (`title`, `description`, `storage_path`, `file_size`, `mime_type`, `uploaded_by`), le binaire vit dans le bucket Storage `residence_documents`
+- **`residence_codes`** — `label`/`code`/`notes` (portails, digicodes)
+- RLS des 3 tables : `for all using (is_super())` — aucun accès `membre`/`admin` pour l'instant.
+
 ### Configuration
 - **`settings`** — paramètres du moteur ELO (`elo_init`, `bonus_point`, `bonus_seuil`, `seuil`, `max_ecart`, `poids_finale`, `poids_finaliste`, `k_factor`) — voir §6
 
@@ -204,6 +217,7 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 
 ### Storage
 - Bucket `joueurs_photos` — accès via URL signée (1h) dans `app/joueurs/[id]/page.tsx` et `admin_joueurs/page.tsx`.
+- Bucket `residence_documents` (privé) — PDF de la résidence, voir §9. Accès via URL signée (1h), policy `storage.objects` restreinte à `is_super()`.
 - Bucket `photos_import` (privé) — contributions photo des membres. RLS exige que le chemin commence par `private/` (`(storage.foldername(name))[1] = 'private'`). Deux sous-dossiers par photo, même nom de fichier (`{userId}_{timestamp}.webp`) :
   - `private/full/` — jusqu'à ~1,5 Mo (compression + conversion WebP côté navigateur, `browser-image-compression`, plusieurs paliers résolution/qualité).
   - `private/thumbs/` — vignette 400px (~quelques dizaines de Ko), seule chargée par la galerie ; la version complète n'est signée et ouverte qu'au clic.
@@ -287,7 +301,18 @@ Un bouton "IA Prono" sur chaque match non terminé ouvre une modale qui calcule 
 
 `app/(sections)/render/page.tsx` est une scène Three.js/React Three Fiber fonctionnelle et significativement développée : rendu de tous les appartements (avec quirks architecturaux gérés au cas par cas — largeurs débordantes, extensions en L, couloirs absorbés — via des champs d'override sur chaque appartement), sélection interactive au double-clic avec panneau d'info, boussole/`GizmoHelper` d'orientation, piscine + pataugeoire modélisées par extrusion (dimensions mesurées sur une photo aérienne réelle), terrain de pétanque avec joueurs et nageurs stylisés low-poly.
 
-> ⚠️ **Ni `app/(sections)/render/page.tsx` ni `data/residence.ts` ne sont commités** — consigne explicite : cette partie est développée par itérations mais reste hors du dépôt tant que ce n'est pas demandé. Ne pas les committer sans confirmation.
+### Espace réservé (`app/(sections)/render/prive/`, rôle `super`)
+
+Sous-arbre gardé par un `layout.tsx` dédié (même principe que `live/(super)/layout.tsx` : RPC `is_super()`, redirect vers `/render` sinon — dupliqué plutôt que partagé car `/render` n'est pas sous l'arborescence `/live`). Accessible depuis `/render` via un bouton "Accès réservé" affiché uniquement si `userRole === 'super'` (état déjà présent dans la page, alimenté par `get_my_role`).
+
+Page hub (3 tuiles, gabarit repris de `/videos`) vers :
+- **`contacts/`** — coordonnées du Conseil Syndical (`residence_contacts`), CRUD inline, `apartment_num` affiché en badge quand renseigné (lien purement déclaratif avec le plan pour l'instant, pas d'intégration dans la scène 3D).
+- **`documents/`** — bibliothèque de PDF (convocations, comptes-rendus...), upload vers le bucket privé `residence_documents` + métadonnées en base, téléchargement par URL signée, suppression (fichier + ligne).
+- **`codes/`** — codes d'accès (portails, digicodes) avec bouton copier.
+
+Les 3 tables portent une colonne `access_level` (défaut `'super'`) pour permettre plus tard d'élargir l'accès à des "membres privilégiés" sans migration de schéma — aucune UI côté membre n'existe pour l'instant.
+
+Les 6 premiers contacts du Conseil Syndical proviennent d'un extrait de `documents/private/Extranet Reveille.pdf` (export de l'extranet du syndic), saisis manuellement en base (le fichier PDF lui-même n'est pas importé dans le bucket, seules les infos structurées le sont).
 
 ## 10. Déploiement & configuration
 
