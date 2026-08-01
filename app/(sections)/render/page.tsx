@@ -5,7 +5,7 @@ import { OrbitControls, Grid, Text, Edges, GizmoHelper, GizmoViewport } from '@r
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import Link from 'next/link';
-import { Lock, Phone, Mail } from 'lucide-react';
+import { Lock, Phone, Mail, FileText } from 'lucide-react';
 import { residenceData } from '@/data/residence';
 import { createClient } from '@/utils/supabase/client';
 
@@ -1085,15 +1085,24 @@ export default function RenderPage() {
         <OrbitControls makeDefault />
       </Canvas>
 
-      {/* Flip/flop couloirs+escalier seul + accès à l'espace réservé (mode super) */}
-      {userRole === 'super' && (
+      {/* Documents résidence (tous les membres) + flip/flop couloirs & accès à l'espace réservé (mode super) */}
+      {userRole && (
         <div className="absolute top-8 right-8 flex items-center gap-2">
+          <Link
+            href="/render/documents"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+          >
+            <FileText size={12} /> Documents
+          </Link>
+          {userRole === 'super' && (
           <Link
             href="/render/prive"
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-red-600/90 text-white hover:bg-red-600"
           >
             <Lock size={12} /> Accès réservé
           </Link>
+          )}
+          {userRole === 'super' && (
           <button
             onClick={() => setOnlyCorridors((v) => !v)}
             className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
@@ -1104,6 +1113,7 @@ export default function RenderPage() {
           >
             {onlyCorridors ? 'Bâtiment masqué' : 'Masquer le bâtiment'}
           </button>
+          )}
         </div>
       )}
 

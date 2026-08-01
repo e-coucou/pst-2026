@@ -56,11 +56,12 @@ app/
 │   ├── share/page.tsx              Plein écran QR code d'invitation
 │   └── render/                     3D de la résidence, voir §9
 │       ├── page.tsx                 Maquette 3D publique
+│       ├── documents/page.tsx       Documents résidence publics (tout membre connecté), voir §9
 │       └── prive/                   Espace réservé (rôle super), voir §9
 │           ├── layout.tsx            Garde d'accès via RPC is_super()
 │           ├── page.tsx              Hub (Contacts / Documents / Codes)
-│           ├── contacts/page.tsx     CRUD résidence_contacts (Conseil Syndical)
-│           ├── documents/page.tsx    Bibliothèque PDF (bucket Storage résidence_documents)
+│           ├── contacts/page.tsx     CRUD résidence_contacts (Conseil Syndical, gardien, copro, locataire, fournisseur)
+│           ├── documents/page.tsx    CRUD résidence_documents (liens Google Drive, catégorie, public/privé)
 │           └── codes/page.tsx        CRUD résidence_codes (portails, digicodes)
 │
 ├── joueurs/[id]/page.tsx          Fiche joueur (Server Component, profil ELO complet)
@@ -196,7 +197,7 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 
 ### Résidence (espace réservé, voir §9)
 - **`residence_contacts`** — coordonnées (`nom`, `telephone`, `email`), `category` (`conseil_syndical`/`gardien`/`coproprietaire`/`locataire`/`fournisseur`, typée côté UI mais stockée en `text` libre côté base), `contrat` (texte libre décrivant la prestation/référence contractuelle, affiché sous le nom — utilisé pour `fournisseur`, formulaire d'ajout conditionnel à cette catégorie), `apartment_num` (lien manuel optionnel vers `data/residence.ts`, exploité par la fiche double-clic de la scène 3D — voir §9), `access_level` (défaut `'super'`, prévu pour une extension "membre privilégié" future sans migration)
-- **`residence_documents`** — métadonnées des PDF (`title`, `description`, `storage_path`, `file_size`, `mime_type`, `uploaded_by`), le binaire vit dans le bucket Storage `residence_documents`
+- **`residence_documents`** — métadonnées des PDF (`title`, `description`, `external_url`, `category` [`syndic`/`fournisseurs`/`ag`/`pv`/`autre`], `visibility` [`public`/`private`, défaut `private`], `resume` [markdown, optionnel], `uploaded_by`) : pas de binaire stocké côté Supabase, `external_url` pointe vers un fichier partagé sur Google Drive (voir §9 — certains PDF de la résidence dépassent la limite de taille utilisable en pratique sur le plan Supabase gratuit). Deux policies RLS combinées en OR : accès total pour `is_super()`, lecture seule pour tout `authenticated` quand `visibility = 'public'` — c'est la première table de cet espace accessible en dehors du rôle super.
 - **`residence_codes`** — `label`/`code`/`notes` (portails, digicodes)
 - RLS des 3 tables : `for all using (is_super())` — aucun accès `membre`/`admin` pour l'instant.
 
@@ -217,7 +218,6 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 
 ### Storage
 - Bucket `joueurs_photos` — accès via URL signée (1h) dans `app/joueurs/[id]/page.tsx` et `admin_joueurs/page.tsx`.
-- Bucket `residence_documents` (privé) — PDF de la résidence, voir §9. Accès via URL signée (1h), policy `storage.objects` restreinte à `is_super()`.
 - Bucket `photos_import` (privé) — contributions photo des membres. RLS exige que le chemin commence par `private/` (`(storage.foldername(name))[1] = 'private'`). Deux sous-dossiers par photo, même nom de fichier (`{userId}_{timestamp}.webp`) :
   - `private/full/` — jusqu'à ~1,5 Mo (compression + conversion WebP côté navigateur, `browser-image-compression`, plusieurs paliers résolution/qualité).
   - `private/thumbs/` — vignette 400px (~quelques dizaines de Ko), seule chargée par la galerie ; la version complète n'est signée et ouverte qu'au clic.
@@ -307,7 +307,9 @@ Sous-arbre gardé par un `layout.tsx` dédié (même principe que `live/(super)/
 
 Page hub (3 tuiles, gabarit repris de `/videos`) vers :
 - **`contacts/`** — coordonnées (`residence_contacts`), CRUD inline, 5 catégories filtrables par pills (Conseil Syndical, Gardien, Copropriétaire, Locataire, Fournisseur — badge coloré par catégorie), `apartment_num` affiché en badge quand renseigné. Téléphone/email sont des liens `tel:`/`mailto:` (ouvrent directement l'app Téléphone/Mail sur iPhone). Catégorie `fournisseur` : champ `contrat` additionnel (prestation/référence), affiché en sous-ligne du nom, formulaire d'ajout conditionnel à cette catégorie. Bouton "Partager" (toujours visible, pas seulement au survol) génère une vCard (`.vcf`) et l'ouvre via `navigator.share` (feuille de partage native iOS — AirDrop/Messages/"Ajouter aux contacts"), avec repli sur un téléchargement direct si l'API Web Share est absente.
-- **`documents/`** — bibliothèque de PDF (convocations, comptes-rendus...), upload vers le bucket privé `residence_documents` + métadonnées en base, téléchargement par URL signée, suppression (fichier + ligne).
+- **`documents/`** — bibliothèque de PDF (convocations, comptes-rendus...) : pas d'upload binaire — certains PDF de la résidence dépassent la limite de taille pratique du plan Supabase gratuit (50 Mo/fichier, quota total 1 Go déjà partagé avec `photos_import`). Les fichiers sont déposés manuellement sur Google Drive (domaine de l'utilisateur), l'app se contente d'enregistrer titre/description/lien de partage (`residence_documents.external_url`) et d'ouvrir ce lien au clic. Filtrable par catégorie (pills, même pattern que `contacts/`), toggle public/privé par document (icône globe/cadenas, toujours visible). Champ **résumé** optionnel (`resume`, markdown) : bouton dédié (icône `AlignLeft`) ouvre un panneau avec textarea + aperçu rendu via `components/MarkdownDisplay.tsx` (réutilisé, headings resserrés par des classes Tailwind arbitraires `[&_h2]:...` pour rester compact dans une carte plutôt qu'en pleine page).
+
+Les documents `visibility = 'public'` sont en plus consultables par **tous les membres connectés** (pas seulement `super`) sur `app/(sections)/render/documents/page.tsx` — lecture seule, mêmes filtres par catégorie, résumé affiché en lecture seule si renseigné (bouton visible uniquement quand `resume` existe), hors de l'arborescence `render/prive/`. Accessible depuis un bouton "Documents" toujours visible sur `/render` (contrairement au bouton "Accès réservé", conditionné à `userRole === 'super'`).
 - **`codes/`** — codes d'accès (portails, digicodes) avec bouton copier.
 
 Intégrations transversales avec le reste de l'app :
@@ -334,3 +336,4 @@ Jeux de données initiaux extraits de `documents/private/Extranet Reveille.pdf` 
 - **Piège rencontré plusieurs fois** : un `select(...)` ciblant une colonne pas encore créée en base (ex. `team_mode` avant sa migration) échoue silencieusement si le code ne vérifie pas `error` — `data` devient `null` et le code retombe sur ses valeurs par défaut (`format: 'classique'`) sans rien signaler, ce qui ressemble à un bug fonctionnel alors que c'est un schéma désynchronisé. Corrigé pour cette requête précise dans `admin/page.tsx` (affiche une alerte si `error`) ; à garder en tête pour toute nouvelle colonne ajoutée manuellement en base avant que le code qui la lit ne soit déployé.
 - `app/(sections)/videos/photos/page.tsx` liste les photos dans `private/thumbs/` : les photos uploadées **avant** l'introduction du système vignette+complet (chemin plat `private/{fichier}.webp`, sans sous-dossier) ne sont plus listées — pas de code de migration/rétrocompatibilité.
 - `documents/private/` contient des données personnelles/financières réelles (convocation d'AG, rapprochement nom/lot du Bâtiment B) — ajouté à `.gitignore`, jamais commité, à traiter avec précaution.
+- `residence_documents.external_url` pointe vers un fichier Google Drive externe, hors du contrôle de l'app : si le lien est révoqué, le fichier déplacé/supprimé, ou le partage repassé en privé côté Drive, l'app ne le détecte pas — le lien casse silencieusement (pas de vérification de disponibilité).

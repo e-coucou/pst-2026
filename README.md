@@ -22,7 +22,8 @@ Application web privée de gestion de tournois de **pétanque** entre amis, sais
 | 📐 **L'Algorithme** | Explication pédagogique du calcul ELO Classic vs Modern |
 | 🔧 **Panel Admin / Super** | Pilotage du tournoi live, gestion des joueurs/équipes, réglages ELO, recalcul d'historique (accès par rôle). Constitution des équipes automatique ou en tirage au sort révélé en direct |
 | 🕵️ **Journal d'activité** *(super)* | Traçabilité des actions admin et des consultations (pages, joueurs, tournois, photos) + page "Qui est en ligne" + stats de popularité |
-| 🏠 **Résidence — espace réservé** *(super)* | Sous l'onglet Résidence (`/render`) : contacts par catégorie (Conseil Syndical, Gardien, Copropriétaires, Locataires, Fournisseurs) avec partage vCard en un tap sur iPhone, bibliothèque de documents PDF (Supabase Storage), codes d'accès de la résidence — dont un accès rapide directement depuis le panel super |
+| 🏠 **Résidence — espace réservé** *(super)* | Sous l'onglet Résidence (`/render`) : contacts par catégorie (Conseil Syndical, Gardien, Copropriétaires, Locataires, Fournisseurs) avec partage vCard en un tap sur iPhone, codes d'accès de la résidence — dont un accès rapide directement depuis le panel super |
+| 📄 **Résidence — documents** | Bibliothèque de PDF (Syndic, Fournisseurs, AG, PV...) hébergés sur Google Drive, catégorisables et marquables public/privé. Les documents publics sont visibles par tous les membres sur `/render/documents`, les privés restent réservés au rôle super |
 
 ---
 
