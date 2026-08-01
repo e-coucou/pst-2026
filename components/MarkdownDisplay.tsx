@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface MarkdownDisplayProps {
   content: string;
@@ -16,6 +17,7 @@ export function MarkdownDisplay({ content, className = '' }: MarkdownDisplayProp
   return (
     <div className={`prose prose-invert max-w-none ${className}`}>
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           // Personnalisation des balises HTML générées par le markdown
           h1: ({ children }) => (
