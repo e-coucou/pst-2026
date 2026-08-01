@@ -5,7 +5,7 @@ import { OrbitControls, Grid, Text, Edges, GizmoHelper, GizmoViewport } from '@r
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import Link from 'next/link';
-import { Lock, Phone, Mail, FileText } from 'lucide-react';
+import { Lock, Phone, Mail, FileText, Eye, EyeOff } from 'lucide-react';
 import { residenceData } from '@/data/residence';
 import { createClient } from '@/utils/supabase/client';
 
@@ -1086,32 +1086,37 @@ export default function RenderPage() {
       </Canvas>
 
       {/* Documents résidence (tous les membres) + flip/flop couloirs & accès à l'espace réservé (mode super) */}
+      {/* Icônes seules sur mobile (le libellé n'apparaît qu'à partir de sm) pour ne pas chevaucher le panneau titre/fiche en haut à gauche */}
       {userRole && (
         <div className="absolute top-8 right-8 flex items-center gap-2">
           <Link
             href="/render/documents"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+            title="Documents"
+            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
           >
-            <FileText size={12} /> Documents
+            <FileText size={14} /> <span className="hidden sm:inline">Documents</span>
           </Link>
           {userRole === 'super' && (
           <Link
             href="/render/prive"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-red-600/90 text-white hover:bg-red-600"
+            title="Accès réservé"
+            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-red-600/90 text-white hover:bg-red-600"
           >
-            <Lock size={12} /> Accès réservé
+            <Lock size={14} /> <span className="hidden sm:inline">Accès réservé</span>
           </Link>
           )}
           {userRole === 'super' && (
           <button
             onClick={() => setOnlyCorridors((v) => !v)}
-            className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
+            title={onlyCorridors ? 'Bâtiment masqué' : 'Masquer le bâtiment'}
+            className={`inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
               onlyCorridors
                 ? 'bg-blue-600 text-white'
                 : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700'
             }`}
           >
-            {onlyCorridors ? 'Bâtiment masqué' : 'Masquer le bâtiment'}
+            {onlyCorridors ? <EyeOff size={14} /> : <Eye size={14} />}
+            <span className="hidden sm:inline">{onlyCorridors ? 'Bâtiment masqué' : 'Masquer le bâtiment'}</span>
           </button>
           )}
         </div>

@@ -100,8 +100,8 @@ export default function PublicResidenceDocumentsPage() {
           <div className="bg-zinc-900/20 border border-white/5 rounded-[2rem] divide-y divide-white/5 overflow-hidden">
             {visibleDocs.map(doc => (
               <div key={doc.id}>
-                <div className="group flex items-center justify-between gap-4 px-6 py-5 hover:bg-white/[0.02] transition-colors">
-                  <a href={doc.external_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 min-w-0">
+                <div className="group flex flex-wrap items-center justify-between gap-4 px-6 py-5 hover:bg-white/[0.02] transition-colors">
+                  <a href={doc.external_url} target="_blank" rel="noopener noreferrer" title="Ouvre dans un nouvel onglet" className="flex items-center gap-4 min-w-0">
                     <div className="p-3 rounded-xl bg-zinc-800 text-red-600 shrink-0">
                       <FileText size={18} />
                     </div>
@@ -125,9 +125,7 @@ export default function PublicResidenceDocumentsPage() {
                         <AlignLeft size={16} />
                       </button>
                     )}
-                    <a href={doc.external_url} target="_blank" rel="noopener noreferrer" className="p-1">
-                      <ExternalLink size={16} className="text-zinc-500" />
-                    </a>
+                    <ExternalLink size={16} className="text-zinc-500 shrink-0" />
                   </div>
                 </div>
                 {expandedId === doc.id && doc.resume && (

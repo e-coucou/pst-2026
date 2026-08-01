@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
-import { ArrowLeft, Loader2, Plus, FileText, Trash2, ExternalLink, Globe, Lock, AlignLeft, Check } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, FileText, Trash2, Globe, Lock, AlignLeft, Check } from 'lucide-react';
 import { MarkdownDisplay } from '@/components/MarkdownDisplay';
 
 type DocCategory = 'syndic' | 'fournisseurs' | 'ag' | 'pv' | 'autre';
@@ -139,7 +139,7 @@ export default function ResidenceDocumentsPage() {
           </p>
           <p className="text-zinc-600 mt-3 text-xs max-w-lg">
             Les PDF sont hébergés sur Google Drive (certains dépassent la limite de taille de notre stockage) :
-            dépose le fichier dans ton Drive, partage-le ("Toute personne disposant du lien"), puis colle le lien ici.
+            dépose le fichier dans ton Drive, partage-le (&laquo;&nbsp;Toute personne disposant du lien&nbsp;&raquo;), puis colle le lien ici.
             Un document <span className="text-emerald-500 font-bold">public</span> est visible par tous les membres
             sur <span className="text-white font-bold">/render/documents</span>, un document{' '}
             <span className="text-zinc-300 font-bold">privé</span> reste réservé aux super admins.
@@ -202,8 +202,8 @@ export default function ResidenceDocumentsPage() {
           <div className="bg-zinc-900/20 border border-white/5 rounded-[2rem] divide-y divide-white/5 overflow-hidden">
             {visibleDocs.map(doc => (
               <div key={doc.id}>
-                <div className="group flex items-center justify-between gap-4 px-6 py-5 hover:bg-white/[0.02] transition-colors">
-                  <a href={doc.external_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 min-w-0">
+                <div className="group flex flex-wrap items-center justify-between gap-4 px-6 py-5 hover:bg-white/[0.02] transition-colors">
+                  <a href={doc.external_url} target="_blank" rel="noopener noreferrer" title="Ouvre dans un nouvel onglet" className="flex items-center gap-4 min-w-0">
                     <div className="p-3 rounded-xl bg-zinc-800 text-red-600 shrink-0">
                       <FileText size={18} />
                     </div>
@@ -229,12 +229,8 @@ export default function ResidenceDocumentsPage() {
                       className={`p-2.5 rounded-xl transition-colors ${doc.visibility === 'public' ? 'bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600 hover:text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
                       {doc.visibility === 'public' ? <Globe size={16} /> : <Lock size={16} />}
                     </button>
-                    <a href={doc.external_url} target="_blank" rel="noopener noreferrer"
+                    <button onClick={() => handleDelete(doc)} title="Supprimer"
                       className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors">
-                      <ExternalLink size={16} />
-                    </a>
-                    <button onClick={() => handleDelete(doc)}
-                      className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
                       <Trash2 size={16} />
                     </button>
                   </div>
