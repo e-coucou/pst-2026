@@ -35,12 +35,20 @@ export default function PublicResidenceDocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<DocCategory | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.from('residence_documents').select('id, title, description, external_url, category, resume, created_at')
-      .eq('visibility', 'public').order('created_at', { ascending: false })
-      .then(({ data }) => { if (data) setDocs(data); setLoading(false); });
+    // Vue résidence_documents_public : le RLS de la table de base filtre déjà les lignes
+    // (palier >= 1 ou super), et la colonne resume y est redactée pour le palier < 2 —
+    // aucune logique de palier à gérer ici, le bouton résumé s'affiche déjà seulement si présent.
+    supabase.from('residence_documents_public').select('id, title, description, external_url, category, resume, created_at')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) { console.error(error); setLoadError(error.message); }
+        else if (data) setDocs(data);
+        setLoading(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -91,7 +99,12 @@ export default function PublicResidenceDocumentsPage() {
           </div>
         )}
 
-        {visibleDocs.length === 0 ? (
+        {loadError ? (
+          <div className="bg-red-950/30 border border-red-600/20 p-8 rounded-[2rem] text-center">
+            <p className="text-red-500 font-black uppercase tracking-widest text-sm">Erreur de chargement</p>
+            <p className="text-red-400/70 text-xs mt-2 font-mono">{loadError}</p>
+          </div>
+        ) : visibleDocs.length === 0 ? (
           <div className="bg-zinc-900/50 border border-white/5 p-16 rounded-[3rem] text-center">
             <FileText className="text-zinc-400 mx-auto mb-4" size={32} />
             <p className="text-zinc-400 font-black uppercase tracking-widest">Aucun document pour l&apos;instant.</p>

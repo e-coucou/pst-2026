@@ -12,8 +12,15 @@ interface SiteUser {
   role: 'membre' | 'admin' | 'super';
   email: string | null;
   favoris: number | null;
+  residence_access_level: number;
   last_login: string | null;
 }
+
+const RESIDENCE_LEVELS = [
+  { value: 0, label: 'Aucun' },
+  { value: 1, label: 'Consultation' },
+  { value: 2, label: 'Avancé' },
+];
 
 export default function SuperAdminPage() {
   const [users, setUsers] = useState<SiteUser[]>([]);
@@ -50,8 +57,8 @@ export default function SuperAdminPage() {
     // 2. Récupération de l'admin actuel (pour le log)
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const fieldName = data.role ? 'Rôle' : 'Favori';
-      const newValue = data.role || data.favoris;
+      const fieldName = data.role ? 'Rôle' : (data.residence_access_level !== undefined ? 'Accès Résidence' : 'Favori');
+      const newValue = data.role ?? data.residence_access_level ?? data.favoris;
       await supabase.from('session_logs').insert({
         user_id: user.id, // C'est l'ID qui est autorisé par la RLS
         player_nickname: nickname, // Le nickname
@@ -93,6 +100,7 @@ export default function SuperAdminPage() {
               <tr className="border-b border-white/5 bg-white/[0.01]">
                 <th className="px-20 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Joueur</th>
                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Rôle</th>
+                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Accès Résidence</th>
                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">Lien Profil</th>
                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-right">Dernière Connexion</th>
               </tr>
@@ -129,6 +137,23 @@ export default function SuperAdminPage() {
                         <option value="membre">Membre</option>
                         <option value="admin">Admin</option>
                         <option value="super">Super</option>
+                      </select>
+                    )}
+                  </td>
+
+                  <td className="px-8 py-6">
+                    {user.role === 'super' ? (
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Illimité</span>
+                    ) : (
+                      <select
+                        value={user.residence_access_level}
+                        disabled={updating === user.id}
+                        onChange={(e) => updateField(user.id, { residence_access_level: parseInt(e.target.value) }, user.nickname)}
+                        className={`bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-widest outline-none focus:border-white/30 cursor-pointer ${
+                          user.residence_access_level === 2 ? 'text-emerald-500' : user.residence_access_level === 1 ? 'text-blue-400' : 'text-zinc-500'
+                        }`}
+                      >
+                        {RESIDENCE_LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                       </select>
                     )}
                   </td>

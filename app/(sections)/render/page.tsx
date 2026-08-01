@@ -5,9 +5,10 @@ import { OrbitControls, Grid, Text, Edges, GizmoHelper, GizmoViewport } from '@r
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import Link from 'next/link';
-import { Lock, Phone, Mail, FileText, Eye, EyeOff } from 'lucide-react';
+import { Lock, Phone, Mail, FileText, Eye, EyeOff, Users, KeyRound } from 'lucide-react';
 import { residenceData } from '@/data/residence';
 import { createClient } from '@/utils/supabase/client';
+import { useResidenceAccessLevel } from '@/hooks/useResidenceAccessLevel';
 
 // Largeur/profondeur d'un pan (façade ou cour) d'un appartement — factorisé hors de Apartment
 // pour être réutilisé tel quel par la fiche d'info (dimensions + surface estimée), sans risquer
@@ -1009,7 +1010,12 @@ export default function RenderPage() {
   const [hoverCoords, setHoverCoords] = useState<{ x: number; y: number; z: number } | null>(null);
   const groupOffsetX = -35; // doit rester synchro avec le <group position={[groupOffsetX, 0, 0]}> ci-dessous
 
-  // Contacts résidence liés à un n° d'appartement (mode super uniquement), pour la fiche double-clic
+  // Palier d'accès résidence (0 aucun, 1 consultation, 2 avancé) — indépendant du rôle
+  // sauf 'super' qui prime toujours. Voir documents/architecture.md.
+  const residenceLevel = useResidenceAccessLevel();
+  const isSuper = userRole === 'super';
+
+  // Contacts résidence liés à un n° d'appartement (super ou palier avancé), pour la fiche double-clic
   const [contactsByApt, setContactsByApt] = useState<Record<string, { telephone: string | null; email: string | null }>>({});
 
   useEffect(() => {
@@ -1019,18 +1025,21 @@ export default function RenderPage() {
       supabase.rpc('get_my_role').then(({ data: role, error }) => {
         if (error || !role) return;
         setUserRole(role);
-        if (role === 'super') {
-          supabase.from('residence_contacts').select('apartment_num, telephone, email').not('apartment_num', 'is', null)
-            .then(({ data }) => {
-              if (!data) return;
-              const map: Record<string, { telephone: string | null; email: string | null }> = {};
-              data.forEach((c: any) => { map[c.apartment_num] = { telephone: c.telephone, email: c.email }; });
-              setContactsByApt(map);
-            });
-        }
       });
     });
   }, []);
+
+  useEffect(() => {
+    if (!isSuper && residenceLevel < 2) return;
+    const supabase = createClient();
+    supabase.from('residence_contacts').select('apartment_num, telephone, email').not('apartment_num', 'is', null)
+      .then(({ data }) => {
+        if (!data) return;
+        const map: Record<string, { telephone: string | null; email: string | null }> = {};
+        data.forEach((c: any) => { map[c.apartment_num] = { telephone: c.telephone, email: c.email }; });
+        setContactsByApt(map);
+      });
+  }, [isSuper, residenceLevel]);
 
   return (
     <div className="relative w-full h-screen bg-[#09090b]">
@@ -1085,10 +1094,11 @@ export default function RenderPage() {
         <OrbitControls makeDefault />
       </Canvas>
 
-      {/* Documents résidence (tous les membres) + flip/flop couloirs & accès à l'espace réservé (mode super) */}
+      {/* Accès résidence par palier (documents/codes >= 1, contacts >= 2, super = tout) + gestion (super) */}
       {/* Icônes seules sur mobile (le libellé n'apparaît qu'à partir de sm) pour ne pas chevaucher le panneau titre/fiche en haut à gauche */}
       {userRole && (
-        <div className="absolute top-8 right-8 flex items-center gap-2">
+        <div className="absolute top-8 right-8 flex items-center gap-2 flex-wrap justify-end">
+          {(isSuper || residenceLevel >= 1) && (
           <Link
             href="/render/documents"
             title="Documents"
@@ -1096,7 +1106,26 @@ export default function RenderPage() {
           >
             <FileText size={14} /> <span className="hidden sm:inline">Documents</span>
           </Link>
-          {userRole === 'super' && (
+          )}
+          {(isSuper || residenceLevel >= 1) && (
+          <Link
+            href="/render/codes"
+            title="Codes"
+            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+          >
+            <KeyRound size={14} /> <span className="hidden sm:inline">Codes</span>
+          </Link>
+          )}
+          {(isSuper || residenceLevel >= 2) && (
+          <Link
+            href="/render/contacts"
+            title="Contacts"
+            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+          >
+            <Users size={14} /> <span className="hidden sm:inline">Contacts</span>
+          </Link>
+          )}
+          {isSuper && (
           <Link
             href="/render/prive"
             title="Accès réservé"
@@ -1105,7 +1134,7 @@ export default function RenderPage() {
             <Lock size={14} /> <span className="hidden sm:inline">Accès réservé</span>
           </Link>
           )}
-          {userRole === 'super' && (
+          {isSuper && (
           <button
             onClick={() => setOnlyCorridors((v) => !v)}
             title={onlyCorridors ? 'Bâtiment masqué' : 'Masquer le bâtiment'}
@@ -1172,7 +1201,7 @@ export default function RenderPage() {
               )}
             </div>
             <ApartmentDimensions apt={selected} />
-            {userRole === 'super' && contactsByApt[selected.num] && (contactsByApt[selected.num].telephone || contactsByApt[selected.num].email) && (
+            {(isSuper || residenceLevel >= 2) && contactsByApt[selected.num] && (contactsByApt[selected.num].telephone || contactsByApt[selected.num].email) && (
               <div className="flex flex-col gap-1.5 mt-3 pointer-events-auto w-fit">
                 {contactsByApt[selected.num].telephone && (
                   <a href={`tel:${contactsByApt[selected.num].telephone!.replace(/[^\d+]/g, '')}`}

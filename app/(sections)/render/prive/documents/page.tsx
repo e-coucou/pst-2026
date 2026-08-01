@@ -3,11 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
-import { ArrowLeft, Loader2, Plus, FileText, Trash2, Globe, Lock, AlignLeft, Check } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, FileText, Trash2, AlignLeft, Check } from 'lucide-react';
 import { MarkdownDisplay } from '@/components/MarkdownDisplay';
 
 type DocCategory = 'syndic' | 'fournisseurs' | 'ag' | 'pv' | 'autre';
-type Visibility = 'public' | 'private';
 
 interface DocumentRow {
   id: string;
@@ -15,7 +14,6 @@ interface DocumentRow {
   description: string | null;
   external_url: string;
   category: DocCategory;
-  visibility: Visibility;
   resume: string | null;
   created_at: string;
 }
@@ -41,7 +39,6 @@ export default function ResidenceDocumentsPage() {
   const [description, setDescription] = useState('');
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState<DocCategory>('autre');
-  const [visibility, setVisibility] = useState<Visibility>('private');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [resumeDraft, setResumeDraft] = useState('');
   const [savingResume, setSavingResume] = useState(false);
@@ -72,7 +69,6 @@ export default function ResidenceDocumentsPage() {
       description: description.trim() || null,
       external_url: url.trim(),
       category,
-      visibility,
       uploaded_by: user?.id ?? null,
     });
     if (!error) {
@@ -87,12 +83,6 @@ export default function ResidenceDocumentsPage() {
   async function handleDelete(doc: DocumentRow) {
     if (!confirm(`Supprimer "${doc.title}" ?`)) return;
     const { error } = await supabase.from('residence_documents').delete().eq('id', doc.id);
-    if (!error) await fetchDocs();
-  }
-
-  async function toggleVisibility(doc: DocumentRow) {
-    const next: Visibility = doc.visibility === 'public' ? 'private' : 'public';
-    const { error } = await supabase.from('residence_documents').update({ visibility: next }).eq('id', doc.id);
     if (!error) await fetchDocs();
   }
 
@@ -140,9 +130,9 @@ export default function ResidenceDocumentsPage() {
           <p className="text-zinc-600 mt-3 text-xs max-w-lg">
             Les PDF sont hébergés sur Google Drive (certains dépassent la limite de taille de notre stockage) :
             dépose le fichier dans ton Drive, partage-le (&laquo;&nbsp;Toute personne disposant du lien&nbsp;&raquo;), puis colle le lien ici.
-            Un document <span className="text-emerald-500 font-bold">public</span> est visible par tous les membres
-            sur <span className="text-white font-bold">/render/documents</span>, un document{' '}
-            <span className="text-zinc-300 font-bold">privé</span> reste réservé aux super admins.
+            Visible par les membres ayant un accès résidence <span className="text-white font-bold">Consultation</span> ou{' '}
+            <span className="text-white font-bold">Avancé</span> (le résumé markdown, lui, n&apos;est visible qu&apos;au palier Avancé) —
+            géré dans <span className="text-white font-bold">/live/users</span>.
           </p>
         </div>
 
@@ -178,14 +168,6 @@ export default function ResidenceDocumentsPage() {
               className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600/50">
               {CATEGORIES.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
             </select>
-            <div className="flex items-center gap-2">
-              {(['private', 'public'] as const).map(v => (
-                <button key={v} type="button" onClick={() => setVisibility(v)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${visibility === v ? (v === 'public' ? 'bg-emerald-600 text-white' : 'bg-zinc-700 text-white') : 'bg-zinc-800/50 text-zinc-500 hover:text-white'}`}>
-                  {v === 'public' ? <Globe size={12} /> : <Lock size={12} />} {v === 'public' ? 'Public' : 'Privé'}
-                </button>
-              ))}
-            </div>
             <button onClick={handleAdd} disabled={saving || !title.trim() || !isValidUrl(url.trim())}
               className="ml-auto inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-black uppercase tracking-widest text-[10px] px-5 py-3 rounded-xl transition-all active:scale-95">
               {saving ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />} Ajouter
@@ -224,10 +206,6 @@ export default function ResidenceDocumentsPage() {
                     <button onClick={() => toggleExpand(doc)} title="Résumé (markdown)"
                       className={`p-2.5 rounded-xl transition-colors ${doc.resume ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
                       <AlignLeft size={16} />
-                    </button>
-                    <button onClick={() => toggleVisibility(doc)} title={doc.visibility === 'public' ? 'Public — cliquer pour rendre privé' : 'Privé — cliquer pour rendre public'}
-                      className={`p-2.5 rounded-xl transition-colors ${doc.visibility === 'public' ? 'bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600 hover:text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
-                      {doc.visibility === 'public' ? <Globe size={16} /> : <Lock size={16} />}
                     </button>
                     <button onClick={() => handleDelete(doc)} title="Supprimer"
                       className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors">

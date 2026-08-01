@@ -56,12 +56,14 @@ app/
 │   ├── share/page.tsx              Plein écran QR code d'invitation
 │   └── render/                     3D de la résidence, voir §9
 │       ├── page.tsx                 Maquette 3D publique
-│       ├── documents/page.tsx       Documents résidence publics (tout membre connecté), voir §9
-│       └── prive/                   Espace réservé (rôle super), voir §9
+│       ├── documents/               Lecture seule, palier ≥ 1 (layout.tsx = garde)
+│       ├── codes/                   Lecture seule, palier ≥ 1 (layout.tsx = garde)
+│       ├── contacts/                Lecture seule, palier ≥ 2 (layout.tsx = garde)
+│       └── prive/                   Gestion CRUD (rôle super uniquement), voir §9
 │           ├── layout.tsx            Garde d'accès via RPC is_super()
 │           ├── page.tsx              Hub (Contacts / Documents / Codes)
 │           ├── contacts/page.tsx     CRUD résidence_contacts (Conseil Syndical, gardien, copro, locataire, fournisseur)
-│           ├── documents/page.tsx    CRUD résidence_documents (liens Google Drive, catégorie, public/privé)
+│           ├── documents/page.tsx    CRUD résidence_documents (liens Google Drive, catégorie, résumé markdown)
 │           └── codes/page.tsx        CRUD résidence_codes (portails, digicodes)
 │
 ├── joueurs/[id]/page.tsx          Fiche joueur (Server Component, profil ELO complet)
@@ -168,6 +170,19 @@ Les comptes créés via `/signup` (hors Google) utilisent un email **synthétiqu
 
 > ⚠️ **Le code d'invitation est un secret unique partagé par tous les membres.** L'utiliser comme seule vérification de reset signifie que n'importe quel membre le connaissant peut réinitialiser le mot de passe d'un autre membre s'il connaît son pseudo (contrairement à l'inscription, où le code n'autorise qu'à créer un compte pour soi-même). Risque documenté et accepté vu le contexte (club fermé) — voir `todo.md` (section Sécurité).
 
+### e) Palier d'accès résidence (`site_users.residence_access_level`)
+
+Axe d'autorisation **indépendant du rôle global**, dédié à l'espace résidence (§9) : `role` régit le concours (membre < admin < super), `residence_access_level` régit ce qu'un `membre`/`admin` peut consulter côté résidence, sans jamais toucher au CRUD (toujours exclusivement `super`).
+
+- `0` — aucun accès résidence (défaut)
+- `1` — **Consultation** : documents (liste + lien Drive) et codes d'accès
+- `2` — **Avancé** : tout le niveau 1 + résumés markdown des documents + contacts
+- Un `role = 'super'` a toujours accès total, indépendamment de sa valeur de `residence_access_level` (généralement laissée à `0`, non pertinente pour ce rôle)
+
+RPC `get_residence_access_level()` (`SECURITY DEFINER`, même principe que `is_super()`) : contourne le RLS de `site_users` pour exposer uniquement le palier de l'utilisateur courant. Utilisée à la fois dans les policies RLS des 3 tables résidence et côté client (`hooks/useResidenceAccessLevel.ts`, calqué sur `hooks/useIsSuper.ts`) pour l'affichage conditionnel des boutons/pages. Gate serveur factorisée dans `lib/residence-access.ts#hasResidenceAccess(minLevel)`, appelée par les `layout.tsx` de `render/documents/`, `render/contacts/`, `render/codes/` (redirect `/render` si palier insuffisant — même schéma que `render/prive/layout.tsx` pour `is_super()`).
+
+Géré depuis `/live/users` (super), colonne "Accès Résidence" à côté du rôle.
+
 ---
 
 ## 5. Modèle de données (Supabase / PostgreSQL)
@@ -176,7 +191,7 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 
 ### Identité & comptes
 - **`profiles`** — fiche joueur : `id`, `nom`, `photo_url`, `level`, relation `elo_history`
-- **`site_users`** — compte applicatif : `id` (= auth uid), `role` (`membre`/`admin`/`super`), `favoris` (FK → `profiles.id`)
+- **`site_users`** — compte applicatif : `id` (= auth uid), `role` (`membre`/`admin`/`super`), `favoris` (FK → `profiles.id`), `residence_access_level` (`0`/`1`/`2`, voir §4e — indépendant du rôle)
 - **`site_config`** — clé/valeur (ex. `invitation_code`)
 - **`session_logs`** — journal des connexions/déconnexions
 
@@ -196,10 +211,11 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 - **`steps`** — barème par `type` de match : `value` (rang de base pour `finalTop8`, ex. `Finale Rang1` → 1), `label` (libellé lisible affiché à la place du `type` brut, ex. `Finale Rang2` → "Petite Finale")
 
 ### Résidence (espace réservé, voir §9)
-- **`residence_contacts`** — coordonnées (`nom`, `telephone`, `email`), `category` (`conseil_syndical`/`gardien`/`coproprietaire`/`locataire`/`fournisseur`, typée côté UI mais stockée en `text` libre côté base), `contrat` (texte libre décrivant la prestation/référence contractuelle, affiché sous le nom — utilisé pour `fournisseur`, formulaire d'ajout conditionnel à cette catégorie), `apartment_num` (lien manuel optionnel vers `data/residence.ts`, exploité par la fiche double-clic de la scène 3D — voir §9), `access_level` (défaut `'super'`, prévu pour une extension "membre privilégié" future sans migration)
-- **`residence_documents`** — métadonnées des PDF (`title`, `description`, `external_url`, `category` [`syndic`/`fournisseurs`/`ag`/`pv`/`autre`], `visibility` [`public`/`private`, défaut `private`], `resume` [markdown, optionnel], `uploaded_by`) : pas de binaire stocké côté Supabase, `external_url` pointe vers un fichier partagé sur Google Drive (voir §9 — certains PDF de la résidence dépassent la limite de taille utilisable en pratique sur le plan Supabase gratuit). Deux policies RLS combinées en OR : accès total pour `is_super()`, lecture seule pour tout `authenticated` quand `visibility = 'public'` — c'est la première table de cet espace accessible en dehors du rôle super.
+- **`residence_contacts`** — coordonnées (`nom`, `telephone`, `email`), `category` (`conseil_syndical`/`gardien`/`coproprietaire`/`locataire`/`fournisseur`, typée côté UI mais stockée en `text` libre côté base), `contrat` (texte libre décrivant la prestation/référence contractuelle, affiché sous le nom — utilisé pour `fournisseur`, formulaire d'ajout conditionnel à cette catégorie), `apartment_num` (lien manuel optionnel vers `data/residence.ts`, exploité par la fiche double-clic de la scène 3D — voir §9)
+- **`residence_documents`** — métadonnées des PDF (`title`, `description`, `external_url`, `category` [`syndic`/`fournisseurs`/`ag`/`pv`/`autre`], `resume` [markdown, optionnel], `uploaded_by`) : pas de binaire stocké côté Supabase, `external_url` pointe vers un fichier partagé sur Google Drive (voir §9 — certains PDF de la résidence dépassent la limite de taille utilisable en pratique sur le plan Supabase gratuit)
 - **`residence_codes`** — `label`/`code`/`notes` (portails, digicodes)
-- RLS des 3 tables : `for all using (is_super())` — aucun accès `membre`/`admin` pour l'instant.
+- **`residence_documents_public`** — vue (`security_invoker = true`) sur `residence_documents`, colonne `resume` redactée (`null`) sous le palier 2 — voir §4e. Seule source de lecture pour les pages membres, jamais interrogée en écriture.
+- RLS : CRUD (`for all`) réservé à `is_super()` sur les 3 tables. Lecture supplémentaire par palier (§4e), policies combinées en OR avec celle du super : `residence_documents`/`residence_codes` dès le palier 1, `residence_contacts` à partir du palier 2 seulement.
 
 ### Configuration
 - **`settings`** — paramètres du moteur ELO (`elo_init`, `bonus_point`, `bonus_seuil`, `seuil`, `max_ecart`, `poids_finale`, `poids_finaliste`, `k_factor`) — voir §6
@@ -301,22 +317,32 @@ Un bouton "IA Prono" sur chaque match non terminé ouvre une modale qui calcule 
 
 `app/(sections)/render/page.tsx` est une scène Three.js/React Three Fiber fonctionnelle et significativement développée : rendu de tous les appartements (avec quirks architecturaux gérés au cas par cas — largeurs débordantes, extensions en L, couloirs absorbés — via des champs d'override sur chaque appartement), sélection interactive au double-clic avec panneau d'info, boussole/`GizmoHelper` d'orientation, piscine + pataugeoire modélisées par extrusion (dimensions mesurées sur une photo aérienne réelle), terrain de pétanque avec joueurs et nageurs stylisés low-poly.
 
-### Espace réservé (`app/(sections)/render/prive/`, rôle `super`)
+### Espace réservé — gestion CRUD (`app/(sections)/render/prive/`, rôle `super`)
 
-Sous-arbre gardé par un `layout.tsx` dédié (même principe que `live/(super)/layout.tsx` : RPC `is_super()`, redirect vers `/render` sinon — dupliqué plutôt que partagé car `/render` n'est pas sous l'arborescence `/live`). Accessible depuis `/render` via un bouton "Accès réservé" affiché uniquement si `userRole === 'super'` (état déjà présent dans la page, alimenté par `get_my_role`).
+Sous-arbre gardé par un `layout.tsx` dédié (même principe que `live/(super)/layout.tsx` : RPC `is_super()`, redirect vers `/render` sinon — dupliqué plutôt que partagé car `/render` n'est pas sous l'arborescence `/live`). Accessible depuis `/render` via un bouton "Accès réservé" affiché uniquement si `isSuper` (dérivé de `userRole === 'super'`, alimenté par `get_my_role`).
 
 Page hub (3 tuiles, gabarit repris de `/videos`) vers :
 - **`contacts/`** — coordonnées (`residence_contacts`), CRUD inline, 5 catégories filtrables par pills (Conseil Syndical, Gardien, Copropriétaire, Locataire, Fournisseur — badge coloré par catégorie), `apartment_num` affiché en badge quand renseigné. Téléphone/email sont des liens `tel:`/`mailto:` (ouvrent directement l'app Téléphone/Mail sur iPhone). Catégorie `fournisseur` : champ `contrat` additionnel (prestation/référence), affiché en sous-ligne du nom, formulaire d'ajout conditionnel à cette catégorie. Bouton "Partager" (toujours visible, pas seulement au survol) génère une vCard (`.vcf`) et l'ouvre via `navigator.share` (feuille de partage native iOS — AirDrop/Messages/"Ajouter aux contacts"), avec repli sur un téléchargement direct si l'API Web Share est absente.
-- **`documents/`** — bibliothèque de PDF (convocations, comptes-rendus...) : pas d'upload binaire — certains PDF de la résidence dépassent la limite de taille pratique du plan Supabase gratuit (50 Mo/fichier, quota total 1 Go déjà partagé avec `photos_import`). Les fichiers sont déposés manuellement sur Google Drive (domaine de l'utilisateur), l'app se contente d'enregistrer titre/description/lien de partage (`residence_documents.external_url`) et d'ouvrir ce lien au clic. Filtrable par catégorie (pills, même pattern que `contacts/`), toggle public/privé par document (icône globe/cadenas, toujours visible). Champ **résumé** optionnel (`resume`, markdown) : bouton dédié (icône `AlignLeft`) ouvre un panneau avec textarea + aperçu rendu via `components/MarkdownDisplay.tsx` (réutilisé, headings resserrés par des classes Tailwind arbitraires `[&_h2]:...` pour rester compact dans une carte plutôt qu'en pleine page).
-
-Les documents `visibility = 'public'` sont en plus consultables par **tous les membres connectés** (pas seulement `super`) sur `app/(sections)/render/documents/page.tsx` — lecture seule, mêmes filtres par catégorie, résumé affiché en lecture seule si renseigné (bouton visible uniquement quand `resume` existe), hors de l'arborescence `render/prive/`. Accessible depuis un bouton "Documents" toujours visible sur `/render` (contrairement au bouton "Accès réservé", conditionné à `userRole === 'super'`).
+- **`documents/`** — bibliothèque de PDF (convocations, comptes-rendus...) : pas d'upload binaire — certains PDF de la résidence dépassent la limite de taille pratique du plan Supabase gratuit (50 Mo/fichier, quota total 1 Go déjà partagé avec `photos_import`). Les fichiers sont déposés manuellement sur Google Drive (domaine de l'utilisateur), l'app se contente d'enregistrer titre/description/lien de partage (`residence_documents.external_url`) et d'ouvrir ce lien au clic. Filtrable par catégorie (pills, même pattern que `contacts/`). Champ **résumé** optionnel (`resume`, markdown) : bouton dédié (icône `AlignLeft`) ouvre un panneau avec textarea + aperçu rendu via `components/MarkdownDisplay.tsx` (réutilisé, headings resserrés par des classes Tailwind arbitraires `[&_h2]:...` pour rester compact dans une carte plutôt qu'en pleine page). Plus de toggle public/privé par document (voir ci-dessous, remplacé par le palier d'accès de l'utilisateur).
 - **`codes/`** — codes d'accès (portails, digicodes) avec bouton copier.
 
-Intégrations transversales avec le reste de l'app :
-- Sur la scène 3D publique (`render/page.tsx`), la fiche d'un appartement sélectionné par double-clic affiche désormais, **en mode `super` uniquement**, le téléphone/email du contact `residence_contacts` dont `apartment_num` correspond (chargés une fois en mémoire au montage si `role === 'super'`, mappés par n° d'appartement). Le gizmo de coordonnées XYZ (hover, mode super) est masqué pour l'instant côté UI — la mécanique de hover (`CoordinateProbe`) reste en place, prête à être réaffichée.
-- Le panel super rapide `/live/super` (`app/live/(super)/super/page.tsx`, accessible via l'icône empreinte de la Navbar) affiche directement les `residence_codes` en tête de page, avant même les autres raccourcis de navigation — cartes tap-friendly pleine largeur, copie du code en un tap (retour visuel ✓), pensées pour une lecture rapide sur iPhone. Un lien "Gérer" renvoie vers `/render/prive/codes` pour l'édition complète.
+### Espace résidence — lecture par palier (`app/(sections)/render/{documents,contacts,codes}/`)
 
-Les 3 tables (`residence_contacts`, `residence_documents`, `residence_codes`) portent une colonne `access_level` (défaut `'super'`) pour permettre plus tard d'élargir l'accès à des "membres privilégiés" sans migration de schéma — aucune UI côté membre n'existe pour l'instant.
+Trois pages jumelles des sections CRUD ci-dessus, en lecture seule, chacune gardée par son propre `layout.tsx` server-side via `lib/residence-access.ts#hasResidenceAccess(minLevel)` (voir §4e) — redirect `/render` si le palier de l'utilisateur (`residence_access_level` + `is_super()`) est insuffisant :
+
+| Route | Palier requis | Source de lecture |
+|---|---|---|
+| `render/documents/` | 1 (Consultation) | Vue `residence_documents_public` — `resume` déjà redacté côté base pour le palier < 2, aucune logique de palier à coder côté client (le bouton résumé s'affiche simplement si `doc.resume` n'est pas `null`) |
+| `render/codes/` | 1 (Consultation) | Table `residence_codes` (RLS palier ≥ 1) |
+| `render/contacts/` | 2 (Avancé) | Table `residence_contacts` (RLS palier ≥ 2) |
+
+`/render` affiche jusqu'à 5 boutons en haut à droite selon les droits de l'utilisateur courant (`isSuper`, `residenceLevel` via `hooks/useResidenceAccessLevel.ts`) : Documents/Codes (palier ≥ 1), Contacts (palier ≥ 2), Accès réservé + Masquer le bâtiment (super uniquement) — icônes seules sous `sm`, libellé au-delà (cf. correctif chevauchement mobile).
+
+Intégrations transversales avec le reste de l'app :
+- Sur la scène 3D publique (`render/page.tsx`), la fiche d'un appartement sélectionné par double-clic affiche le téléphone/email du contact `residence_contacts` dont `apartment_num` correspond, pour `isSuper || residenceLevel >= 2` (chargés une fois en mémoire au montage). Le gizmo de coordonnées XYZ (hover, mode super) est masqué pour l'instant côté UI — la mécanique de hover (`CoordinateProbe`) reste en place, prête à être réaffichée.
+- Le panel super rapide `/live/super` (`app/live/(super)/super/page.tsx`, accessible via l'icône empreinte de la Navbar) affiche directement les `residence_codes` en tête de page, avant même les autres raccourcis de navigation — cartes tap-friendly pleine largeur, copie du code en un tap (retour visuel ✓), pensées pour une lecture rapide sur iPhone. Un lien "Gérer" renvoie vers `/render/prive/codes` pour l'édition complète. Cette section reste, comme le CRUD, réservée à `super` (pas de version par palier).
+
+> Historique : la première itération de cette ouverture aux membres reposait sur `residence_documents.visibility` (`public`/`private`), un modèle "tout ou rien" jugé insuffisant (pas de granularité par utilisateur, notion de "public" trompeuse dans une app déjà fermée par login). Remplacé par le modèle par palier ci-dessus ; colonnes `visibility` et `access_level` (les 3 tables) supprimées.
 
 Jeux de données initiaux extraits de `documents/private/Extranet Reveille.pdf` (export de l'extranet du syndic) et saisis manuellement en base — le PDF lui-même n'est pas importé dans le bucket, seules les infos structurées le sont : les 6 membres du Conseil Syndical, et 27 fournisseurs (SQL fourni dans `documents/private/seed_fournisseurs.sql`, non versionné comme le reste de `documents/private/`).
 
