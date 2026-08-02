@@ -5,7 +5,7 @@ import { OrbitControls, Grid, Text, Edges, GizmoHelper, GizmoViewport } from '@r
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import Link from 'next/link';
-import { Lock, Phone, Mail, FileText, Eye, EyeOff, Users, KeyRound } from 'lucide-react';
+import { Lock, Phone, Mail, FileText, Eye, EyeOff, Users, KeyRound, Layers } from 'lucide-react';
 import { residenceData } from '@/data/residence';
 import { createClient } from '@/utils/supabase/client';
 import { useResidenceAccessLevel } from '@/hooks/useResidenceAccessLevel';
@@ -54,6 +54,37 @@ function ApartmentDimensions({ apt }: { apt: any }) {
       <span className="px-2 py-1 bg-red-600/20 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-md">
         ≈ {surface.toFixed(1)} m²
       </span>
+    </div>
+  );
+}
+
+interface ResidenceLotInfo {
+  identifiant_local: string;
+  numero_lot: number;
+  etage: string | null;
+  secteur: string | null;
+  composition: string[] | null;
+  tantieme_numerateur: number | null;
+  tantieme_denominateur: number | null;
+}
+
+// Fiche signalétique issue de l'acte notarié (residence_lots), affichée quand le lot cliqué a
+// une correspondance (studio/appartement/garage/chambre de bonne — pas les caves, non modélisées
+// individuellement en 3D). Réservé au palier avancé/super, cf. render/page.tsx#lotsByPlanKey.
+function LotFiche({ lot }: { lot: ResidenceLotInfo }) {
+  return (
+    <div className="mt-3 pt-3 border-t border-white flex flex-col gap-1.5">
+      <p className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">
+        Lot n°{lot.numero_lot} — {lot.identifiant_local}
+      </p>
+      {lot.composition && lot.composition.length > 0 && (
+        <ul className="text-xs text-zinc-300 space-y-0.5">
+          {lot.composition.map((piece, i) => <li key={i}>• {piece}</li>)}
+        </ul>
+      )}
+      {lot.tantieme_numerateur != null && (
+        <p className="text-[10px] text-zinc-100 font-mono">Tantièmes {lot.tantieme_numerateur}/{lot.tantieme_denominateur}</p>
+      )}
     </div>
   );
 }
@@ -1041,6 +1072,31 @@ export default function RenderPage() {
       });
   }, [isSuper, residenceLevel]);
 
+  // Fiches signalétiques (acte notarié) liées par (kind, num) aux appartements/garages/CdB
+  // déjà sélectionnables en 3D — les caves/placards n'ont pas de contrepartie individuelle.
+  const [lotsByPlanKey, setLotsByPlanKey] = useState<Record<string, ResidenceLotInfo>>({});
+
+  useEffect(() => {
+    if (!isSuper && residenceLevel < 2) return;
+    const supabase = createClient();
+    supabase.from('residence_lots')
+      .select('identifiant_local, numero_lot, etage, secteur, composition, tantieme_numerateur, tantieme_denominateur, plan_kind, plan_num')
+      .not('plan_kind', 'is', null)
+      .then(({ data }: { data: (ResidenceLotInfo & { plan_kind: string; plan_num: string })[] | null }) => {
+        if (!data) return;
+        const map: Record<string, ResidenceLotInfo> = {};
+        data.forEach((l) => { map[`${l.plan_kind}:${l.plan_num}`] = l; });
+        setLotsByPlanKey(map);
+      });
+  }, [isSuper, residenceLevel]);
+
+  function lotForSelection(sel: { kind?: string; num?: string } | null): ResidenceLotInfo | null {
+    if (!sel) return null;
+    const key = sel.kind === 'cdb' ? `chambre_de_bonne:${sel.num}` : sel.kind === 'garage' ? `garage:${sel.num}` : sel.num ? `apartment:${sel.num}` : null;
+    return key ? lotsByPlanKey[key] || null : null;
+  }
+  const selectedLot = lotForSelection(selected);
+
   return (
     <div className="relative w-full h-screen bg-[#09090b]">
       <Canvas camera={{ position: [50, 30, 50], fov: 35 }}>
@@ -1125,6 +1181,15 @@ export default function RenderPage() {
             <Users size={14} /> <span className="hidden sm:inline">Contacts</span>
           </Link>
           )}
+          {(isSuper || residenceLevel >= 2) && (
+          <Link
+            href="/render/lots"
+            title="Lots"
+            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+          >
+            <Layers size={14} /> <span className="hidden sm:inline">Lots</span>
+          </Link>
+          )}
           {isSuper && (
           <Link
             href="/render/prive"
@@ -1163,6 +1228,7 @@ export default function RenderPage() {
             <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest mt-2">
               Chambre de bonne
             </p>
+            {selectedLot && <LotFiche lot={selectedLot} />}
           </>
         ) : selected?.kind === 'garage' ? (
           <>
@@ -1175,6 +1241,7 @@ export default function RenderPage() {
                 <span className="text-red-500"> ↔ Appartement {selected.linkedApartmentId}</span>
               )}
             </p>
+            {selectedLot && <LotFiche lot={selectedLot} />}
           </>
         ) : selected ? (
           <>
@@ -1201,6 +1268,7 @@ export default function RenderPage() {
               )}
             </div>
             <ApartmentDimensions apt={selected} />
+            {selectedLot && <LotFiche lot={selectedLot} />}
             {(isSuper || residenceLevel >= 2) && contactsByApt[selected.num] && (contactsByApt[selected.num].telephone || contactsByApt[selected.num].email) && (
               <div className="flex flex-col gap-1.5 mt-3 pointer-events-auto w-fit">
                 {contactsByApt[selected.num].telephone && (

@@ -23,7 +23,8 @@ Application web privée de gestion de tournois de **pétanque** entre amis, sais
 | 🔧 **Panel Admin / Super** | Pilotage du tournoi live, gestion des joueurs/équipes, réglages ELO, recalcul d'historique (accès par rôle). Constitution des équipes automatique ou en tirage au sort révélé en direct |
 | 🕵️ **Journal d'activité** *(super)* | Traçabilité des actions admin et des consultations (pages, joueurs, tournois, photos) + page "Qui est en ligne" + stats de popularité |
 | 🏠 **Résidence — gestion** *(super)* | CRUD complet sous l'onglet Résidence (`/render/prive`) : contacts par catégorie (Conseil Syndical, Gardien, Copropriétaires, Locataires, Fournisseurs) avec partage vCard en un tap sur iPhone, bibliothèque de documents PDF (Syndic, Fournisseurs, AG, PV...) hébergés sur Google Drive avec résumé markdown optionnel, codes d'accès de la résidence — accès rapide aux codes directement depuis le panel super |
-| 🔑 **Résidence — accès par palier** | Les membres/admins peuvent être élevés à un palier de lecture résidence (géré depuis `/live/users`) : **Consultation** (documents + codes) ou **Avancé** (+ contacts + résumés des documents). Aucun accès par défaut — jamais "public" au sens non-authentifié |
+| 🔑 **Résidence — accès par palier** | Les membres/admins peuvent être élevés à un palier de lecture résidence (géré depuis `/live/users`) : **Consultation** (documents + codes) ou **Avancé** (+ contacts + résumés des documents + fiches signalétiques des lots). Aucun accès par défaut — jamais "public" au sens non-authentifié |
+| 📋 **Résidence — fiches signalétiques** | 173 lots du Bâtiment B (studios, appartements, box, caves, chambres de bonne, placards) issus de l'état descriptif de division d'un acte notarié : composition, tantièmes, situation. Consultables par recherche (`/render/lots`) ou directement au double-clic dans le plan 3D pour les 110 lots reliés à un objet du modèle |
 
 ---
 

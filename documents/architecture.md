@@ -59,6 +59,7 @@ app/
 │       ├── documents/               Lecture seule, palier ≥ 1 (layout.tsx = garde)
 │       ├── codes/                   Lecture seule, palier ≥ 1 (layout.tsx = garde)
 │       ├── contacts/                Lecture seule, palier ≥ 2 (layout.tsx = garde)
+│       ├── lots/                    Fiches signalétiques Bâtiment B, lecture seule, palier ≥ 2 (layout.tsx = garde)
 │       └── prive/                   Gestion CRUD (rôle super uniquement), voir §9
 │           ├── layout.tsx            Garde d'accès via RPC is_super()
 │           ├── page.tsx              Hub (Contacts / Documents / Codes)
@@ -214,8 +215,9 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 - **`residence_contacts`** — coordonnées (`nom`, `telephone`, `email`), `category` (`conseil_syndical`/`gardien`/`coproprietaire`/`locataire`/`fournisseur`, typée côté UI mais stockée en `text` libre côté base), `contrat` (texte libre décrivant la prestation/référence contractuelle, affiché sous le nom — utilisé pour `fournisseur`, formulaire d'ajout conditionnel à cette catégorie), `apartment_num` (lien manuel optionnel vers `data/residence.ts`, exploité par la fiche double-clic de la scène 3D — voir §9)
 - **`residence_documents`** — métadonnées des PDF (`title`, `description`, `external_url`, `category` [`syndic`/`fournisseurs`/`ag`/`pv`/`autre`], `resume` [markdown, optionnel], `uploaded_by`) : pas de binaire stocké côté Supabase, `external_url` pointe vers un fichier partagé sur Google Drive (voir §9 — certains PDF de la résidence dépassent la limite de taille utilisable en pratique sur le plan Supabase gratuit)
 - **`residence_codes`** — `label`/`code`/`notes` (portails, digicodes)
+- **`residence_lots`** — fiche signalétique des 173 lots du Bâtiment B extraits d'un acte notarié de 1957 (`numero_lot`, `identifiant_local`, `categorie` [`studio`/`appartement`/`box`/`cave`/`chambre_de_bonne`/`placard`], `etage`, `secteur`, `orientation`, `situation`, `composition` [`text[]`], `tantieme_numerateur`/`denominateur`/`texte_original`, `observation`), plus `plan_kind`/`plan_num` (couple `'apartment'|'garage'|'chambre_de_bonne'` + numéro) qui relie 110 des 173 lots aux objets déjà cliquables de la scène 3D — voir §9. Import figé (pas de CRUD prévu), palier de lecture 2 comme `residence_contacts`.
 - **`residence_documents_public`** — vue (`security_invoker = true`) sur `residence_documents`, colonne `resume` redactée (`null`) sous le palier 2 — voir §4e. Seule source de lecture pour les pages membres, jamais interrogée en écriture.
-- RLS : CRUD (`for all`) réservé à `is_super()` sur les 3 tables. Lecture supplémentaire par palier (§4e), policies combinées en OR avec celle du super : `residence_documents`/`residence_codes` dès le palier 1, `residence_contacts` à partir du palier 2 seulement.
+- RLS : CRUD (`for all`) réservé à `is_super()` sur les 4 tables. Lecture supplémentaire par palier (§4e), policies combinées en OR avec celle du super : `residence_documents`/`residence_codes` dès le palier 1, `residence_contacts`/`residence_lots` à partir du palier 2 seulement.
 
 ### Configuration
 - **`settings`** — paramètres du moteur ELO (`elo_init`, `bonus_point`, `bonus_seuil`, `seuil`, `max_ecart`, `poids_finale`, `poids_finaliste`, `k_factor`) — voir §6
@@ -313,7 +315,9 @@ Un bouton "IA Prono" sur chaque match non terminé ouvre une modale qui calcule 
 
 ## 9. Modélisation 3D de la résidence (`data/residence.ts`, `app/(sections)/render/page.tsx`)
 
-`data/residence.ts` encode le plan du bâtiment de la résidence sous forme de grille paramétrique (sections `principale`/`sectionB`, colonnes/rangées, appartements avec `col`/`row`/`colSpan`/`rowSpan`/`face`, occupants relevés sur les plans) accompagnée de formules de dérivation 3D destinées à un rendu React Three Fiber.
+`data/residence.ts` encode le plan du **Bâtiment B** (le seul modélisé à ce jour — pas de Bâtiment A dans le 3D) sous forme de grille paramétrique (colonnes/rangées, appartements avec `col`/`row`/`colSpan`/`rowSpan`/`face`, occupants relevés sur les plans) accompagnée de formules de dérivation 3D destinées à un rendu React Three Fiber. Les libellés `section: "principale"`/`"sectionB"` dans les données sont un artefact de mise en page (les deux moitiés du bâtiment séparées par la cage d'escalier) — **`"sectionB"` ne correspond à aucune notion légale de "Bâtiment B"**, piège identifié en croisant ce fichier avec l'acte notarié (voir plus bas, `residence_lots`).
+
+Trois familles d'objets individuellement cliquables/numérotés, chacune avec son propre espace de numérotation (`num`) : `apartments[]` (studios + appartements, `selected.num`), `chambresDeBonne[]` (`selected.kind === 'cdb'`, `selected.num`), `garages[]` (`selected.kind === 'garage'`, `selected.num`, `linkedApartmentId` optionnel vers un appartement). Les caves (`type: "caves"` sur des blocs génériques) ne sont pas individuellement sélectionnables.
 
 `app/(sections)/render/page.tsx` est une scène Three.js/React Three Fiber fonctionnelle et significativement développée : rendu de tous les appartements (avec quirks architecturaux gérés au cas par cas — largeurs débordantes, extensions en L, couloirs absorbés — via des champs d'override sur chaque appartement), sélection interactive au double-clic avec panneau d'info, boussole/`GizmoHelper` d'orientation, piscine + pataugeoire modélisées par extrusion (dimensions mesurées sur une photo aérienne réelle), terrain de pétanque avec joueurs et nageurs stylisés low-poly.
 
@@ -326,25 +330,42 @@ Page hub (3 tuiles, gabarit repris de `/videos`) vers :
 - **`documents/`** — bibliothèque de PDF (convocations, comptes-rendus...) : pas d'upload binaire — certains PDF de la résidence dépassent la limite de taille pratique du plan Supabase gratuit (50 Mo/fichier, quota total 1 Go déjà partagé avec `photos_import`). Les fichiers sont déposés manuellement sur Google Drive (domaine de l'utilisateur), l'app se contente d'enregistrer titre/description/lien de partage (`residence_documents.external_url`) et d'ouvrir ce lien au clic. Filtrable par catégorie (pills, même pattern que `contacts/`). Champ **résumé** optionnel (`resume`, markdown) : bouton dédié (icône `AlignLeft`) ouvre un panneau avec textarea + aperçu rendu via `components/MarkdownDisplay.tsx` (réutilisé, headings resserrés par des classes Tailwind arbitraires `[&_h2]:...` pour rester compact dans une carte plutôt qu'en pleine page). Plus de toggle public/privé par document (voir ci-dessous, remplacé par le palier d'accès de l'utilisateur).
 - **`codes/`** — codes d'accès (portails, digicodes) avec bouton copier.
 
-### Espace résidence — lecture par palier (`app/(sections)/render/{documents,contacts,codes}/`)
+### Espace résidence — lecture par palier (`app/(sections)/render/{documents,contacts,codes,lots}/`)
 
-Trois pages jumelles des sections CRUD ci-dessus, en lecture seule, chacune gardée par son propre `layout.tsx` server-side via `lib/residence-access.ts#hasResidenceAccess(minLevel)` (voir §4e) — redirect `/render` si le palier de l'utilisateur (`residence_access_level` + `is_super()`) est insuffisant :
+Quatre pages jumelles des sections CRUD ci-dessus, en lecture seule, chacune gardée par son propre `layout.tsx` server-side via `lib/residence-access.ts#hasResidenceAccess(minLevel)` (voir §4e) — redirect `/render` si le palier de l'utilisateur (`residence_access_level` + `is_super()`) est insuffisant :
 
 | Route | Palier requis | Source de lecture |
 |---|---|---|
 | `render/documents/` | 1 (Consultation) | Vue `residence_documents_public` — `resume` déjà redacté côté base pour le palier < 2, aucune logique de palier à coder côté client (le bouton résumé s'affiche simplement si `doc.resume` n'est pas `null`) |
 | `render/codes/` | 1 (Consultation) | Table `residence_codes` (RLS palier ≥ 1) |
 | `render/contacts/` | 2 (Avancé) | Table `residence_contacts` (RLS palier ≥ 2) |
+| `render/lots/` | 2 (Avancé) | Table `residence_lots` (RLS palier ≥ 2) — recherche par identifiant/n°, filtres par catégorie, fiche dépliable (composition, tantièmes, situation) |
 
-`/render` affiche jusqu'à 5 boutons en haut à droite selon les droits de l'utilisateur courant (`isSuper`, `residenceLevel` via `hooks/useResidenceAccessLevel.ts`) : Documents/Codes (palier ≥ 1), Contacts (palier ≥ 2), Accès réservé + Masquer le bâtiment (super uniquement) — icônes seules sous `sm`, libellé au-delà (cf. correctif chevauchement mobile).
+`/render` affiche jusqu'à 6 boutons en haut à droite selon les droits de l'utilisateur courant (`isSuper`, `residenceLevel` via `hooks/useResidenceAccessLevel.ts`) : Documents/Codes (palier ≥ 1), Contacts/Lots (palier ≥ 2), Accès réservé + Masquer le bâtiment (super uniquement) — icônes seules sous `sm`, libellé au-delà (cf. correctif chevauchement mobile).
 
 Intégrations transversales avec le reste de l'app :
-- Sur la scène 3D publique (`render/page.tsx`), la fiche d'un appartement sélectionné par double-clic affiche le téléphone/email du contact `residence_contacts` dont `apartment_num` correspond, pour `isSuper || residenceLevel >= 2` (chargés une fois en mémoire au montage). Le gizmo de coordonnées XYZ (hover, mode super) est masqué pour l'instant côté UI — la mécanique de hover (`CoordinateProbe`) reste en place, prête à être réaffichée.
+- Sur la scène 3D publique (`render/page.tsx`), la fiche d'un appartement/garage/chambre de bonne sélectionné par double-clic affiche, pour `isSuper || residenceLevel >= 2` :
+  - le téléphone/email du contact `residence_contacts` dont `apartment_num` correspond ;
+  - la fiche signalétique du lot correspondant (`LotFiche`, composition + tantièmes) si `residence_lots.plan_kind`/`plan_num` matche la sélection — voir "Fiches signalétiques" ci-dessous.
+
+  Les deux jeux sont chargés une fois en mémoire au montage (`contactsByApt`, `lotsByPlanKey`). Le gizmo de coordonnées XYZ (hover, mode super) est masqué pour l'instant côté UI — la mécanique de hover (`CoordinateProbe`) reste en place, prête à être réaffichée.
 - Le panel super rapide `/live/super` (`app/live/(super)/super/page.tsx`, accessible via l'icône empreinte de la Navbar) affiche directement les `residence_codes` en tête de page, avant même les autres raccourcis de navigation — cartes tap-friendly pleine largeur, copie du code en un tap (retour visuel ✓), pensées pour une lecture rapide sur iPhone. Un lien "Gérer" renvoie vers `/render/prive/codes` pour l'édition complète. Cette section reste, comme le CRUD, réservée à `super` (pas de version par palier).
 
 > Historique : la première itération de cette ouverture aux membres reposait sur `residence_documents.visibility` (`public`/`private`), un modèle "tout ou rien" jugé insuffisant (pas de granularité par utilisateur, notion de "public" trompeuse dans une app déjà fermée par login). Remplacé par le modèle par palier ci-dessus ; colonnes `visibility` et `access_level` (les 3 tables) supprimées.
 
 Jeux de données initiaux extraits de `documents/private/Extranet Reveille.pdf` (export de l'extranet du syndic) et saisis manuellement en base — le PDF lui-même n'est pas importé dans le bucket, seules les infos structurées le sont : les 6 membres du Conseil Syndical, et 27 fournisseurs (SQL fourni dans `documents/private/seed_fournisseurs.sql`, non versionné comme le reste de `documents/private/`).
+
+### Fiches signalétiques des lots (`residence_lots`, acte notarié)
+
+`documents/private/batiment_B_lots.json` (173 lots, état descriptif de division/acte notarié de 1957, schéma uniforme entre catégories) a été importé tel quel dans `residence_lots` — table plutôt que fichier statique, pour deux raisons : `documents/private/` n'est jamais buildé/déployé (un JSON y restant serait inutilisable en prod), et le schéma uniforme se prête naturellement à la recherche/au filtre côté base plutôt qu'au chargement d'un bundle complet.
+
+Correspondance avec `data/residence.ts` (**arithmétique, pas de rapprochement flou**) calculée une fois à l'import, stockée dans `plan_kind`/`plan_num` :
+- studio/appartement : `identifiant_local` = `"B" + apartments[].num`
+- chambre de bonne : `identifiant_local` = `"Chambre de bonne " + chambresDeBonne[].num`
+- box : `identifiant_local` = `"Box " + garages[].num`
+- cave/placard (63 des 173 lots) : pas de correspondance — le plan ne rend pas ces lots individuellement, consultables uniquement via `render/lots/`
+
+110 des 173 lots ont donc une fiche accessible aussi bien par double-clic dans la scène 3D (`LotFiche`, palier ≥ 2) que par recherche sur `render/lots/` ; les 63 caves/placards ne sont accessibles que par cette dernière. Import figé (acte de 1957) : pas de page de gestion CRUD, seed SQL unique (`documents/private/residence_lots.sql`, généré depuis le JSON, non versionné).
 
 ## 10. Déploiement & configuration
 
