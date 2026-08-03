@@ -51,18 +51,29 @@
 	  return rounds.reverse().flat();
 	};
 
-	// Attribution des terrains (format 10_equipes, poules de 5 équipes = round-robin à 10 matchs).
-	// Avec seulement 4 terrains, il est mathématiquement impossible qu'une équipe joue une fois sur
-	// chacun (nombre chromatique d'arêtes de K5 = 5, vérifié par calcul exhaustif) : chaque équipe
-	// dispute 4 matchs et ne peut couvrir que 3 terrains distincts sur 4. Table figée ci-dessous =
-	// meilleure répartition trouvée par recherche exhaustive : les 5 équipes couvrent chacune
-	// exactement 3 terrains différents, et les 4 terrains sont utilisés de façon équilibrée (3/3/2/2
-	// matchs). Clé = paire d'index triée "i-j" dans le tableau local de la poule (0..4).
-	const POULE5_COURTS: Record<string, string> = {
-	  '0-1': 'T1', '0-2': 'T1', '0-3': 'T2', '0-4': 'T3',
-	  '1-2': 'T1', '1-3': 'T2', '1-4': 'T4',
-	  '2-3': 'T3', '2-4': 'T2',
-	  '3-4': 'T4',
+	// Attribution des terrains (format 10_equipes, 2 poules de 5 équipes jouées EN PARALLÈLE sur les
+	// 4 mêmes terrains physiques : à chaque ronde, 2 matchs Gassin + 2 matchs Ramatuelle = 4 matchs
+	// simultanés, un par terrain — cf. generateRoundRobinPairs, même découpage en 5 rondes pour les
+	// deux poules). Avec seulement 4 terrains, il est mathématiquement impossible qu'une équipe joue
+	// une fois sur chacun (nombre chromatique d'arêtes de K5 = 5, vérifié par calcul exhaustif) :
+	// chaque équipe dispute 4 matchs et ne peut couvrir que 3 terrains distincts sur 4 au mieux.
+	// Tables figées ci-dessous = meilleure répartition conjointe trouvée par recherche (les 2 poules
+	// ne doivent jamais s'attribuer le même terrain à la même ronde) : les 10 équipes couvrent
+	// chacune au moins 3 terrains différents (une couvre les 4). Clé = paire d'index triée "i-j"
+	// dans le tableau local de la poule (0..4).
+	const POULE5_COURTS: Record<'Gassin' | 'Ramatuelle', Record<string, string>> = {
+	  Gassin: {
+	    '0-1': 'T2', '0-2': 'T4', '0-3': 'T1', '0-4': 'T3',
+	    '1-2': 'T1', '1-3': 'T3', '1-4': 'T2',
+	    '2-3': 'T3', '2-4': 'T4',
+	    '3-4': 'T4',
+	  },
+	  Ramatuelle: {
+	    '0-1': 'T1', '0-2': 'T1', '0-3': 'T3', '0-4': 'T2',
+	    '1-2': 'T4', '1-3': 'T2', '1-4': 'T1',
+	    '2-3': 'T4', '2-4': 'T2',
+	    '3-4': 'T3',
+	  },
 	};
 
 	export default function LiveAdminWizard() {
@@ -382,7 +393,7 @@
 	       }
 	     } else {
 	       // Round-robin générique (cf. generateRoundRobinPairs)
-	       const generateOrderedMatches = (ids: string[], village: string) => {
+	       const generateOrderedMatches = (ids: string[], village: 'Gassin' | 'Ramatuelle') => {
 	         const pairs = generateRoundRobinPairs(ids.length);
 	         pairs.forEach(([idx1, idx2]) => {
 	           pouleMatches.push({
@@ -392,15 +403,21 @@
 	             team1_id: ids[idx1],
 	             team2_id: ids[idx2],
 	             status: 'EN_ATTENTE',
-	             terrain: ids.length === 5 ? POULE5_COURTS[`${idx1}-${idx2}`] : null
+	             terrain: ids.length === 5 ? POULE5_COURTS[village][`${idx1}-${idx2}`] : null
 	           });
 	         });
 	       };
 
 	       // Appel de la génération pour les deux poules
 	       const ramatuelleIds = teamIds.filter(id => !gassinIds.includes(id));
-	       generateOrderedMatches(gassinIds, 'Gassin');
-	       generateOrderedMatches(ramatuelleIds, 'Ramatuelle');
+	       // Format 10_equipes : la structure round-robin met toujours l'équipe d'index local 2 au
+	       // repos à la 1ère ronde (indépendamment des lettres, cf. POULE5_COURTS/generateRoundRobinPairs).
+	       // On réordonne donc les tableaux locaux pour que ce soit E (Gassin) et J (Ramatuelle) qui
+	       // occupent cet index, afin qu'elles soient les premières équipes à ne pas jouer.
+	       const gassinRR = format === '10_equipes' ? ['A', 'B', 'E', 'D', 'C'] : gassinIds;
+	       const ramatuelleRR = format === '10_equipes' ? ['F', 'G', 'J', 'I', 'H'] : ramatuelleIds;
+	       generateOrderedMatches(gassinRR, 'Gassin');
+	       generateOrderedMatches(ramatuelleRR, 'Ramatuelle');
 	     }
 
 	     // 4. Envoi en base
