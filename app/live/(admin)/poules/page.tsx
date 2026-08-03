@@ -309,24 +309,29 @@ export default function LivePoulesPage() {
                   </div>
 
                   {/* Inputs */}
-                  <div className="flex items-center gap-1 md:gap-2 bg-zinc-900 p-1 md:p-2 rounded-lg md:rounded-xl">
-                    <input 
-                      type="number" 
-                      inputMode="numeric"
-                      value={s.s1} 
-                      onChange={(e) => handleScoreChange(m.id, 1, e.target.value)} 
-                      disabled={isTermine} 
-                      className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" 
-                    />
-                    <span className="text-zinc-400 font-bold">-</span>
-                    <input 
-                      type="number" 
-                      inputMode="numeric"
-                      value={s.s2} 
-                      onChange={(e) => handleScoreChange(m.id, 2, e.target.value)} 
-                      disabled={isTermine} 
-                      className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" 
-                    />
+                  <div className="flex flex-col items-center gap-1">
+                    {m.terrain && (
+                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">{m.terrain}</span>
+                    )}
+                    <div className="flex items-center gap-1 md:gap-2 bg-zinc-900 p-1 md:p-2 rounded-lg md:rounded-xl">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={s.s1}
+                        onChange={(e) => handleScoreChange(m.id, 1, e.target.value)}
+                        disabled={isTermine}
+                        className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none"
+                      />
+                      <span className="text-zinc-400 font-bold">-</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={s.s2}
+                        onChange={(e) => handleScoreChange(m.id, 2, e.target.value)}
+                        disabled={isTermine}
+                        className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none"
+                      />
+                    </div>
                   </div>
 
                   {/* Team 2 */}

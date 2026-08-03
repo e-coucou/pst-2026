@@ -206,7 +206,7 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 ### Tournoi en direct (saison courante)
 - **`live_tournament`** — ligne unique (`id=1`) avec `status` = étape courante du stepper, `format` (`classique`/`10_equipes`/`ronde`, voir §7), `team_mode` (`auto`/`live`, voir §7 — indépendant du format)
 - **`live_teams`** — doublettes du jour : `elo_start_pointeur`, `elo_start_tireur`, `modern_start`, `poule` (`Gassin`/`Ramatuelle`, ou `Ronde` en format suisse — CHECK constraint étendue en conséquence)
-- **`live_matches`** — match du jour : `team1_id`, `team2_id`, `score_team1/2`, `status` (`EN_COURS`/`TERMINE`), `type`, `poule`, `round` (entier, uniquement renseigné en format `ronde` pour distinguer les 4 rondes suisses), `delta_elo_team1/2`, `delta_modern_team1/2` — `type` porte une **FK vers `steps.id`** (non documentée par Supabase, découverte en pratique)
+- **`live_matches`** — match du jour : `team1_id`, `team2_id`, `score_team1/2`, `status` (`EN_COURS`/`TERMINE`), `type`, `poule`, `round` (entier, uniquement renseigné en format `ronde` pour distinguer les 4 rondes suisses), `terrain` (`T1`..`T4`, uniquement renseigné pour les poules du format `10_equipes`, voir §7), `delta_elo_team1/2`, `delta_modern_team1/2` — `type` porte une **FK vers `steps.id`** (non documentée par Supabase, découverte en pratique)
 - **`live_selected`** — joueurs convoqués pour la journée, avec `role` (`Pointeur`/`Tireur`), ELO figé au moment de la sélection
 - **`live_history`** — équivalent de `history_all` mais pour le tournoi live (reconstruit par `/api/admin/live-elo`)
 - **`steps`** — barème par `type` de match : `value` (rang de base pour `finalTop8`, ex. `Finale Rang1` → 1), `label` (libellé lisible affiché à la place du `type` brut, ex. `Finale Rang2` → "Petite Finale")
@@ -287,10 +287,12 @@ Les 3 formats empruntent des chemins différents dans cette même machine à ét
 | Format | Équipes | Chemin | Détail |
 |---|---|---|---|
 | `classique` | 8 (2 poules de 4) | `POULES → DEMI → FINALE` | Round-robin par poule, demies (Principal/Honneur), 4 finales spécifiques (`Finale`, `Petite Finale`, `Toute petite Finale`, `Finale d'Honneur`) |
-| `10_equipes` | 10 (2 poules de 5) | `POULES → FINALE` (saute `DEMI`) | Round-robin par poule, puis 5 finales classées 1er×1er…5e×5e (`Finale Rang1`…`Rang5`) directement depuis `poules/page.tsx` |
+| `10_equipes` | 10 (2 poules de 5, Gassin `A`-`E` / Ramatuelle `F`-`J`) | `POULES → FINALE` (saute `DEMI`) | Round-robin par poule, puis 5 finales classées 1er×1er…5e×5e (`Finale Rang1`…`Rang5`) directement depuis `poules/page.tsx` |
 | `ronde` | 10 (1 seul groupe) | `POULES → FINALE` (saute `DEMI`) | Système suisse (voir `documents/rondes.md`) : 4 rondes générées une par une sur `/live/ronde` (appariement par classement cumulé, anti-rematch), puis une 5ème ronde = 5 finales classées par rang adjacent (1v2, 3v4…), réutilisant le même mécanisme `Finale RangX` que `10_equipes` — `finale/page.tsx` et `podium/page.tsx` sont donc réutilisées telles quelles, sans branche de code dédiée |
 
 `generateRoundRobinPairs(n)` (`admin/page.tsx`) génère le round-robin de façon générique (méthode du cercle, avec bye si impair) pour `classique`/`10_equipes`. `generateRondePairing`/`buildPlayedPairs` (`utils/live-stats.ts`) gèrent l'appariement suisse du format `ronde`.
+
+**Terrains (format `10_equipes` uniquement)** — `live_matches.terrain` (`T1`..`T4`), attribué à la génération dans `admin/page.tsx` via la table figée `POULE5_COURTS`. Avec 5 équipes par poule (round-robin = K5, 10 matchs), une équipe joue 4 matchs et il est mathématiquement impossible qu'elle couvre 4 terrains distincts avec seulement 4 terrains disponibles (nombre chromatique d'arêtes de K5 = 5, vérifié par recherche exhaustive). `POULE5_COURTS` est la meilleure répartition trouvée : chaque équipe couvre 3 terrains sur 4, usage des 4 terrains équilibré (3/3/2/2 matchs). Affiché en badge sur `poules/page.tsx` (admin) et `app/live/page.tsx` (public). Colonne nullable, absente pour `classique`/`ronde`.
 
 `components/Stepper.tsx` affiche visuellement la progression, sa liste d'étapes dépend du prop `format` (cf. §3). Chaque page conditionne l'affichage de ses sections à l'étape courante — soit via l'index du statut (`currentStepIndex >= statusSteps.findIndex(...)`), soit, de façon plus robuste et indépendante du format, en testant directement la présence de données (`demiMatches.length > 0`, `matches.length > 0` pour la section "Finales").
 

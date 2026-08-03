@@ -588,6 +588,9 @@ export default function PodiumPage() {
 						  <div className="bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center w-full">
 						    {m.score_team1} - {m.score_team2}
 						  </div>
+						  {m.terrain && (
+						    <span className="mt-1 text-[9px] font-black uppercase tracking-widest text-zinc-500">{m.terrain}</span>
+						  )}
 						</div>
 				       {/* ÉQUIPE 2 - Bloc de droite */}
 				       {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}

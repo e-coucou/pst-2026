@@ -20,7 +20,7 @@
 	    ? ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 	    : ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 	const getGassinIds = (format: string) =>
-	  format === '10_equipes' ? ['A', 'C', 'E', 'G', 'I'] : ['A', 'C', 'E', 'G'];
+	  format === '10_equipes' ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'C', 'E', 'G'];
 
 	// Round-robin générique (méthode du cercle) : pour n équipes (pair ou impair, avec bye si
 	// impair), génère toutes les paires C(n,2) sans répétition. Vérifié à la main pour n=4 :
@@ -49,6 +49,20 @@
 	  // Inversion de l'ordre des rounds (pas des paires à l'intérieur d'un round) : nécessaire
 	  // pour retomber exactement sur l'ordre legacy à n=4.
 	  return rounds.reverse().flat();
+	};
+
+	// Attribution des terrains (format 10_equipes, poules de 5 équipes = round-robin à 10 matchs).
+	// Avec seulement 4 terrains, il est mathématiquement impossible qu'une équipe joue une fois sur
+	// chacun (nombre chromatique d'arêtes de K5 = 5, vérifié par calcul exhaustif) : chaque équipe
+	// dispute 4 matchs et ne peut couvrir que 3 terrains distincts sur 4. Table figée ci-dessous =
+	// meilleure répartition trouvée par recherche exhaustive : les 5 équipes couvrent chacune
+	// exactement 3 terrains différents, et les 4 terrains sont utilisés de façon équilibrée (3/3/2/2
+	// matchs). Clé = paire d'index triée "i-j" dans le tableau local de la poule (0..4).
+	const POULE5_COURTS: Record<string, string> = {
+	  '0-1': 'T1', '0-2': 'T1', '0-3': 'T2', '0-4': 'T3',
+	  '1-2': 'T1', '1-3': 'T2', '1-4': 'T4',
+	  '2-3': 'T3', '2-4': 'T2',
+	  '3-4': 'T4',
 	};
 
 	export default function LiveAdminWizard() {
@@ -377,7 +391,8 @@
 	             tableau: 'Principal',
 	             team1_id: ids[idx1],
 	             team2_id: ids[idx2],
-	             status: 'EN_ATTENTE'
+	             status: 'EN_ATTENTE',
+	             terrain: ids.length === 5 ? POULE5_COURTS[`${idx1}-${idx2}`] : null
 	           });
 	         });
 	       };
