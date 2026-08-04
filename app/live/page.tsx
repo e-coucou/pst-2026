@@ -12,7 +12,7 @@ import PouleStandingsTable from '@/components/PouleStandingsTable';
 import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
 
-const EVENT_DATETIME = new Date(2026, 7, 4, 18, 0, 0); // Mardi 4 Août 2026, 18h00 (mois 0-indexé)
+const EVENT_DATETIME = new Date(2026, 7, 4, 17, 30, 0); // Mardi 4 Août 2026, 17h30 (mois 0-indexé)
 
 const statusSteps = [
   { id: 'JOUEURS', label: 'Joueurs' },
@@ -300,7 +300,7 @@ export default function PodiumPage() {
                     Tournoi <span className="text-red-600">à venir</span>
                   </h1>
                   <p className="inline-block bg-red-600/10 border border-red-600/40 text-red-500 font-black uppercase text-2xl md:text-4xl tracking-widest px-6 py-2 rounded-2xl animate-pulse">
-                    Mardi 4 août 2026 — 18h00
+                    Mardi 4 août 2026 — 17h30
                   </p>
                 </>
               );

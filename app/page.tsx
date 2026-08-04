@@ -115,7 +115,7 @@ export default function Home() {
                           Mardi 4 Août
                         </div>
                         <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mt-1 max-w-[220px] sm:max-w-none mx-auto">
-                          Terrain de Boules • RDV 18h00 précises <span className="text-white">(Tirage des Équipes)</span>
+                          Terrain de Boules • RDV 17h30 précises <span className="text-white">(Tirage des Équipes)</span>
                         </div>
                       </div>
                     );
@@ -131,7 +131,7 @@ export default function Home() {
                           {manquants} joueur{manquants > 1 ? 's' : ''} pas encore confirmé{manquants > 1 ? 's' : ''}
                         </div>
                         <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest text-center">
-                          Terrain de Boules • RDV 18h00 précises <span className="text-white">(Tirage des Équipes)</span>
+                          Terrain de Boules • RDV 17h30 précises <span className="text-white">(Tirage des Équipes)</span>
                         </div>
                       </div>
                     );
@@ -150,7 +150,7 @@ export default function Home() {
                         14h – 16h <span className="text-white">petite sieste...</span>
                       </span>
                       <span className="text-red-600 text-xs font-black uppercase tracking-widest mt-1">
-                        RDV 18h00 précises, terrain de boules !
+                        RDV 17h30 précises, terrain de boules !
                       </span>
                     </div>
                   );
