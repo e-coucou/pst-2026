@@ -182,7 +182,10 @@ export default function PredictionModal({
     }
 
     // 4. ELO ACTUEL
-    const lastElo = history?.[0]?.elo_modern_value ?? 1500;
+    // Fallback à 100 (et non 1500) : même convention que le reste de l'app pour un joueur
+    // sans historique (cf. fetchPlayersWithElo dans admin/page.tsx) — l'échelle "modern" est
+    // centrée autour de 100, pas 1500 (qui aurait créé un écart artificiel écrasant le modèle).
+    const lastElo = history?.[0]?.elo_modern_value ?? 100;
 
     // 5. EXPLOSIVITÉ (variance des scores marqués)
     let explosivity = 1.0;
