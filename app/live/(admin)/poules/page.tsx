@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
 import PredictionModal from '@/components/PredictionModal';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
-import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Dices, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Dices, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { logActivity } from '@/utils/log-activity';
 import { calculatePouleStandings } from '@/utils/live-stats';
 import { simulateRandomScores } from '@/utils/simulate';
@@ -410,6 +410,15 @@ export default function LivePoulesPage() {
                 className="flex items-center gap-2 text-[10px] font-black uppercase text-amber-500 hover:text-amber-300 bg-amber-500/10 px-4 py-2 rounded-full border border-dashed border-amber-500/40 disabled:opacity-40"
               >
                 {simulating ? <Loader2 size={14} className="animate-spin" /> : <Dices size={14} />} <span className="hidden md:inline">Simuler</span>
+              </button>
+            )}
+            {isSuper && (
+              <button
+                onClick={() => router.push('/live/screen')}
+                title="Écran équipes (fond blanc, à partager sur WhatsApp)"
+                className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5"
+              >
+                <ImageIcon size={14} /> <span className="hidden md:inline">Écran équipes</span>
               </button>
             )}
             <button onClick={() => router.push('/live/admin')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">
