@@ -9,10 +9,7 @@ export async function POST() {
       process.env.SUPABASE_SERVICE_ROLE_KEY! // Nécessaire pour bypasser le RLS et DELETE
     );
 
-    // 1. Reset de la table
-    await supabase.from('live_history').delete().gt('year', 0);
-
-    // 2. Récupérer les Settings
+    // 1. Récupérer les Settings
     const { data: settingsData } = await supabase.from('settings').select('*');
     const s: any = {};
     settingsData?.forEach(item => s[item.key] = item.value);
@@ -28,7 +25,7 @@ export async function POST() {
       k_factor: s.k_factor || 20
     };
 
-    // 3. Récupérer les données sources
+    // 2. Récupérer les données sources
     const { data: players } = await supabase.from('profiles').select('*');
     const { data: liveTeams } = await supabase.from('live_teams').select('*');
     const { data: liveMatches } = await supabase
@@ -41,7 +38,7 @@ export async function POST() {
       throw new Error("Données manquantes pour le calcul");
     }
 
-    // 4. Initialisation ELO par JOUEUR
+    // 3. Initialisation ELO par JOUEUR
     let currentElo: Record<number, { pst: number, modern: number }> = {};
     players.forEach(p => {
       currentElo[p.id] = { pst: eloSettings.elo_init, modern: eloSettings.elo_init };
@@ -63,7 +60,7 @@ export async function POST() {
 
     const historyAllEntries: any[] = [];
 
-    // 5. Boucle de calcul
+    // 4. Boucle de calcul
     for (const m of liveMatches) {
       const t1 = teamsMap[m.team1_id];
       const t2 = teamsMap[m.team2_id];
@@ -109,11 +106,27 @@ export async function POST() {
       });
     }
 
-    // 6. Insertion par lots (Chunk)
+    // 5. Nettoyage des matchs qui ne sont plus TERMINE (ex: reset manuel via /live/reset) + upsert
+    // par lots. Un simple DELETE-de-tout puis INSERT-de-tout n'est pas atomique (deux allers-retours
+    // réseau distincts) : avec 4 terrains joués en parallèle, deux scores saisis à quelques secondes
+    // d'intervalle déclenchent deux appels à cette route qui peuvent s'entrelacer (delete A, delete B,
+    // insert B, insert A) et laisser les lignes de A en doublon à côté de celles de B — c'est ce qui
+    // faisait apparaître un joueur deux fois sur le graphique dès qu'il avait joué un 2e match.
+    // L'upsert sur (player_id, game_id) rend le recalcul idempotent : deux appels concurrents finissent
+    // par écrire le même résultat sans jamais dupliquer une ligne.
+    const validGameIds = liveMatches.map(m => m.id);
+    if (validGameIds.length > 0) {
+      await supabase.from('live_history').delete().not('game_id', 'in', `(${validGameIds.join(',')})`);
+    } else {
+      await supabase.from('live_history').delete().gt('year', 0);
+    }
+
     const chunkSize = 500;
     for (let i = 0; i < historyAllEntries.length; i += chunkSize) {
       const chunk = historyAllEntries.slice(i, i + chunkSize);
-      const { error: insertError } = await supabase.from('live_history').insert(chunk);
+      const { error: insertError } = await supabase
+        .from('live_history')
+        .upsert(chunk, { onConflict: 'player_id,game_id' });
       if (insertError) throw insertError;
     }
 
