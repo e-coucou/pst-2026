@@ -48,7 +48,37 @@ export const calculatePouleStandings = (
     }
   });
 
-  return standings.sort((a, b) => (b.pts - a.pts) || (b.diff - a.diff) || (b.pour - a.pour));
+  // Tri : points, puis goalaverage général (diff), puis points marqués (pour). Les égalités
+  // strictes restantes sont ensuite départagées par goalaverage particulier (confrontation
+  // directe entre les seules équipes encore à égalité) plutôt que laissées à l'ordre arbitraire.
+  const primarySort = (a: PouleStanding, b: PouleStanding) =>
+    (b.pts - a.pts) || (b.diff - a.diff) || (b.pour - a.pour);
+
+  const sorted = [...standings].sort(primarySort);
+  const result: PouleStanding[] = [];
+  let i = 0;
+  while (i < sorted.length) {
+    let j = i + 1;
+    while (j < sorted.length && primarySort(sorted[i], sorted[j]) === 0) j++;
+    const tiedGroup = sorted.slice(i, j);
+
+    if (tiedGroup.length > 1) {
+      const idsInGroup = new Set(tiedGroup.map(t => t.id));
+      const h2hDiff = new Map<string, number>(tiedGroup.map(t => [t.id, 0]));
+      pouleMatches
+        .filter(m => idsInGroup.has(m.team1_id) && idsInGroup.has(m.team2_id))
+        .forEach(m => {
+          h2hDiff.set(m.team1_id, (h2hDiff.get(m.team1_id) || 0) + (m.score_team1 - m.score_team2));
+          h2hDiff.set(m.team2_id, (h2hDiff.get(m.team2_id) || 0) + (m.score_team2 - m.score_team1));
+        });
+      tiedGroup.sort((a, b) => (h2hDiff.get(b.id) || 0) - (h2hDiff.get(a.id) || 0));
+    }
+
+    result.push(...tiedGroup);
+    i = j;
+  }
+
+  return result;
 };
 
 /**
