@@ -47,14 +47,13 @@ export default function LiveScreenPage() {
         <h2 className="text-2xl font-black uppercase border-b-2 border-black pb-1 mb-3">
           Poule {pouleName}
         </h2>
-        <div className="space-y-3">
+        <div className="divide-y divide-zinc-200">
           {pouleTeams.map(t => (
-            <div key={t.id} className="text-lg leading-snug">
-              <span className="font-black">{t.id}</span>
-              <span className="font-normal text-sm"> — Pointeur : </span>
-              <span className="font-black text-2xl">{getName(t.pointeur_id)}</span>
-              <span className="font-normal text-sm"> / Tireur : </span>
-              <span className="font-black text-2xl">{getName(t.tireur_id)}</span>
+            <div key={t.id} className="flex items-baseline gap-3 py-2">
+              <span className="font-black text-lg w-6 shrink-0">{t.id}</span>
+              <span className="font-black text-xl truncate">
+                {getName(t.pointeur_id)} / {getName(t.tireur_id)}
+              </span>
             </div>
           ))}
         </div>
