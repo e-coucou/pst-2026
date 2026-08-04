@@ -66,12 +66,29 @@ interface ResidenceLotInfo {
   composition: string[] | null;
   tantieme_numerateur: number | null;
   tantieme_denominateur: number | null;
+  proprietaire_officiel: string | null;
+  proprietaire_confiance: string | null;
+  autres_lots_du_meme_proprietaire: number[] | null;
+  historique_proprietaires: string[] | null;
+  anomalie_signalee: string | null;
+  concordance_residence_ts: string | null;
+  charges_reparties_total: number | null;
+  charges_solde_total: number | null;
+  charges_comptes: { code: string; nom: string; E: number; H: number }[] | null;
 }
+
+const formatEuros = (n: number) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
 // Fiche signalétique issue de l'acte notarié (residence_lots), affichée quand le lot cliqué a
 // une correspondance (studio/appartement/garage/chambre de bonne — pas les caves, non modélisées
 // individuellement en 3D). Réservé au palier avancé/super, cf. render/page.tsx#lotsByPlanKey.
-function LotFiche({ lot }: { lot: ResidenceLotInfo }) {
+//
+// `lotsByNumero` sert à résoudre `autres_lots_du_meme_proprietaire` (numéros de lot 1957) en
+// identifiants lisibles ("B12" plutôt que "127") — cf. PST-2026_Resume_Analyse_et_Specs_Integration.md §6.
+function LotFiche({ lot, lotsByNumero }: { lot: ResidenceLotInfo; lotsByNumero: Record<number, ResidenceLotInfo> }) {
+  const proprietaireFiable = lot.proprietaire_confiance === 'officiel_confirme_PV_ou_convocation_AG';
+  const autresLots = (lot.autres_lots_du_meme_proprietaire || []).map((n) => lotsByNumero[n]?.identifiant_local || `Lot ${n}`);
+
   return (
     <div className="mt-3 pt-3 border-t border-white flex flex-col gap-1.5">
       <p className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">
@@ -84,6 +101,66 @@ function LotFiche({ lot }: { lot: ResidenceLotInfo }) {
       )}
       {lot.tantieme_numerateur != null && (
         <p className="text-[10px] text-zinc-100 font-mono">Tantièmes {lot.tantieme_numerateur}/{lot.tantieme_denominateur}</p>
+      )}
+
+      <div className="flex flex-col gap-1 mt-1">
+        <p className="text-xs text-zinc-300">
+          {lot.proprietaire_officiel
+            ? <>Propriétaire officiel : <span className="text-white font-semibold">{lot.proprietaire_officiel}</span></>
+            : <span className="text-zinc-500 italic">Propriétaire non identifié dans les documents disponibles</span>}
+        </p>
+        {lot.proprietaire_officiel && !proprietaireFiable && (
+          <span className="text-[9px] text-amber-500 font-black uppercase tracking-widest">Source non confirmée</span>
+        )}
+        {lot.concordance_residence_ts === 'DISCORDANT_a_verifier' && (
+          <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-md w-fit">
+            À vérifier — nom 3D différent
+          </span>
+        )}
+        {lot.anomalie_signalee && (
+          <span className="px-2 py-0.5 bg-red-600/20 text-red-400 text-[9px] font-black uppercase tracking-widest rounded-md w-fit">
+            Anomalie : {lot.anomalie_signalee}
+          </span>
+        )}
+        {autresLots.length > 0 && (
+          <p className="text-[10px] text-zinc-400">Autres lots du même propriétaire : {autresLots.join(', ')}</p>
+        )}
+        {lot.historique_proprietaires && lot.historique_proprietaires.length > 0 && (
+          <details className="text-[10px] text-zinc-400">
+            <summary className="cursor-pointer">Historique des propriétaires</summary>
+            <ul className="mt-1 space-y-0.5">
+              {lot.historique_proprietaires.map((h, i) => <li key={i}>• {h}</li>)}
+            </ul>
+          </details>
+        )}
+      </div>
+
+      {lot.charges_comptes && lot.charges_comptes.length > 0 && (
+        <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-white/20">
+          <p className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">
+            Charges réparties (AG 2026)
+          </p>
+          <p className="text-xs text-zinc-300">
+            Charges réparties : <span className="text-white font-semibold">{formatEuros(lot.charges_reparties_total!)}</span>
+            {' · '}
+            Solde : <span className={lot.charges_solde_total! > 0 ? 'text-red-400 font-semibold' : 'text-emerald-400 font-semibold'}>
+              {formatEuros(lot.charges_solde_total!)}
+            </span>
+          </p>
+          {lot.charges_comptes.length > 1 && (
+            <details className="text-[10px] text-zinc-400">
+              <summary className="cursor-pointer">{lot.charges_comptes.length} comptes rattachés à ce lot</summary>
+              <ul className="mt-1 space-y-0.5">
+                {lot.charges_comptes.map((c) => (
+                  <li key={c.code}>• {c.nom} ({c.code}) — {formatEuros(c.E)}, solde {formatEuros(c.H)}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+          <p className="text-[9px] text-zinc-500 italic">
+            Compte(s) syndic rattaché(s) à ce lot — peut regrouper plusieurs lots du même propriétaire.
+          </p>
+        </div>
       )}
     </div>
   );
@@ -1075,18 +1152,25 @@ export default function RenderPage() {
   // Fiches signalétiques (acte notarié) liées par (kind, num) aux appartements/garages/CdB
   // déjà sélectionnables en 3D — les caves/placards n'ont pas de contrepartie individuelle.
   const [lotsByPlanKey, setLotsByPlanKey] = useState<Record<string, ResidenceLotInfo>>({});
+  // Tous les lots (A + B) indexés par numero_lot (1957), pour résoudre autres_lots_du_meme_proprietaire
+  // en identifiants lisibles — cf. LotFiche.
+  const [lotsByNumero, setLotsByNumero] = useState<Record<number, ResidenceLotInfo>>({});
 
   useEffect(() => {
     if (!isSuper && residenceLevel < 2) return;
     const supabase = createClient();
     supabase.from('residence_lots')
-      .select('identifiant_local, numero_lot, etage, secteur, composition, tantieme_numerateur, tantieme_denominateur, plan_kind, plan_num')
-      .not('plan_kind', 'is', null)
-      .then(({ data }: { data: (ResidenceLotInfo & { plan_kind: string; plan_num: string })[] | null }) => {
+      .select('identifiant_local, numero_lot, etage, secteur, composition, tantieme_numerateur, tantieme_denominateur, proprietaire_officiel, proprietaire_confiance, autres_lots_du_meme_proprietaire, historique_proprietaires, anomalie_signalee, concordance_residence_ts, charges_reparties_total, charges_solde_total, charges_comptes, plan_kind, plan_num')
+      .then(({ data }: { data: (ResidenceLotInfo & { plan_kind: string | null; plan_num: string | null })[] | null }) => {
         if (!data) return;
-        const map: Record<string, ResidenceLotInfo> = {};
-        data.forEach((l) => { map[`${l.plan_kind}:${l.plan_num}`] = l; });
-        setLotsByPlanKey(map);
+        const byPlanKey: Record<string, ResidenceLotInfo> = {};
+        const byNumero: Record<number, ResidenceLotInfo> = {};
+        data.forEach((l) => {
+          if (l.plan_kind && l.plan_num) byPlanKey[`${l.plan_kind}:${l.plan_num}`] = l;
+          byNumero[l.numero_lot] = l;
+        });
+        setLotsByPlanKey(byPlanKey);
+        setLotsByNumero(byNumero);
       });
   }, [isSuper, residenceLevel]);
 
@@ -1227,8 +1311,16 @@ export default function RenderPage() {
             </h1>
             <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest mt-2">
               Chambre de bonne
+              {selected.linkedApartmentId != null && (
+                <span className="text-red-500"> ↔ Appartement {selected.linkedApartmentId}</span>
+              )}
             </p>
-            {selectedLot && <LotFiche lot={selectedLot} />}
+            {selected.ownerNameOfficial && (
+              <p className="text-xs text-zinc-300 mt-1">
+                Propriétaire officiel : <span className="text-white font-semibold">{selected.ownerNameOfficial}</span>
+              </p>
+            )}
+            {selectedLot && <LotFiche lot={selectedLot} lotsByNumero={lotsByNumero} />}
           </>
         ) : selected?.kind === 'garage' ? (
           <>
@@ -1241,7 +1333,15 @@ export default function RenderPage() {
                 <span className="text-red-500"> ↔ Appartement {selected.linkedApartmentId}</span>
               )}
             </p>
-            {selectedLot && <LotFiche lot={selectedLot} />}
+            {selected.ownerNameOfficial && (
+              <p className="text-xs text-zinc-300 mt-1">
+                Propriétaire officiel : <span className="text-white font-semibold">{selected.ownerNameOfficial}</span>
+                {selected.linkedApartmentIdOfficial != null && selected.linkedApartmentIdOfficial !== selected.linkedApartmentId && (
+                  <span className="text-zinc-500"> (lié à l'appartement {selected.linkedApartmentIdOfficial})</span>
+                )}
+              </p>
+            )}
+            {selectedLot && <LotFiche lot={selectedLot} lotsByNumero={lotsByNumero} />}
           </>
         ) : selected ? (
           <>
@@ -1268,7 +1368,7 @@ export default function RenderPage() {
               )}
             </div>
             <ApartmentDimensions apt={selected} />
-            {selectedLot && <LotFiche lot={selectedLot} />}
+            {selectedLot && <LotFiche lot={selectedLot} lotsByNumero={lotsByNumero} />}
             {(isSuper || residenceLevel >= 2) && contactsByApt[selected.num] && (contactsByApt[selected.num].telephone || contactsByApt[selected.num].email) && (
               <div className="flex flex-col gap-1.5 mt-3 pointer-events-auto w-fit">
                 {contactsByApt[selected.num].telephone && (

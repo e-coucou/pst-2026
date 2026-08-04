@@ -155,55 +155,55 @@ export const residenceData = {
     ],
     "apartments": [
       {
-        "id": 1, "num": "1", "occupant": "François Pozzo",
+        "id": 1, "num": "1", "lot1957": 49, "ownerVerified": true, "occupant": "François Pozzo",
         "section": "principale", "col": 1, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true, "extraSouthDepth": 1.5
       },
       {
-        "id": 2, "num": "2", "occupant": "Perruzi",
+        "id": 2, "num": "2", "lot1957": 50, "ownerVerified": true, "occupant": "Perruzi",
         "section": "principale", "col": 2, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true, "extraSouthDepth": 1.5
       },
       {
-        "id": 3, "num": "3", "occupant": "Miniotte",
+        "id": 3, "num": "3", "lot1957": 51, "ownerVerified": true, "occupant": "Miniotte",
         "section": "principale", "col": 3, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true, "extraSouthDepth": 1.5
       },
       {
-        "id": 4, "num": "4", "occupant": "Millian-Perrin",
+        "id": 4, "num": "4", "lot1957": 52, "ownerVerified": false, "occupant": "Millian-Perrin",
         "section": "principale", "col": 4, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true, "extraSouthDepth": 1.5
       },
       {
-        "id": 5, "num": "5", "occupant": "Bonhomme",
+        "id": 5, "num": "5", "lot1957": 53, "ownerVerified": true, "occupant": "Bonhomme",
         "section": "principale", "col": 5, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true, "extraSouthDepth": 1.5
       },
       {
-        "id": 6, "num": "6", "occupant": "Bonhomme",
+        "id": 6, "num": "6", "lot1957": 54, "ownerVerified": true, "occupant": "Bonhomme",
         "section": "principale", "col": 6, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true, "extraSouthDepth": 1.5
       },
       {
-        "id": 7, "num": "7", "occupant": "Chauvin",
+        "id": 7, "num": "7", "lot1957": 55, "ownerVerified": false, "occupant": "Chauvin",
         "section": "principale", "col": 7, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true, "extraSouthDepth": 1.5
       },
       {
-        "id": 8, "num": "8", "occupant": "Seguin",
+        "id": 8, "num": "8", "lot1957": 56, "ownerVerified": true, "occupant": "Seguin",
         "section": "principale", "col": 8, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true, "extraSouthDepth": 1.5
       },
       {
-        "id": 9, "num": "9", "occupant": "Vahé",
+        "id": 9, "num": "9", "lot1957": 57, "ownerVerified": false, "occupant": "Vahé",
         "section": "principale", "col": 9, "colSpan": 1, "row": 0, "rowSpan": 2, "face": "facade", "avant": "oui", "southCorridorExtra": true, "extraSouthDepth": 1.5
       },
       {
-        "id": 10, "num": "10", "occupant": "Mailian",
+        "id": 10, "num": "10", "lot1957": 58, "ownerVerified": true, "occupant": "Mailian",
         "section": "sectionB", "col": 1, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "both", "up": "non", "corridorRear": true
       },
       {
-        "id": 11, "num": "11", "occupant": "Mailian",
+        "id": 11, "num": "11", "lot1957": 59, "ownerVerified": true, "occupant": "Mailian",
         "section": "sectionB", "col": 2, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "both", "up": "non", "corridorRear": true
       },
       {
-        "id": 12, "num": "12", "occupant": "Casellas Bethuel",
+        "id": 12, "num": "12", "lot1957": 60, "ownerVerified": false, "occupant": "Casellas Bethuel",
         "section": "sectionB", "col": 3, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "both", "up": "non", "corridorRear": true
       },
       {
-        "id": 13, "num": "13", "occupant": "Repetto Carboneschi",
+        "id": 13, "num": "13", "lot1957": 61, "ownerVerified": false, "occupant": "Repetto Carboneschi",
         "section": "sectionB", "col": 4, "colSpan": 1, "row": 1, "rowSpan": 2, "face": "both", "up": "non", "corridorRear": true, "colCour": 1, "colSpanCour": 4, "courExtraWidth": 0.8
       },
       {
@@ -243,107 +243,107 @@ export const residenceData = {
         "northCorridorWidthMeters": 3
       },
       {
-        "id": 21, "num": "21", "occupant": "Hyams Wikler", "occupantCour": "Arthur",
+        "id": 21, "num": "21", "lot1957": 69, "ownerVerified": false, "occupant": "Hyams Wikler", "occupantCour": "Arthur",
         "section": "principale", "col": 1, "colSpan": 1, "row": 4, "rowSpan": 2, "face": "both","up": "non", "rearExtensionDepth": 1.5
       },
       {
-        "id": 22, "num": "22", "occupant": "Cancel",
+        "id": 22, "num": "22", "lot1957": 70, "ownerVerified": true, "occupant": "Cancel",
         "section": "principale", "col": 2, "colSpan": 1, "row": 4, "rowSpan": 2, "face": "both","up": "non", "rearExtensionDepth": 1.5
       },
       {
-        "id": 23, "num": "23", "occupant": "Coppola",
+        "id": 23, "num": "23", "lot1957": 71, "ownerVerified": true, "occupant": "Coppola",
         "section": "principale", "col": 3, "colSpan": 1, "row": 4, "rowSpan": 2, "face": "both","up": "non", "rearExtensionDepth": 1.5
       },
       {
-        "id": 24, "num": "24", "occupant": "Milot-Mercet",
+        "id": 24, "num": "24", "lot1957": 72, "ownerVerified": true, "occupant": "Milot-Mercet",
         "section": "principale", "col": 4, "colSpan": 1, "row": 4, "rowSpan": 2, "face": "both","up": "non", "rearExtensionDepth": 1.5
       },
       {
-        "id": 25, "num": "25", "occupant": "Chassagne",
+        "id": 25, "num": "25", "lot1957": 73, "ownerVerified": true, "occupant": "Chassagne",
         "section": "principale", "col": 5, "colSpan": 1, "row": 4, "rowSpan": 2, "face": "both","up": "non", "rearExtensionDepth": 1.5
       },
       {
-        "id": 26, "num": "26", "occupant": "Niederhauser",
+        "id": 26, "num": "26", "lot1957": 74, "ownerVerified": true, "occupant": "Niederhauser",
         "section": "principale", "col": 6, "colSpan": 1, "row": 4, "rowSpan": 2, "face": "both","up": "non", "rearExtensionDepth": 1.5
       },
       {
-        "id": 27, "num": "27", "occupant": "Capitani",
+        "id": 27, "num": "27", "lot1957": 75, "ownerVerified": false, "occupant": "Capitani",
         "section": "principale", "col": 7, "colSpan": 1, "row": 4, "rowSpan": 2, "face": "both","up": "non", "rearExtensionDepth": 1.5
       },
       {
-        "id": 28, "num": "28", "occupant": "Laberine",
+        "id": 28, "num": "28", "lot1957": 76, "ownerVerified": false, "occupant": "Laberine",
         "section": "principale", "col": 8, "colSpan": 1, "row": 4, "rowSpan": 2, "face": "both","up": "non", "rearExtensionDepth": 1.5
       },
       {
-        "id": 29, "num": "29", "occupant": "Letexier",
+        "id": 29, "num": "29", "lot1957": 77, "ownerVerified": true, "occupant": "Letexier",
         "section": "principale", "col": 9, "colSpan": 1, "row": 4, "rowSpan": 2, "face": "both","up": "non", "rearExtensionDepth": 1.5
       },
       {
-        "id": 30, "num": "30", "occupant": "RochedePins", "occupantCour": "Pipige",
+        "id": 30, "num": "30", "lot1957": 78, "ownerVerified": true, "occupant": "RochedePins", "occupantCour": "Pipige",
         "section": "sectionB", "col": 1, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both", "up": "oui"
       },
       {
-        "id": 31, "num": "31", "occupant": "Wissler",
+        "id": 31, "num": "31", "lot1957": 79, "ownerVerified": false, "occupant": "Wissler",
         "section": "sectionB", "col": 2, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both", "up": "oui"
       },
       {
-        "id": 32, "num": "32", "occupant": "Schumacher",
+        "id": 32, "num": "32", "lot1957": 80, "ownerVerified": false, "occupant": "Schumacher",
         "section": "sectionB", "col": 3, "colSpan": 1, "row": 3, "rowSpan": 2, "face": "both", "up": "oui"
       },
       {
-        "id": 33, "num": "33", "occupant": "Smadja",
+        "id": 33, "num": "33", "lot1957": 81, "ownerVerified": false, "occupant": "Smadja",
         "section": "sectionB", "col": 4, "colSpan": 1, "courExtraWidth": 0.8, "row": 3, "rowSpan": 2, "face": "both", "up": "oui"
       },
       {
-        "id": 34, "num": "34", "occupant": "Montezin","pos":"haute",
+        "id": 34, "num": "34", "lot1957": 82, "ownerVerified": true, "occupant": "Montezin","pos":"haute",
         "section": "principale", "col": 1, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
-        "id": 35, "num": "35", "occupant": "Prevot Arquin","pos":"haute",
+        "id": 35, "num": "35", "lot1957": 83, "ownerVerified": false, "occupant": "Prevot Arquin","pos":"haute",
         "section": "principale", "col": 2, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non","step": "left"
       },
       {
-        "id": 36, "num": "36", "occupant": "Donville","pos":"haute",
+        "id": 36, "num": "36", "lot1957": 84, "ownerVerified": false, "occupant": "Donville","pos":"haute",
         "section": "principale", "col": 3, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
-        "id": 37, "num": "37", "occupant": "Berthet","pos":"haute",
+        "id": 37, "num": "37", "lot1957": 85, "ownerVerified": true, "occupant": "Berthet","pos":"haute",
         "section": "principale", "col": 4, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non","step": "left"
       },
       {
-        "id": 38, "num": "38", "occupant": "Floriot","pos":"haute",
+        "id": 38, "num": "38", "lot1957": 86, "ownerVerified": true, "occupant": "Floriot","pos":"haute",
         "section": "principale", "col": 5, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
-        "id": 39, "num": "39", "occupant": "Bresson","pos":"haute",
+        "id": 39, "num": "39", "lot1957": 87, "ownerVerified": false, "occupant": "Bresson","pos":"haute",
         "section": "principale", "col": 6, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non","step": "left"
       },
       {
-        "id": 40, "num": "40", "occupant": "Marcet","pos":"haute",
+        "id": 40, "num": "40", "lot1957": 88, "ownerVerified": true, "occupant": "Marcet","pos":"haute",
         "section": "principale", "col": 7, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
-        "id": 41, "num": "41", "occupant": "Souchon","pos":"haute",
+        "id": 41, "num": "41", "lot1957": 89, "ownerVerified": true, "occupant": "Souchon","pos":"haute",
         "section": "principale", "col": 8, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non","step": "left"
       },
       {
-        "id": 42, "num": "42", "occupant": "Dumont-Maur","pos":"haute",
+        "id": 42, "num": "42", "lot1957": 90, "ownerVerified": true, "occupant": "Dumont-Maur","pos":"haute",
         "section": "principale", "col": 9, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
-        "id": 43, "num": "43", "occupant": "Onfray","pos":"haute",
+        "id": 43, "num": "43", "lot1957": 91, "ownerVerified": false, "occupant": "Onfray","pos":"haute",
         "section": "sectionB", "col": 1, "colSpan": 1.5, "colSpanCour": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui","extendLeft": "oui","step": "right"
       },
       {
-        "id": 44, "num": "44", "occupant": "Jenny-Staub", "occupantCour": "Daniel","pos":"haute",
+        "id": 44, "num": "44", "lot1957": 92, "ownerVerified": true, "occupant": "Jenny-Staub", "occupantCour": "Daniel","pos":"haute",
         "section": "sectionB", "col": 2, "colSpan": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui", 'step': "left",
       },
       {
-        "id": 45, "num": "45", "occupant": "Griffoul","pos":"haute",
+        "id": 45, "num": "45", "lot1957": 93, "ownerVerified": true, "occupant": "Griffoul","pos":"haute",
         "section": "sectionB", "col": 3, "colSpan": 1, "row": 5, "rowSpan": 2, "face": "both", "up": "oui", "step": "right"
       },
       {
-        "id": 46, "num": "46", "occupant": "Tristan", "type" : "cour","pos":"haute",
+        "id": 46, "num": "46", "lot1957": 94, "ownerVerified": true, "occupant": "Tristan", "type" : "cour","pos":"haute",
         "section": "sectionB", "col": 4, "colSpan": 1, "courExtraWidth": 0.8, "row": 5, "rowSpan": 2, "face": "both", "up": "oui", "step":"left"
       },
       {
@@ -386,105 +386,105 @@ export const residenceData = {
         "comment": "2 blocs de large selon plan, démarre à la col 3.5. Absorbe le couloir intérieur sur sa moitié ouest (forme en L, 3m vers le sud, même niveau que la façade)"
       },
       {
-        "id": 54, "num": "54", "occupant": "Bellemin-Noel","pos":"haute",
+        "id": 54, "num": "54", "lot1957": 102, "ownerVerified": false, "occupant": "Bellemin-Noel","pos":"haute",
         "section": "principale", "col": 1, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up": "oui","step":"right"
       },
       {
-        "id": 55, "num": "55", "occupant": "Barat","pos":"haute",
+        "id": 55, "num": "55", "lot1957": 103, "ownerVerified": true, "occupant": "Barat","pos":"haute",
         "section": "principale", "col": 2, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"left"
       },
       {
-        "id": 56, "num": "56", "occupant": "Innebel","pos":"haute",
+        "id": 56, "num": "56", "lot1957": 104, "ownerVerified": true, "occupant": "Innebel","pos":"haute",
         "section": "principale", "col": 3, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"right"
       },
       {
-        "id": 57, "num": "57", "occupant": "Consorts","pos":"haute",
+        "id": 57, "num": "57", "lot1957": 105, "ownerVerified": false, "occupant": "Consorts","pos":"haute",
         "section": "principale", "col": 4, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"left"
       },
       {
-        "id": 58, "num": "58", "occupant": "Frealle","pos":"haute",
+        "id": 58, "num": "58", "lot1957": 106, "ownerVerified": true, "occupant": "Frealle","pos":"haute",
         "section": "principale", "col": 5, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"right"
       },
       {
-        "id": 59, "num": "59", "occupant": "Autin","pos":"haute",
+        "id": 59, "num": "59", "lot1957": 107, "ownerVerified": false, "occupant": "Autin","pos":"haute",
         "section": "principale", "col": 6, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"left"
       },
       {
-        "id": 60, "num": "60", "occupant": "Lepersonne","pos":"haute",
+        "id": 60, "num": "60", "lot1957": 108, "ownerVerified": false, "occupant": "Lepersonne","pos":"haute",
         "section": "principale", "col": 7, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"right"
       },
       {
-        "id": 61, "num": "61", "occupant": "Mitsou Coste","pos":"haute",
+        "id": 61, "num": "61", "lot1957": 109, "ownerVerified": false, "occupant": "Mitsou Coste","pos":"haute",
         "section": "principale", "col": 8, "colSpan": 1, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"left"
       },
       {
-        "id": 62, "num": "62", "occupant": "Griffoul","pos":"haute",
+        "id": 62, "num": "62", "lot1957": 110, "ownerVerified": false, "occupant": "Griffoul","pos":"haute",
         "section": "principale", "col": 9, "colSpan": 1, "colSpanCour": 1.5, "row": 8, "rowSpan": 2, "face": "both", "up":"oui", "step":"right"
       },
       {
-        "id": 63, "num": "63", "occupant": "Peyron","pos":"haute",
+        "id": 63, "num": "63", "lot1957": 111, "ownerVerified": true, "occupant": "Peyron","pos":"haute",
         "section": "sectionB", "col": 1, "colSpan": 1.5, "colSpanCour": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non","extendLeft": "oui","step":"right"
       },
       {
-        "id": 64, "num": "64", "occupant": "Morello","pos":"haute",
+        "id": 64, "num": "64", "lot1957": 112, "ownerVerified": true, "occupant": "Morello","pos":"haute",
         "section": "sectionB", "col": 2, "colSpan": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non","step":"left"
       },
       {
-        "id": 65, "num": "65", "occupant": "Borgialli","pos":"haute",
+        "id": 65, "num": "65", "lot1957": 113, "ownerVerified": false, "occupant": "Borgialli","pos":"haute",
         "section": "sectionB", "col": 3, "colSpan": 1, "row": 9, "rowSpan": 2, "face": "both","up": "non", "step":"right"
       },
       {
-        "id": 66, "num": "66", "occupant": "Charpin", "occupantCour": "Olivier","pos":"haute",
+        "id": 66, "num": "66", "lot1957": 114, "ownerVerified": false, "occupant": "Charpin", "occupantCour": "Olivier","pos":"haute",
         "section": "sectionB", "col": 4, "colSpan": 1, "courExtraWidth": 0.8, "row": 9, "rowSpan": 2, "face": "both","up": "non", 'step': "left"
       }
     ],
     "chambresDeBonne": [
-      { "id": 1, "num": "1", "parentId": 21, "index": 0, "splitCount": 2 },
-      { "id": 2, "num": "2", "parentId": 21, "index": 1, "splitCount": 2 },
-      { "id": 3, "num": "3", "parentId": 22, "index": 0, "splitCount": 2 },
-      { "id": 4, "num": "4", "parentId": 22, "index": 1, "splitCount": 2 },
-      { "id": 5, "num": "5", "parentId": 23, "index": 0, "splitCount": 2 },
-      { "id": 6, "num": "6", "parentId": 23, "index": 1, "splitCount": 2 },
-      { "id": 7, "num": "7", "parentId": 24, "index": 0, "splitCount": 2 },
-      { "id": 8, "num": "8", "parentId": 24, "index": 1, "splitCount": 2 },
-      { "id": 9, "num": "9", "parentId": 25, "index": 0, "splitCount": 2 },
-      { "id": 10, "num": "10", "parentId": 25, "index": 1, "splitCount": 2 },
-      { "id": 11, "num": "11", "parentId": 26, "index": 0, "splitCount": 2 },
-      { "id": 12, "num": "12", "parentId": 26, "index": 1, "splitCount": 2 },
-      { "id": 13, "num": "13", "parentId": 27, "index": 0, "splitCount": 2 },
-      { "id": 14, "num": "14", "parentId": 27, "index": 1, "splitCount": 2 },
-      { "id": 15, "num": "15", "parentId": 28, "index": 0, "splitCount": 2 },
-      { "id": 16, "num": "16", "parentId": 28, "index": 1, "splitCount": 2 },
-      { "id": 17, "num": "17", "parentId": 29, "index": 0, "splitCount": 2 },
-      { "id": 18, "num": "18", "parentId": 29, "index": 1, "splitCount": 2 },
-      { "id": 19, "num": "19", "parentId": 19, "index": 0, "splitCount": 4 },
-      { "id": 20, "num": "20", "parentId": 19, "index": 1, "splitCount": 4 },
-      { "id": 21, "num": "21", "parentId": 19, "index": 2, "splitCount": 4 },
-      { "id": 22, "num": "22", "parentId": 19, "index": 3, "splitCount": 4 },
-      { "id": 23, "num": "23", "parentId": 20, "index": 0, "splitCount": 4 },
-      { "id": 24, "num": "24", "parentId": 20, "index": 1, "splitCount": 4 },
-      { "id": 25, "num": "25", "parentId": 20, "index": 2, "splitCount": 4 },
-      { "id": 26, "num": "26", "parentId": 20, "index": 3, "splitCount": 4 }
+      { "id": 1, "num": "1", "parentId": 21, "index": 0, "splitCount": 2, "lot1957": 170, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 2, "num": "2", "parentId": 21, "index": 1, "splitCount": 2, "lot1957": 171, "ownerNameOfficial": "SCI MARIOUDOU (Mme Cadel)", "ownerSource": "PV/convocation AG 2026", "linkedApartmentId": null },
+      { "id": 3, "num": "3", "parentId": 22, "index": 0, "splitCount": 2, "lot1957": 172, "ownerNameOfficial": "SCI MARIOUDOU (Mme Cadel)", "ownerSource": "PV/convocation AG 2026", "linkedApartmentId": null },
+      { "id": 4, "num": "4", "parentId": 22, "index": 1, "splitCount": 2, "lot1957": 173, "ownerNameOfficial": "SCI MARIOUDOU (Mme Cadel)", "ownerSource": "PV/convocation AG 2026", "linkedApartmentId": null },
+      { "id": 5, "num": "5", "parentId": 23, "index": 0, "splitCount": 2, "lot1957": 174, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 6, "num": "6", "parentId": 23, "index": 1, "splitCount": 2, "lot1957": 175, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 7, "num": "7", "parentId": 24, "index": 0, "splitCount": 2, "lot1957": 176, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 8, "num": "8", "parentId": 24, "index": 1, "splitCount": 2, "lot1957": 177, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 9, "num": "9", "parentId": 25, "index": 0, "splitCount": 2, "lot1957": 178, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 10, "num": "10", "parentId": 25, "index": 1, "splitCount": 2, "lot1957": 179, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 11, "num": "11", "parentId": 26, "index": 0, "splitCount": 2, "lot1957": 180, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 12, "num": "12", "parentId": 26, "index": 1, "splitCount": 2, "lot1957": 181, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 13, "num": "13", "parentId": 27, "index": 0, "splitCount": 2, "lot1957": 182, "ownerNameOfficial": "Madame DIOT", "ownerSource": "PV/convocation AG 2022", "linkedApartmentId": null },
+      { "id": 14, "num": "14", "parentId": 27, "index": 1, "splitCount": 2, "lot1957": 183, "ownerNameOfficial": "Madame DIOT", "ownerSource": "PV/convocation AG 2022", "linkedApartmentId": null },
+      { "id": 15, "num": "15", "parentId": 28, "index": 0, "splitCount": 2, "lot1957": 184, "ownerNameOfficial": "Madame DIOT", "ownerSource": "PV/convocation AG 2022", "linkedApartmentId": null },
+      { "id": 16, "num": "16", "parentId": 28, "index": 1, "splitCount": 2, "lot1957": 185, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 17, "num": "17", "parentId": 29, "index": 0, "splitCount": 2, "lot1957": 186, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 18, "num": "18", "parentId": 29, "index": 1, "splitCount": 2, "lot1957": 187, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 19, "num": "19", "parentId": 19, "index": 0, "splitCount": 4, "lot1957": 188, "ownerNameOfficial": "Madame MAILIAN Tamara (convocation 2026)", "ownerSource": "PV/convocation AG 2026", "linkedApartmentId": 10 },
+      { "id": 20, "num": "20", "parentId": 19, "index": 1, "splitCount": 4, "lot1957": 189, "ownerNameOfficial": "Madame et Monsieur VIGNIER Eric", "ownerSource": "PV/convocation AG 2025", "linkedApartmentId": 42 },
+      { "id": 21, "num": "21", "parentId": 19, "index": 2, "splitCount": 4, "lot1957": 190, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 22, "num": "22", "parentId": 19, "index": 3, "splitCount": 4, "lot1957": 191, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 23, "num": "23", "parentId": 20, "index": 0, "splitCount": 4, "lot1957": 192, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 24, "num": "24", "parentId": 20, "index": 1, "splitCount": 4, "lot1957": 193, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 25, "num": "25", "parentId": 20, "index": 2, "splitCount": 4, "lot1957": 194, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null },
+      { "id": 26, "num": "26", "parentId": 20, "index": 3, "splitCount": 4, "lot1957": 195, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentId": null }
     ],
     "garages": [
-      { "id": 11, "num": "11", "parentId": 21, "index": 0, "splitCount": 2, "linkedApartmentId": 62 },
-      { "id": 12, "num": "12", "parentId": 21, "index": 1, "splitCount": 2, "linkedApartmentId": 45 },
-      { "id": 13, "num": "13", "parentId": 22, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 14, "num": "14", "parentId": 22, "index": 1, "splitCount": 2, "linkedApartmentId": 63 },
-      { "id": 15, "num": "15", "parentId": 23, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 16, "num": "16", "parentId": 23, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 17, "num": "17", "parentId": 24, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 18, "num": "18", "parentId": 24, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 19, "num": "19", "parentId": 25, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 20, "num": "20", "parentId": 25, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 21, "num": "21", "parentId": 26, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 22, "num": "22", "parentId": 26, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 23, "num": "23", "parentId": 27, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 24, "num": "24", "parentId": 27, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 25, "num": "25", "parentId": 28, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 26, "num": "26", "parentId": 28, "index": 1, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 27, "num": "27", "parentId": 29, "index": 0, "splitCount": 2, "linkedApartmentId": null },
-      { "id": 28, "num": "28", "parentId": 29, "index": 1, "splitCount": 2, "linkedApartmentId": 66 }
+      { "id": 11, "num": "11", "parentId": 21, "index": 0, "splitCount": 2, "linkedApartmentId": 62, "lot1957": 115, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 12, "num": "12", "parentId": 21, "index": 1, "splitCount": 2, "linkedApartmentId": 45, "lot1957": 116, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 13, "num": "13", "parentId": 22, "index": 0, "splitCount": 2, "linkedApartmentId": null, "lot1957": 117, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 14, "num": "14", "parentId": 22, "index": 1, "splitCount": 2, "linkedApartmentId": 63, "lot1957": 118, "ownerNameOfficial": "Madame Geneviève PEYRON", "ownerSource": "PV/convocation AG 2025", "linkedApartmentIdOfficial": 63 },
+      { "id": 15, "num": "15", "parentId": 23, "index": 0, "splitCount": 2, "linkedApartmentId": null, "lot1957": 119, "ownerNameOfficial": "Monsieur et Madame ROCHE", "ownerSource": "PV/convocation AG 2010", "linkedApartmentIdOfficial": 30 },
+      { "id": 16, "num": "16", "parentId": 23, "index": 1, "splitCount": 2, "linkedApartmentId": null, "lot1957": 120, "ownerNameOfficial": "Madame DONVILLE", "ownerSource": "PV/convocation AG 2016", "linkedApartmentIdOfficial": null },
+      { "id": 17, "num": "17", "parentId": 24, "index": 0, "splitCount": 2, "linkedApartmentId": null, "lot1957": 121, "ownerNameOfficial": "Madame et Monsieur VIGNIER Eric", "ownerSource": "PV/convocation AG 2025", "linkedApartmentIdOfficial": 42 },
+      { "id": 18, "num": "18", "parentId": 24, "index": 1, "splitCount": 2, "linkedApartmentId": null, "lot1957": 122, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 19, "num": "19", "parentId": 25, "index": 0, "splitCount": 2, "linkedApartmentId": null, "lot1957": 123, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 20, "num": "20", "parentId": 25, "index": 1, "splitCount": 2, "linkedApartmentId": null, "lot1957": 124, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 21, "num": "21", "parentId": 26, "index": 0, "splitCount": 2, "linkedApartmentId": null, "lot1957": 125, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 22, "num": "22", "parentId": 26, "index": 1, "splitCount": 2, "linkedApartmentId": null, "lot1957": 126, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 23, "num": "23", "parentId": 27, "index": 0, "splitCount": 2, "linkedApartmentId": null, "lot1957": 127, "ownerNameOfficial": "Monsieur et Madame TRUCCHI", "ownerSource": "PV/convocation AG 2026", "linkedApartmentIdOfficial": 53 },
+      { "id": 24, "num": "24", "parentId": 27, "index": 1, "splitCount": 2, "linkedApartmentId": null, "lot1957": 128, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 25, "num": "25", "parentId": 28, "index": 0, "splitCount": 2, "linkedApartmentId": null, "lot1957": 129, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 26, "num": "26", "parentId": 28, "index": 1, "splitCount": 2, "linkedApartmentId": null, "lot1957": 130, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 27, "num": "27", "parentId": 29, "index": 0, "splitCount": 2, "linkedApartmentId": null, "lot1957": 131, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null },
+      { "id": 28, "num": "28", "parentId": 29, "index": 1, "splitCount": 2, "linkedApartmentId": 66, "lot1957": 132, "ownerNameOfficial": null, "ownerSource": null, "linkedApartmentIdOfficial": null }
     ],
     "derivedFormulas": {
       "description": "Calcul boîte 3D pour Three.js / React Three Fiber",
