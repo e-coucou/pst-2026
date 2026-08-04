@@ -442,7 +442,7 @@
 	 const selectionOK = (selectedPointeurs.length === requiredCount && selectedTireurs.length === requiredCount);
 	 // En mode tirage en direct, le draft se peuple pair par pair : on bloque le lancement
 	 // tant qu'il n'est pas complet (en mode auto, toujours vrai instantanément).
-	 const draftComplete = draftP.length === requiredCount / 2;
+	 const draftComplete = draftP.length === requiredCount;
 	 // Pools restants pour le tirage en direct (joueurs sélectionnés pas encore dans le draft).
 	 const drawnPIds = new Set(draftP.map(p => p.id));
 	 const drawnTIds = new Set(draftT.map(t => t.id));
