@@ -15,6 +15,7 @@ interface SeasonStat {
   finale_jouee: string;
   rank_elo_final: number;
   rank_elo_modern_final: number;
+  rank_skill_final?: number;
   elo?: number; // Optionnel selon ta fusion
 }
 
@@ -147,6 +148,9 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
 					    <div className="flex flex-col text-right md:hidden">
 					        <span className="text-[9px] text-gray-400 uppercase font-black font-mono">ELO {m.elo_value.toFixed(0)}</span>
 					        <span className="text-[9px] text-purple-600 uppercase font-black font-mono">MOD {m.elo_modern_value.toFixed(0)}</span>
+					        {m.skill_ordinal != null && (
+					          <span className="text-[9px] text-emerald-500 uppercase font-black font-mono">DYN {m.skill_ordinal.toFixed(0)}</span>
+					        )}
 					    </div>
 					  </div>
 					{/* BLOC DROITE : ELO & RANG (Caché sur mobile ou réorganisé) */}
@@ -159,6 +163,12 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
 					      <p className="text-[8px] text-gray-400 font-black uppercase">Moderne</p>
 					      <p className="text-sm font-mono font-bold text-purple-400">{m.elo_modern_value.toFixed(1)}</p>
 					    </div>
+					    {m.skill_ordinal != null && (
+					      <div className="text-center">
+					        <p className="text-[8px] text-gray-400 font-black uppercase">Dynamique</p>
+					        <p className="text-sm font-mono font-bold text-emerald-500">{m.skill_ordinal.toFixed(1)}</p>
+					      </div>
+					    )}
 					  </div>
 
 					  <div className="flex justify-between items-center w-full md:w-auto md:col-span-2 md:text-right border-t border-white/5 pt-2 md:border-0 md:pt-0">

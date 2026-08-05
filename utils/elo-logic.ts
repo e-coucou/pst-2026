@@ -1,6 +1,6 @@
 // utils/elo-logic.ts
 
-import { calculatePstElo, calculateModernElo, EloSettings } from '@/lib/elo-engine';
+import { calculatePstElo, calculateModernElo, calculateSkillRating, makeSkillRating, skillOrdinal, EloSettings, Rating } from '@/lib/elo-engine';
 
 /**
  * Interface pour les résultats d'un calcul de match
@@ -82,8 +82,8 @@ export const updateMatchScore = async (
     .from('live_matches')
     .select(`
       *,
-      team1:team1_id (elo_start, modern_start),
-      team2:team2_id (elo_start, modern_start)
+      team1:team1_id (elo_start, modern_start, skill_mu_pointeur, skill_sigma_pointeur, skill_mu_tireur, skill_sigma_tireur),
+      team2:team2_id (elo_start, modern_start, skill_mu_pointeur, skill_sigma_pointeur, skill_mu_tireur, skill_sigma_tireur)
     `)
     .eq('id', matchId)
     .single();
@@ -103,6 +103,25 @@ export const updateMatchScore = async (
     eloSettings
   );
 
+  // "Dynamique" (bayésien) : comme elo_start/modern_start, on part de l'état figé à la
+  // formation de l'équipe (pas d'un chaînage séquentiel intra-tournoi — les poules peuvent se
+  // jouer en parallèle sur plusieurs terrains) ; delta_skill = mouvement moyen d'ordinal de
+  // l'équipe pour ce match, pour rester affichable comme les deux autres systèmes.
+  const skillTeam1Before: [Rating, Rating] = [
+    makeSkillRating(match.team1.skill_mu_tireur, match.team1.skill_sigma_tireur),
+    makeSkillRating(match.team1.skill_mu_pointeur, match.team1.skill_sigma_pointeur),
+  ];
+  const skillTeam2Before: [Rating, Rating] = [
+    makeSkillRating(match.team2.skill_mu_tireur, match.team2.skill_sigma_tireur),
+    makeSkillRating(match.team2.skill_mu_pointeur, match.team2.skill_sigma_pointeur),
+  ];
+  const { team1: skillTeam1After, team2: skillTeam2After } = calculateSkillRating(
+    skillTeam1Before, skillTeam2Before, score1, score2
+  );
+  const avgOrdinal = (r: [Rating, Rating]) => (skillOrdinal(r[0]) + skillOrdinal(r[1])) / 2;
+  const deltaSkillTeam1 = avgOrdinal(skillTeam1After) - avgOrdinal(skillTeam1Before);
+  const deltaSkillTeam2 = avgOrdinal(skillTeam2After) - avgOrdinal(skillTeam2Before);
+
   // 3. Mettre à jour la base de données
   const { data: updatedMatch, error: updateError } = await supabase
     .from('live_matches')
@@ -113,6 +132,8 @@ export const updateMatchScore = async (
       delta_elo_team2: -deltaClassic,
       delta_modern_team1: deltaModern,
       delta_modern_team2: -deltaModern,
+      delta_skill_team1: deltaSkillTeam1,
+      delta_skill_team2: deltaSkillTeam2,
       status: 'TERMINE',
       updated_at: new Date().toISOString()
     })

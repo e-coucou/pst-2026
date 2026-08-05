@@ -3,7 +3,19 @@ import Link from 'next/link';
 import { Trophy, ArrowRight, ChevronLeft, Target, Zap, User, Activity, TrendingUp,Star } from 'lucide-react';
 
 
-export default async function Leaderboard() {
+type Method = 'pst' | 'modern' | 'skill';
+
+const METHOD_META: Record<Method, { label: string; field: 'elo_value' | 'elo_modern_value' | 'skill_ordinal'; color: string; ring: string }> = {
+  pst: { label: 'Classic', field: 'elo_value', color: 'text-red-600', ring: 'bg-red-600' },
+  modern: { label: 'Modern', field: 'elo_modern_value', color: 'text-purple-400', ring: 'bg-purple-600' },
+  skill: { label: 'Dynamique', field: 'skill_ordinal', color: 'text-emerald-400', ring: 'bg-emerald-600' },
+};
+
+export default async function Leaderboard({ searchParams }: { searchParams: Promise<{ method?: string }> }) {
+  const { method: rawMethod } = await searchParams;
+  const method: Method = rawMethod === 'modern' || rawMethod === 'skill' ? rawMethod : 'pst';
+  const meta = METHOD_META[method];
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -12,7 +24,7 @@ export default async function Leaderboard() {
   // 1. Récupération des profils et de l'historique
   const [profilesRes, historyRes, favoriRes] = await Promise.all([
     supabase.from('profiles').select('id, nom, photo_url'),
-    supabase.from('elo_history').select('player_id, elo_value').order('id', { ascending: false }),
+    supabase.from('elo_history').select('player_id, elo_value, elo_modern_value, skill_ordinal').order('id', { ascending: false }),
     supabase.from('site_users').select('favoris').eq('id', user.id).single()
   ]);
 
@@ -41,24 +53,27 @@ export default async function Leaderboard() {
     });
   }
 
-  // 3. Mapping des scores les plus récents
+  // 3. Mapping des scores les plus récents (selon la méthode de classement sélectionnée)
   const latestScoresMap: Record<string, number> = {};
   rawHistory.forEach(entry => {
     const pid = String(entry.player_id);
-    if (!(pid in latestScoresMap)) {
-      latestScoresMap[pid] = parseFloat(entry.elo_value);
+    if (!(pid in latestScoresMap) && entry[meta.field] != null) {
+      latestScoresMap[pid] = parseFloat(entry[meta.field]);
     }
   });
 
   // 4. Construction du tableau final
+  // Défaut par méthode : 100 pour Classic/Modern (elo_init), 0 pour Dynamique (ordinal d'un
+  // rating openskill jamais mis à jour, mu=25/sigma=8.33 -> mu-3*sigma=0).
+  const defaultScore = method === 'skill' ? 0 : 100;
   const leaderboard = profiles.map(p => {
     const pid = String(p.id);
     return {
       id: p.id,
       nom: p.nom || `Joueur #${p.id}`,
-      elo: latestScoresMap[pid] ?? 100,
+      elo: latestScoresMap[pid] ?? defaultScore,
       // On récupère l'URL signée depuis le dictionnaire
-      photo: p.photo_url ? signedUrls[p.photo_url] : null 
+      photo: p.photo_url ? signedUrls[p.photo_url] : null
     };
   }).sort((a, b) => b.elo - a.elo);
 
@@ -86,8 +101,25 @@ export default async function Leaderboard() {
 	    </Link>
 	  </div>
 
+	{/* Bascule entre les 3 méthodes de classement */}
+	  <div className="max-w-2xl mx-auto mb-6 px-4 flex justify-center gap-3">
+	    {(Object.keys(METHOD_META) as Method[]).map(m => (
+	      <Link
+	        key={m}
+	        href={m === 'pst' ? '/classement' : `/classement?method=${m}`}
+	        className={`px-5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+	          method === m
+	            ? `${METHOD_META[m].ring} text-white shadow-lg`
+	            : 'bg-zinc-900 text-zinc-500 border border-white/5 hover:bg-zinc-800'
+	        }`}
+	      >
+	        {METHOD_META[m].label}
+	      </Link>
+	    ))}
+	  </div>
+
 	{/* Le tableau de classement */}
-      <div className="max-w-2xl mx-auto -mt-8 mb-12 px-4 relative z-10">
+      <div className="max-w-2xl mx-auto -mt-2 mb-12 px-4 relative z-10">
         <div className="bg-zinc-900/50 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
           <div className="divide-y divide-white/5">
             {leaderboard.map((player, index) => {
@@ -122,7 +154,7 @@ export default async function Leaderboard() {
                   {/* ELO */}
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="hidden md:block text-[9px] text-gray-400 font-black uppercase mb-1">ELO</p>
+                      <p className={`hidden md:block text-[9px] font-black uppercase mb-1 ${meta.color}`}>{meta.label}</p>
                       <p className="text-sm sm:text-3xl font-mono font-black italic text-white leading-none">
                         {player.elo.toFixed(0)}
                       </p>

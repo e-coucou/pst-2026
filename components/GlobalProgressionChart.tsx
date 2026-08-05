@@ -44,6 +44,9 @@ const Top16Tooltip = ({ active, payload, favoriId }: any) => {
               <div className="flex items-center gap-1.5 shrink-0">
                 <span className="text-[10px] font-mono font-black text-white italic">{Math.round(player.elo)}</span>
                 <span className="text-[10px] font-mono font-black italic text-purple-500"> / {Math.round(player.modern)}</span>
+                {player.skill != null && (
+                  <span className="text-[10px] font-mono font-black italic text-emerald-500"> / {Math.round(player.skill)}</span>
+                )}
               </div>
             </div>
           ))}
@@ -66,6 +69,9 @@ export default function GlobalProgressionChart({
 }) {
   const favoriId = useFavoriId();
   const [isClient, setIsClient] = useState(false);
+  // Quelle valeur pilote les 31 courbes tracées — le tooltip affiche toujours les 3 valeurs,
+  // seul le tracé change (même principe que le toggle d'EloChart.tsx).
+  const [method, setMethod] = useState<'elo' | 'modern' | 'skill'>('elo');
 
   // Sécurité pour l'hydratation Next.js
   useEffect(() => {
@@ -93,7 +99,7 @@ export default function GlobalProgressionChart({
       // Mise à jour des scores pour ceux qui ont joué
       if (match.players) {
         match.players.forEach((p: any) => {
-          if (p.nom) lastKnownElo[p.nom] = p.elo;
+          if (p.nom && p[method] != null) lastKnownElo[p.nom] = p[method];
         });
       }
 
@@ -118,7 +124,7 @@ export default function GlobalProgressionChart({
     });
 
     return { chartData: data, playerConfigs: configs };
-  }, [timeline, allPlayerNames]);
+  }, [timeline, allPlayerNames, method]);
 
   // Si on n'est pas sur le client ou si les données sont absentes
   if (!isClient || chartData.length === 0) {
@@ -135,7 +141,26 @@ export default function GlobalProgressionChart({
   }
 
   return (
-    <div className="w-full h-full min-h-[500px]">
+    <div className="w-full h-full min-h-[500px] flex flex-col gap-4">
+      <div className="flex gap-3 shrink-0">
+        {([
+          { key: 'elo' as const, label: 'ELO CLASSIQUE', active: 'bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.4)]' },
+          { key: 'modern' as const, label: 'MODERN ELO', active: 'bg-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.4)]' },
+          { key: 'skill' as const, label: 'DYNAMIQUE', active: 'bg-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]' },
+        ]).map(btn => (
+          <button
+            key={btn.key}
+            onClick={() => setMethod(btn.key)}
+            className={`px-6 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+              method === btn.key
+                ? `${btn.active} text-white`
+                : 'bg-zinc-900 text-zinc-500 border border-white/5 hover:bg-zinc-800'
+            }`}
+          >
+            {btn.label}
+          </button>
+        ))}
+      </div>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
           <CartesianGrid 

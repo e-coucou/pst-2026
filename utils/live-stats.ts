@@ -126,6 +126,7 @@ export interface TeamStats {
   id: string;
   delta_elo: number;
   delta_modern: number;
+  delta_skill: number;
 }
 
 /**
@@ -145,17 +146,20 @@ export const calculateTeamsStats = (teams: any[], allMatches: any[]): TeamStats[
         // Sécurité : conversion en Number au cas où la DB renvoie des strings
         const eloDelta = isT1 ? Number(m.delta_elo_team1 || 0) : Number(m.delta_elo_team2 || 0);
         const modernDelta = isT1 ? Number(m.delta_modern_team1 || 0) : Number(m.delta_modern_team2 || 0);
+        const skillDelta = isT1 ? Number(m.delta_skill_team1 || 0) : Number(m.delta_skill_team2 || 0);
 
         return {
           elo: acc.elo + eloDelta,
-          modern: acc.modern + modernDelta
+          modern: acc.modern + modernDelta,
+          skill: acc.skill + skillDelta
         };
-      }, { elo: 0, modern: 0 });
+      }, { elo: 0, modern: 0, skill: 0 });
 
     return {
       id: team.id,
       delta_elo: totals.elo,
-      delta_modern: totals.modern
+      delta_modern: totals.modern,
+      delta_skill: totals.skill
     };
   });
 };

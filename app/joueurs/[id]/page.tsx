@@ -60,8 +60,9 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
     const eloInfo = ranking?.find((er: any) => er.annee === ms.annee);
     return {
       ...ms,
-      rank_elo_final: eloInfo?.rank_elo || ms.rank_elo, 
-      rank_elo_modern_final: eloInfo?.rank_modern_elo || ms.rank_modern_elo
+      rank_elo_final: eloInfo?.rank_elo || ms.rank_elo,
+      rank_elo_modern_final: eloInfo?.rank_modern_elo || ms.rank_modern_elo,
+      rank_skill_final: eloInfo?.rank_skill_elo
     };
   });
 
@@ -134,6 +135,10 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
               <p className="text-[10px] text-purple-200 font-black uppercase mb-2 tracking-widest">Modern</p>
               <p className="text-4xl font-mono font-black italic">{(lastEntry?.elo_modern_value || 100).toFixed(1)}</p>
             </div>
+            <div className="group flex-1 bg-emerald-700 border border-emerald-600/30 p-6 rounded-3xl text-center min-w-[140px] hover:border-emerald-600 transition-all">
+              <p className="text-[10px] text-emerald-200 font-black uppercase mb-2 tracking-widest">Dynamique</p>
+              <p className="text-4xl font-mono font-black italic">{(lastEntry?.skill_ordinal ?? 0).toFixed(1)}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -142,7 +147,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
       <div className="bg-zinc-900/20 rounded-[2rem] p-8 border border-white/5">
         <div className="flex items-center gap-4 mb-8">
           <Target size={18} className="text-red-600" />
-          <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500">Courbe évolution du score ELO/Modern</h2>
+          <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500">Courbe évolution du score ELO/Modern/Dynamique</h2>
         </div>
         <div className="h-[350px] w-full relative">
           <EloChart history={eloHistory} />

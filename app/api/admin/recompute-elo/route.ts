@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { calculatePstElo, calculateModernElo, EloSettings } from '@/lib/elo-engine';
+import { calculatePstElo, calculateModernElo, calculateSkillRating, makeSkillRating, skillOrdinal, EloSettings, Rating } from '@/lib/elo-engine';
 
 export async function POST() {
   const supabase = createClient(
@@ -44,9 +44,9 @@ export async function POST() {
     const teamsMap: Record<number, any> = {};
     teams.forEach(t => { teamsMap[t.id] = t; });
 
-    let currentElo: Record<number, { pst: number, modern: number }> = {};
+    let currentElo: Record<number, { pst: number, modern: number, skill: Rating }> = {};
     players.forEach(p => {
-      currentElo[p.id] = { pst: eloSettings.elo_init, modern: eloSettings.elo_init };
+      currentElo[p.id] = { pst: eloSettings.elo_init, modern: eloSettings.elo_init, skill: makeSkillRating() };
     });
 
     const historyEntries: any[] = [];
@@ -72,6 +72,18 @@ export async function POST() {
       const deltaPst = calculatePstElo(avgPst1, avgPst2, sc1, sc2, g.type, eloSettings);
       const deltaMod = calculateModernElo(avgMod1, avgMod2, sc1, sc2, eloSettings.k_factor);
 
+      // Dynamique (bayésien) : contrairement à pst/modern, la mise à jour n'est pas un delta
+      // scalaire partagé — chaque joueur bouge différemment selon sa propre incertitude (sigma).
+      const { team1: skillTeam1, team2: skillTeam2 } = calculateSkillRating(
+        [currentElo[team1.tireur_id].skill, currentElo[team1.pointeur_id].skill],
+        [currentElo[team2.tireur_id].skill, currentElo[team2.pointeur_id].skill],
+        sc1, sc2
+      );
+      currentElo[team1.tireur_id].skill = skillTeam1[0];
+      currentElo[team1.pointeur_id].skill = skillTeam1[1];
+      currentElo[team2.tireur_id].skill = skillTeam2[0];
+      currentElo[team2.pointeur_id].skill = skillTeam2[1];
+
       // Mise à jour des 4 joueurs
       const pids = [team1.tireur_id, team1.pointeur_id, team2.tireur_id, team2.pointeur_id];
       pids.forEach((pid, i) => {
@@ -82,16 +94,20 @@ export async function POST() {
 
       // Calcul du Leaderboard pour les Rangs
       const sorted = Object.entries(currentElo)
-        .map(([id, val]) => ({ id: parseInt(id), pst: val.pst, modern: val.modern }))
+        .map(([id, val]) => ({ id: parseInt(id), pst: val.pst, modern: val.modern, skill: skillOrdinal(val.skill) }))
         .sort((a, b) => b.pst - a.pst);
-      
+
       const sortedMod = [...sorted].sort((a, b) => b.modern - a.modern);
+      const sortedSkill = [...sorted].sort((a, b) => b.skill - a.skill);
 
       const ranksPst: Record<number, number> = {};
       sorted.forEach((item, index) => { ranksPst[item.id] = index + 1; });
-      
+
       const ranksMod: Record<number, number> = {};
       sortedMod.forEach((item, index) => { ranksMod[item.id] = index + 1; });
+
+      const ranksSkill: Record<number, number> = {};
+      sortedSkill.forEach((item, index) => { ranksSkill[item.id] = index + 1; });
 
       // Remplissage ELO_HISTORY (Les 4 joueurs du match)
       pids.forEach((pid, i) => {
@@ -104,8 +120,12 @@ export async function POST() {
           year: g.year,
           elo_value: currentElo[pid].pst,
           elo_modern_value: currentElo[pid].modern,
+          skill_ordinal: skillOrdinal(currentElo[pid].skill),
+          skill_mu: currentElo[pid].skill.mu,
+          skill_sigma: currentElo[pid].skill.sigma,
           rank_at_time: ranksPst[pid],
           modern_rank_at_time: ranksMod[pid],
+          skill_rank_at_time: ranksSkill[pid],
           win: winArr[i],
           type: g.type,
           sc_p: i < 2 ? sc1 : sc2,
@@ -126,8 +146,12 @@ export async function POST() {
           year: g.year,
           elo_value: currentElo[p.id].pst,
           elo_modern_value: currentElo[p.id].modern,
+          skill_ordinal: skillOrdinal(currentElo[p.id].skill),
+          skill_mu: currentElo[p.id].skill.mu,
+          skill_sigma: currentElo[p.id].skill.sigma,
           rank: ranksPst[p.id],
           rank_modern: ranksMod[p.id],
+          rank_skill: ranksSkill[p.id],
           poule: g.poule,
           team1_id: g.team_1_id,
           team2_id: g.team_2_id

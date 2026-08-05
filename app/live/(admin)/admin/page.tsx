@@ -9,6 +9,7 @@
 	import { logActivity } from '@/utils/log-activity';
 	import FavoriStar from '@/components/FavoriStar';
 	import { useFavoriId } from '@/hooks/useFavoriId';
+	import { makeSkillRating } from '@/lib/elo-engine';
 
 	// --- HELPERS FORMAT DE TOURNOI ---
 	// 'classique' = 8 équipes / 2 poules de 4 (demies puis 4 finales)
@@ -154,8 +155,9 @@
 	       existing.forEach(x => { map[x.player_id] = !!x.confirmed; });
 	       setConfirmedMap(map);
 
-	       const ps = existing.filter(x => x.role === 'Pointeur').map(x => ({ id: x.player_id, nom: x.nom, elo: x.elo_at_selection, modern: x.modern_at_selection, confirmed: !!x.confirmed }));
-	       const ts = existing.filter(x => x.role === 'Tireur').map(x => ({ id: x.player_id, nom: x.nom, elo: x.elo_at_selection, modern: x.modern_at_selection, confirmed: !!x.confirmed }));
+	       const defaultSkill = makeSkillRating();
+	       const ps = existing.filter(x => x.role === 'Pointeur').map(x => ({ id: x.player_id, nom: x.nom, elo: x.elo_at_selection, modern: x.modern_at_selection, skillMu: x.skill_mu_at_selection ?? defaultSkill.mu, skillSigma: x.skill_sigma_at_selection ?? defaultSkill.sigma, confirmed: !!x.confirmed }));
+	       const ts = existing.filter(x => x.role === 'Tireur').map(x => ({ id: x.player_id, nom: x.nom, elo: x.elo_at_selection, modern: x.modern_at_selection, skillMu: x.skill_mu_at_selection ?? defaultSkill.mu, skillSigma: x.skill_sigma_at_selection ?? defaultSkill.sigma, confirmed: !!x.confirmed }));
 	       setSelectedPointeurs(ps);
 	       setSelectedTireurs(ts);
 
@@ -176,12 +178,21 @@
 
 	 const fetchPlayersWithElo = async () => {
 	   const { data: profiles } = await supabase.from('profiles').select('id, nom');
-	   const { data: elos } = await supabase.from('elo_history').select('player_id, elo_value, elo_modern_value').order('game_id', { ascending: false });
+	   const { data: elos } = await supabase.from('elo_history').select('player_id, elo_value, elo_modern_value, skill_mu, skill_sigma').order('game_id', { ascending: false });
 
 	   if (profiles && elos) {
+	     const defaultSkill = makeSkillRating();
 	     const playersDetailed = profiles.map(p => {
 	       const lastElo = elos.find(e => e.player_id === p.id);
-	       return { ...p, elo: lastElo ? lastElo.elo_value : 100 , modern: lastElo ? lastElo.elo_modern_value : 100 };
+	       return {
+	         ...p,
+	         elo: lastElo ? lastElo.elo_value : 100,
+	         modern: lastElo ? lastElo.elo_modern_value : 100,
+	         // "Dynamique" (bayésien) : mu/sigma par joueur, valeurs par défaut openskill si le
+	         // joueur n'a jamais joué (cf. lib/elo-engine.ts#makeSkillRating).
+	         skillMu: lastElo?.skill_mu ?? defaultSkill.mu,
+	         skillSigma: lastElo?.skill_sigma ?? defaultSkill.sigma,
+	       };
 	     }).sort((a, b) => b.elo - a.elo);
 	     setAllProfiles(playersDetailed);
 	   }
@@ -196,6 +207,8 @@
 	     role: role,
 	     elo_at_selection: player.elo,
 	     modern_at_selection: player.modern,
+	     skill_mu_at_selection: player.skillMu,
+	     skill_sigma_at_selection: player.skillSigma,
 	     nom: player.nom
 	   }, { onConflict: 'player_id' });
 	   logActivity(supabase, 'ADMIN_SELECT_PLAYER', { player_id: player.id, nom: player.nom, role });
@@ -231,8 +244,8 @@
 
 	     // 2. On prépare l'insert
 	     const toInsert = [
-	       ...selectedPointeurs.map(p => ({ player_id: p.id, role: 'Pointeur', elo_at_selection: p.elo, modern_at_selection:p.modern, nom: p.nom, confirmed: !!p.confirmed })),
-	       ...selectedTireurs.map(t => ({ player_id: t.id, role: 'Tireur', elo_at_selection: t.elo, modern_at_selection:t.modern, nom: t.nom, confirmed: !!t.confirmed }))
+	       ...selectedPointeurs.map(p => ({ player_id: p.id, role: 'Pointeur', elo_at_selection: p.elo, modern_at_selection:p.modern, skill_mu_at_selection: p.skillMu, skill_sigma_at_selection: p.skillSigma, nom: p.nom, confirmed: !!p.confirmed })),
+	       ...selectedTireurs.map(t => ({ player_id: t.id, role: 'Tireur', elo_at_selection: t.elo, modern_at_selection:t.modern, skill_mu_at_selection: t.skillMu, skill_sigma_at_selection: t.skillSigma, nom: t.nom, confirmed: !!t.confirmed }))
 	     ];
 	     // mise à jour status du Tournois
 	     const { error } = await supabase.from('live_selected').insert(toInsert);
@@ -284,6 +297,12 @@
 	     elo_start_pointeur: p.elo,
 	     elo_start_tireur: tList[i].elo,
 	     modern_start: (tList[i].modern + p.modern) / 2 || 100,
+	     // "Dynamique" : pas de moyenne d'équipe (contrairement à modern_start) — 4 colonnes
+	     // séparées, chaque joueur garde son propre mu/sigma au sein de la doublette.
+	     skill_mu_pointeur: p.skillMu,
+	     skill_sigma_pointeur: p.skillSigma,
+	     skill_mu_tireur: tList[i].skillMu,
+	     skill_sigma_tireur: tList[i].skillSigma,
 	     poule: format === 'ronde' ? 'Ronde' : (gassinIds.includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle')
 	   }));
 
@@ -367,6 +386,10 @@
 	       elo_start_pointeur: p.elo,
 	       elo_start_tireur: draftT[i].elo,
 	       modern_start: (draftT[i].modern + p.modern) / 2 || 100,
+	       skill_mu_pointeur: p.skillMu,
+	       skill_sigma_pointeur: p.skillSigma,
+	       skill_mu_tireur: draftT[i].skillMu,
+	       skill_sigma_tireur: draftT[i].skillSigma,
 	       poule: format === 'ronde' ? 'Ronde' : (gassinIds.includes(teamIds[i]) ? 'Gassin' : 'Ramatuelle')
 	     }));
 

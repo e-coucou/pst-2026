@@ -194,6 +194,14 @@ export default function PodiumPage() {
             {delta > 0 ? '+' : ''}{delta.toFixed(1)}
           </span>
         )}
+
+        {/* Dynamique (bayésien) : juste le delta (pas de valeur "courante" affichée — ordinal
+            n'est pas une simple addition mu+delta comme pour ELO/Modern, cf. utils/elo-logic.ts). */}
+        {stats && stats.delta_skill !== 0 && (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${stats.delta_skill > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+            DYN {stats.delta_skill > 0 ? '+' : ''}{stats.delta_skill.toFixed(1)}
+          </span>
+        )}
       </div>
     );
   })()}
