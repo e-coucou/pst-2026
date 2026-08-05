@@ -13,8 +13,9 @@ import {
   Loader2,
   ChevronRight,
   Fingerprint, BookOpen, ListTodo, BarChart3, Gauge, Users2, Activity, Radio,
-  KeyRound, Copy, CopyCheck, Settings
+  KeyRound, Copy, CopyCheck, Settings, Archive, CalendarPlus, DownloadCloud
 } from 'lucide-react';
+import { downloadTournamentBackup } from '@/utils/download-backup';
 
 interface ResidenceCode {
   id: string;
@@ -64,6 +65,17 @@ export default function AdminControlPanel() {
 
   // --- ACTIONS DE NAVIGATION ---
   const navTo = (path: string) => router.push(path);
+
+  const handleBackup = async () => {
+    setStatus({ loading: true, action: 'backup' });
+    try {
+      await downloadTournamentBackup();
+    } catch (err: any) {
+      alert(`❌ Erreur sauvegarde : ${err.message}`);
+    } finally {
+      setStatus({ loading: false, action: '' });
+    }
+  };
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6 p-1">
@@ -186,6 +198,40 @@ export default function AdminControlPanel() {
             loading={status.loading && status.action === 'all'}
             variant="warning"
             onClick={() => executeAction('all', '/api/admin/recompute-elo', "Action lourde : Recalculer TOUT depuis l'origine ?")}
+          />
+        </div>
+      </div>
+
+      {/* SECTION 2.4 : SÉCURITÉ — sauvegarde manuelle avant toute action de fin de saison */}
+      <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-6 space-y-3">
+        <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest px-2">Sécurité</h3>
+        <AdminActionButton
+          icon={status.loading && status.action === 'backup' ? <Loader2 className="animate-spin" /> : <DownloadCloud size={18} />}
+          label="Télécharger une sauvegarde"
+          loading={status.loading && status.action === 'backup'}
+          variant="warning"
+          onClick={handleBackup}
+        />
+        <p className="text-[10px] text-zinc-500 px-2">
+          Export JSON des tables live + historique (pas un backup Postgres complet). À faire avant d&apos;archiver ou de passer à la saison suivante.
+        </p>
+      </div>
+
+      {/* SECTION 2.5 : FIN DE SAISON */}
+      <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-6 space-y-4">
+        <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest px-2">Fin de saison</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AdminNavButton
+            icon={<Archive size={20} />}
+            label="Archiver le tournoi"
+            desc="Copie le live vers l'historique, sans rien changer au direct"
+            onClick={() => navTo('/live/archive')}
+          />
+          <AdminNavButton
+            icon={<CalendarPlus size={20} />}
+            label="Saison suivante"
+            desc="Active la saison suivante et réinitialise le direct"
+            onClick={() => navTo('/live/next-season')}
           />
         </div>
       </div>

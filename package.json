@@ -1,6 +1,6 @@
 {
   "name": "pst-2026",
-  "version": "1.14.12",
+  "version": "1.15.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

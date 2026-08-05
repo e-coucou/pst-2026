@@ -40,8 +40,21 @@ export default async function TournamentDetailPage({
     });
   }
 
+  // 0. Barème des types de match ("Finale"/"Finale Rang1" → 1, "Petite Finale"/"Finale Rang2" → 3,
+  // etc.), fetché une seule fois et réutilisé pour toute détection de finale ci-dessous — même
+  // principe générique que finalTop8 (déjà présent plus bas) et que podium/page.tsx côté live,
+  // indépendant du format (classique/10_equipes/ronde), sans avoir besoin de connaître ce format.
+  const { data: steps } = await supabase.from('steps').select('id, value, label');
+  const stepValues = Object.fromEntries(steps?.map(s => [s.id, s.value]) || []);
+  const stepLabels = Object.fromEntries(steps?.map(s => [s.id, s.label]) || []);
+
   // 1. CALCULS DES VAINQUEURS ET STATS
-  const laFinale = matches?.find(m => m.type?.toLowerCase() === 'finale' && m.tableau?.toLowerCase() === 'principal');
+  // Détection générique de "LA finale" (rang 1) : `type='Finale' AND tableau='Principal'`
+  // ne matche que le format classique — `steps.value === 1` couvre aussi 'Finale Rang1'
+  // (10_equipes/ronde), sans notion de tableau. `> 0` (pas juste "défini") exclut 'Demi'/'Poule',
+  // qui ont une entrée `steps` à value=0 — un `!== undefined` les aurait inclus à tort ici.
+  const finalesMatches = matches?.filter(m => (stepValues[m.type] ?? 0) > 0) || [];
+  const laFinale = finalesMatches.find(m => stepValues[m.type] === 1);
   let winnerTeam: any = null;
   let winnerStats = { plus: 0, moins: 0, v: 0, d: 0 };
 
@@ -68,13 +81,19 @@ export default async function TournamentDetailPage({
  });
   }
 
-  const autresFinales = matches?.filter(m => 
-    ['petite finale', 'toute petite finale', "finale d'honneur"].includes(m.type?.toLowerCase() || '')
-  ) || [];
+  // Toute finale sauf LA finale elle-même : couvre aussi bien les 3 finales secondaires du format
+  // classique (Petite Finale/Toute petite Finale/Finale d'Honneur) que les 4 "Finale Rang2..5" des
+  // formats 10_equipes/ronde, sans liste blanche de libellés à maintenir par format.
+  const autresFinales = finalesMatches.filter(m => m.id !== laFinale?.id);
 
   const demis = matches?.filter(m => m.type?.toLowerCase() === 'demi') || [];
   const gassin = matches?.filter(m => m.poule?.toLowerCase() === 'gassin') || [];
   const ramatuelle = matches?.filter(m => m.poule?.toLowerCase() === 'ramatuelle') || [];
+  // Format "ronde" (système suisse, cf. documents/rondes.md) : un seul groupe de 10 équipes au
+  // lieu de 2 poules — détecté depuis les données elles-mêmes (poule = 'Ronde'), sans dépendre
+  // d'une colonne de format sur `seasons` qui n'existe pas encore.
+  const ronde = matches?.filter(m => m.poule?.toLowerCase() === 'ronde') || [];
+  const isRondeFormat = ronde.length > 0;
 
   // Même forme (PouleStanding) et même tri que le classement live (poules/finale/podium/live)
   // pour afficher exactement le même tableau via <PouleStandingsTable>. `teams.nom` porte déjà
@@ -104,26 +123,27 @@ export default async function TournamentDetailPage({
 
   const classementGassin = calculerClassement(gassin);
   const classementRamatuelle = calculerClassement(ramatuelle);
+  const classementRonde = calculerClassement(ronde);
 
-  // Récupérer les "steps" pour les rangs (Finale = 1, Petite Finale = 3, etc.)
-  const { data: steps } = await supabase.from('steps').select('id, value');
-  const stepValues = Object.fromEntries(steps?.map(s => [s.id, s.value]) || []);
   const rankedTeams: any[] = [];
   matches?.filter(m => m.type?.toLowerCase().includes('inale')).forEach(m => {
     const baseRank = stepValues[m.type];
     if (baseRank) {
       const isTeam1Winner = (m.score_1 ?? 0) > (m.score_2 ?? 0);
+      const label = stepLabels[m.type] || m.type;
       // Équipe 1
       rankedTeams.push({
         rank: isTeam1Winner ? baseRank : baseRank + 1,
         team: m.team_1,
-        type: m.type
+        type: m.type,
+        label
       });
       // Équipe 2
       rankedTeams.push({
         rank: isTeam1Winner ? baseRank + 1 : baseRank,
         team: m.team_2,
-        type: m.type
+        type: m.type,
+        label
       });
     }
   });
@@ -133,6 +153,36 @@ const finalTop8 = rankedTeams
   .filter(t => t.team && t.rank > 1) // On vérifie que l'équipe existe et que rank > 1
   .sort((a, b) => a.rank - b.rank);
 
+  // Carte "détail des matchs" d'une poule, factorisée pour supporter Gassin/Ramatuelle (2 cartes
+  // orange/violet, format classique/10_equipes) aussi bien qu'un seul groupe "Ronde" (format ronde,
+  // réutilise l'accent orange comme le fait déjà podium/page.tsx côté live).
+  const renderPouleDetail = (pouleName: string, pouleMatchesList: any[], color: 'orange' | 'purple') => {
+    const isOrange = color === 'orange';
+    return (
+      <section key={pouleName} className="relative group">
+        <div className={`absolute -inset-1 ${isOrange ? 'bg-orange-600/20' : 'bg-purple-600/20'} rounded-2xl blur-sm opacity-50`}></div>
+        <div className={`relative bg-zinc-900/40 border-2 ${isOrange ? 'border-orange-600/50' : 'border-purple-600/50'} rounded-2xl overflow-hidden`}>
+          <div className={`${isOrange ? 'bg-orange-600/10 border-orange-600/30' : 'bg-purple-600/10 border-purple-600/30'} px-5 py-4 border-b flex items-center justify-between`}>
+            <h3 className={`text-2xl font-black uppercase italic ${isOrange ? 'text-orange-500' : 'text-purple-500'} flex items-center gap-3`}>
+              <Target size={24} />{pouleName}
+            </h3>
+            <div className="flex justify-between items-center">
+              <span className={`text-[9px] font-bold ${isOrange ? 'bg-orange-700' : 'bg-purple-700'} px-2 py-0.5 rounded text-white uppercase`}>
+                Match de 20'
+              </span>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            {pouleMatchesList.map(m => (
+              <div key={m.id} className={`bg-black/40 border ${isOrange ? 'border-orange-600/10 hover:border-orange-600/40' : 'border-purple-600/10 hover:border-purple-600/40'} p-3 rounded-xl transition-colors`}>
+                <MatchRow match={m} size="xs" favoriId={favoriId} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 min-h-screen bg-black text-white">
@@ -215,7 +265,7 @@ const finalTop8 = rankedTeams
 		            #{item.rank}
 		          </div>
 		          <span className="text-[8px] font-black bg-black/50 px-2 py-1 rounded text-zinc-500 uppercase tracking-widest">
-		            {item.type}
+		            {item.label}
 		          </span>
 		        </div>
 
@@ -275,7 +325,7 @@ const finalTop8 = rankedTeams
 		      <div className="relative bg-zinc-900/60 border-2 border-red-900/20 rounded-2xl overflow-hidden hover:border-red-900/40 transition-colors">
 		        <div className="bg-red-950/20 px-4 py-2 border-b border-red-900/20 flex justify-center items-center">
 		          <span className="text-[9px] font-black text-red-500 uppercase tracking-[0.2em]">
-		            {m.type}
+		            {stepLabels[m.type] || m.type}
 		          </span>
 		        </div>
 
@@ -295,7 +345,8 @@ const finalTop8 = rankedTeams
        </div>
      </section>
 
-      {/* --- DEMIS --- */}
+      {/* --- DEMIS (absent en format 10_equipes / ronde) --- */}
+      {demis.length > 0 && (
 		<section className="mb-20">
 		  <div className="flex items-center gap-3 mb-8">
 		    <div className="bg-zinc-800 p-2 rounded-lg">
@@ -311,7 +362,7 @@ const finalTop8 = rankedTeams
 		    {demis.map((m) => (
 		      <div key={m.id} className="relative group">
 		        <div className="absolute -inset-0.5 bg-zinc-600/20 rounded-2xl blur-sm opacity-50 group-hover:opacity-100 transition-opacity"></div>
-		        
+
 		        <div className="relative bg-zinc-900/60 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
 		          <div className="bg-zinc-800/80 px-4 py-2 border-b border-zinc-700/50 flex justify-between items-center">
 		            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
@@ -330,7 +381,8 @@ const finalTop8 = rankedTeams
 		    ))}
 		  </div>
 		</section>
-		
+      )}
+
       {/* --- CLASSEMENT DES POULES --- */}
 	 <section className="mb-20">
 	   <div className="flex items-center gap-3 mb-8">
@@ -339,65 +391,31 @@ const finalTop8 = rankedTeams
 	       <span className="text-white">Classement</span><span className="text-red-600"> des Poules</span>
 	     </h2>
 	   </div>
- 
-	   <div className="grid lg:grid-cols-2 gap-8">
-	     <PouleStandingsTable pouleName="Gassin" standings={classementGassin} accentColor="orange" />
-	     <PouleStandingsTable pouleName="Ramatuelle" standings={classementRamatuelle} accentColor="purple" />
+
+	   <div className={`grid gap-8 ${isRondeFormat ? 'grid-cols-1' : 'lg:grid-cols-2'}`}>
+	     {isRondeFormat ? (
+	       <PouleStandingsTable pouleName="Ronde" standings={classementRonde} accentColor="orange" />
+	     ) : (
+	       <>
+	         <PouleStandingsTable pouleName="Gassin" standings={classementGassin} accentColor="orange" />
+	         <PouleStandingsTable pouleName="Ramatuelle" standings={classementRamatuelle} accentColor="purple" />
+	       </>
+	     )}
 	   </div>
 	 </section>
 
       {/* --- DÉTAILS DES MATCHS DE POULES --- */}
 
-<div className="grid lg:grid-cols-2 gap-10 mt-12">
-  <section className="relative group">
-    <div className="absolute -inset-1 bg-orange-600/20 rounded-2xl blur-sm opacity-50"></div>
-    <div className="relative bg-zinc-900/40 border-2 border-orange-600/50 rounded-2xl overflow-hidden">
-      <div className="bg-orange-600/10 px-5 py-4 border-b border-orange-600/30 flex items-center justify-between">
-        <h3 className="text-2xl font-black uppercase italic text-orange-500 flex items-center gap-3">
-          <Target size={24} />Gassin
-        </h3>
-        <div className=" flex justify-between items-center">
-          <span className="text-[9px] font-bold bg-orange-700 px-2 py-0.5 rounded text-white uppercase">
-            Match de 20'
-          </span>
-        </div>
-     </div>
-      <div className="p-4 space-y-3">
-        {gassin.map(m => (
-          <div key={m.id} className="bg-black/40 border border-orange-600/10 p-3 rounded-xl hover:border-orange-600/40 transition-colors">
-            <MatchRow match={m} size="xs" favoriId={favoriId} />
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <section className="relative group">
-    <div className="absolute -inset-1 bg-purple-600/20 rounded-2xl blur-sm opacity-50"></div>
-    <div className="relative bg-zinc-900/40 border-2 border-purple-600/50 rounded-2xl overflow-hidden">
-      <div className="bg-purple-600/10 px-5 py-4 border-b border-purple-600/30 flex items-center justify-between">
-        <h3 className="text-2xl font-black uppercase italic text-purple-500 flex items-center gap-3">
-          <Target size={24} />Ramatuelle
-        </h3>
-        <div className=" flex justify-between items-center">
-          <span className="text-[9px] font-bold bg-purple-700 px-2 py-0.5 rounded text-white uppercase">
-            Match de 20'
-          </span>
-        </div>
-      </div>
-      <div className="p-4 space-y-3">
-        {ramatuelle.map(m => (
-          <div key={m.id} className="bg-black/40 border border-purple-600/10 p-3 rounded-xl hover:border-purple-600/40 transition-colors">
-            <MatchRow match={m} size="xs" favoriId={favoriId} />
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
+<div className={`grid gap-10 mt-12 ${isRondeFormat ? 'grid-cols-1' : 'lg:grid-cols-2'}`}>
+  {isRondeFormat
+    ? renderPouleDetail('Ronde', ronde, 'orange')
+    : (
+      <>
+        {renderPouleDetail('Gassin', gassin, 'orange')}
+        {renderPouleDetail('Ramatuelle', ramatuelle, 'purple')}
+      </>
+    )}
 </div>
-
-
-
 
 
 

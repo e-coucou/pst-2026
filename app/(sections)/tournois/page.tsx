@@ -9,6 +9,13 @@ export default async function TournamentsPage() {
   const supabase = await createClient();
   const favoriId = await getFavoriId();
 
+  // 0. Types de match représentant "LA finale" (rang 1) — générique par format : 'Finale'
+  // (classique, toujours tableau='Principal') aussi bien que 'Finale Rang1' (10_equipes/ronde).
+  // Même principe que tournois/[year]/page.tsx et podium/page.tsx : lire steps.value plutôt que
+  // supposer un type/tableau fixes qui ne matchent que le format classique.
+  const { data: stepsData } = await supabase.from('steps').select('id, value');
+  const championTypes = stepsData?.filter(s => s.value === 1).map(s => s.id) || ['Finale'];
+
   // 1. Récupération des données augmentée des IDs pour les photos
   const { data: seasonsData, error } = await supabase
     .from('games')
@@ -27,8 +34,7 @@ export default async function TournamentsPage() {
         pointeur:profiles!fk_teams_pointeur ( id, nom, photo_url )
       )
     `)
-    .eq('type', 'Finale') 
-    .eq('tableau', 'Principal')
+    .in('type', championTypes)
     .order('year', { ascending: false });
 
   if (error) console.error("Erreur :", error.message);
