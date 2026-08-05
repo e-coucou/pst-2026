@@ -5,8 +5,11 @@ import { PouleStanding } from '@/utils/live-stats';
 
 // Tableau de classement de poule unique, réutilisé par poules/finale/podium/live pour que le
 // palmarès soit identique partout (référence : la version complète affichée en direct pendant
-// la saisie des scores). V/D/N/Pour/Contre masqués sur mobile pour ne pas surcharger, Pts/Diff
-// toujours visibles.
+// la saisie des scores). Rk/J masqués sur mobile (le rang reste visible, préfixé au nom d'équipe).
+// V/D/N et P/C fusionnés en une seule colonne empilée sur 2 lignes côté mobile (la ligne fait
+// déjà 3 lignes de haut à cause du nom pointeur/tireur — autant utiliser cette hauteur plutôt que
+// deux colonnes horizontales en plus) ; redevient 2 colonnes séparées côté desktop, où la largeur
+// ne manque pas. Diff/Pts en padding réduit sur mobile pour laisser la place à tout ça.
 export default function PouleStandingsTable({
   pouleName,
   standings,
@@ -27,6 +30,24 @@ export default function PouleStandingsTable({
   // saisons archivées (table `teams`) n'ont qu'un id numérique auto-incrémenté, pas de lettre.
   const isTeamLetter = (id: string) => /^[A-Z]$/.test(id);
 
+  const renderVDN = (s: PouleStanding) => (
+    <>
+      <span className="text-green-500">{s.v}</span>
+      <span className="text-zinc-500">/</span>
+      <span className="text-red-500">{s.d}</span>
+      <span className="text-zinc-500">/</span>
+      <span className="text-zinc-300">{s.n}</span>
+    </>
+  );
+
+  const renderPC = (s: PouleStanding) => (
+    <>
+      <span className="text-green-500">+{s.pour}</span>
+      <span className="text-zinc-500">/</span>
+      <span className="text-red-500">-{s.contre}</span>
+    </>
+  );
+
   return (
     <div className="bg-black border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden">
       {showHeader && (
@@ -42,10 +63,16 @@ export default function PouleStandingsTable({
               <th className="p-3 md:p-4 hidden md:table-cell">Rk</th>
               <th className="p-3 md:p-4">Équipe</th>
               <th className="p-3 md:p-4 text-center hidden md:table-cell">J</th>
+              <th className="px-1 py-3 md:hidden text-center">
+                <div className="flex flex-col leading-tight">
+                  <span>V/D/N</span>
+                  <span>P/C</span>
+                </div>
+              </th>
               <th className="p-3 md:p-4 text-center hidden md:table-cell">V/D/N</th>
               <th className="p-3 md:p-4 text-center hidden md:table-cell">P/C</th>
-              <th className="p-3 md:p-4 text-center">Diff</th>
-              <th className="p-3 md:p-4 text-center text-red-500">PTS</th>
+              <th className="px-1 py-3 md:p-4 text-center">Diff</th>
+              <th className="px-1 py-3 md:p-4 text-center text-red-500">PTS</th>
             </tr>
           </thead>
           <tbody className="text-[12px] md:text-[14px] text-white font-bold">
@@ -64,22 +91,18 @@ export default function PouleStandingsTable({
                   </div>
                 </td>
                 <td className="p-3 md:p-4 text-center text-zinc-300 hidden md:table-cell">{s.j}</td>
-                <td className="p-3 md:p-4 text-center hidden md:table-cell">
-                  <span className="text-green-500">{s.v}</span>
-                  <span className="text-zinc-500">/</span>
-                  <span className="text-red-500">{s.d}</span>
-                  <span className="text-zinc-500">/</span>
-                  <span className="text-zinc-300">{s.n}</span>
+                <td className="px-1 py-3 md:hidden text-center text-[10px]">
+                  <div className="flex flex-col leading-tight">
+                    <span>{renderVDN(s)}</span>
+                    <span>{renderPC(s)}</span>
+                  </div>
                 </td>
-                <td className="p-3 md:p-4 text-center hidden md:table-cell">
-                  <span className="text-green-500">+{s.pour}</span>
-                  <span className="text-zinc-500"> / </span>
-                  <span className="text-red-500">-{s.contre}</span>
-                </td>
-                <td className={`p-3 md:p-4 text-center ${s.diff > 0 ? 'text-green-500' : s.diff < 0 ? 'text-red-500' : ''}`}>
+                <td className="p-3 md:p-4 text-center hidden md:table-cell">{renderVDN(s)}</td>
+                <td className="p-3 md:p-4 text-center hidden md:table-cell">{renderPC(s)}</td>
+                <td className={`px-1 py-3 md:p-4 text-center ${s.diff > 0 ? 'text-green-500' : s.diff < 0 ? 'text-red-500' : ''}`}>
                   {s.diff > 0 ? `+${s.diff}` : s.diff}
                 </td>
-                <td className="p-3 md:p-4 text-center text-white bg-white/5">{s.pts}</td>
+                <td className="px-1 py-3 md:p-4 text-center text-white bg-white/5">{s.pts}</td>
               </tr>
             ))}
           </tbody>
