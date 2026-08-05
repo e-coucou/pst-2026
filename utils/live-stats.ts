@@ -159,3 +159,14 @@ export const calculateTeamsStats = (teams: any[], allMatches: any[]): TeamStats[
     };
   });
 };
+
+/**
+ * Cible du bouton "écran à partager sur WhatsApp" (fond blanc, pensé pour une capture d'écran) —
+ * un seul bouton, réutilisé sur poules/podium (et potentiellement d'autres étapes), qui pointe
+ * vers la composition des équipes tant que le tournoi n'est pas terminé, puis vers le palmarès
+ * final une fois `status === 'TERMINE'`.
+ */
+export const getShareScreenTarget = (status: string): { href: string; label: string } =>
+  status === 'TERMINE'
+    ? { href: '/live/screen-podium', label: 'Écran résultats' }
+    : { href: '/live/screen', label: 'Écran équipes' };

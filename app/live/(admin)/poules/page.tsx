@@ -8,7 +8,7 @@ import PredictionModal from '@/components/PredictionModal';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
 import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, Dices, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { logActivity } from '@/utils/log-activity';
-import { calculatePouleStandings } from '@/utils/live-stats';
+import { calculatePouleStandings, getShareScreenTarget } from '@/utils/live-stats';
 import { simulateRandomScores } from '@/utils/simulate';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
 import FavoriStar from '@/components/FavoriStar';
@@ -414,11 +414,11 @@ export default function LivePoulesPage() {
             )}
             {isSuper && (
               <button
-                onClick={() => router.push('/live/screen')}
-                title="Écran équipes (fond blanc, à partager sur WhatsApp)"
+                onClick={() => router.push(getShareScreenTarget(status).href)}
+                title="Écran à partager sur WhatsApp (fond blanc)"
                 className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5"
               >
-                <ImageIcon size={14} /> <span className="hidden md:inline">Écran équipes</span>
+                <ImageIcon size={14} /> <span className="hidden md:inline">{getShareScreenTarget(status).label}</span>
               </button>
             )}
             <button onClick={() => router.push('/live/admin')} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5">

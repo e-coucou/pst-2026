@@ -4,14 +4,16 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
-import { Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List, RefreshCw } from 'lucide-react';
-import { calculateTeamsStats, calculatePouleStandings } from '@/utils/live-stats';
+import { Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List, RefreshCw, Image as ImageIcon } from 'lucide-react';
+import { calculateTeamsStats, calculatePouleStandings, getShareScreenTarget } from '@/utils/live-stats';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
 import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
+import { useIsSuper } from '@/hooks/useIsSuper';
 
 export default function PodiumPage() {
   const favoriId = useFavoriId();
+  const isSuper = useIsSuper();
   const supabase = createClient();
   const router = useRouter();
 
@@ -120,7 +122,16 @@ export default function PodiumPage() {
       <div className="max-w-4xl mx-auto">
 
         {/* Pas de Realtime sur cette page : un autre admin peut avoir saisi un score entre-temps. */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end gap-2 mb-4">
+          {isSuper && (
+            <button
+              onClick={() => router.push(getShareScreenTarget(status).href)}
+              title="Écran à partager sur WhatsApp (fond blanc)"
+              className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 hover:text-white bg-zinc-900/50 px-4 py-2 rounded-full border border-white/5"
+            >
+              <ImageIcon size={14} /> {getShareScreenTarget(status).label}
+            </button>
+          )}
           <button
             onClick={fetchData}
             disabled={loading}
