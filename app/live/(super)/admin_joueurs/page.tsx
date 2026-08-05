@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, UserPlus, Loader2, ArrowLeft, Camera, AlertCircle, Upload, X } from 'lucide-react';
+import { Trash2, UserPlus, Loader2, ArrowLeft, Camera, AlertCircle, X } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
@@ -90,16 +90,40 @@ export default function ManagePlayersPage() {
     fetchData();
   }, []);
 
-  // --- NOUVEL UTILITAIRE MUTUALISÉ ---
-  const compressAndUpload = async (file: File, playerId: number) => {
-    const options = { maxSizeMB: 0.15, maxWidthOrHeight: 800, useWebWorker: true };
-    const compressed = await imageCompression(file, options);
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${playerId}_${Date.now()}.${fileExt}`;
+  // Nom de fichier canonique "nom.jpg" (minuscules, accents supprimés, tout caractère non
+  // alphanumérique -> tiret) — aligné sur la convention déjà en place pour la quasi-totalité des
+  // photos existantes (blaise.jpg, christophe-c.jpg...), plutôt que le {id}_{timestamp}.{ext}
+  // précédent qui ne correspondait à rien de ce qui était déjà dans le bucket.
+  const slugify = (nom: string) =>
+    nom
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'joueur';
 
-    const { error: upError } = await supabase.storage.from('joueurs_photos').upload(fileName, compressed);
+  // --- NOUVEL UTILITAIRE MUTUALISÉ ---
+  const compressAndUpload = async (file: File, nom: string, excludePlayerId?: number) => {
+    // fileType forcé en JPEG : les photos iPhone peuvent arriver en HEIC (extension d'origine
+    // non fiable pour nommer le fichier final), et on veut systématiquement un .jpg au final.
+    const options = { maxSizeMB: 0.15, maxWidthOrHeight: 800, useWebWorker: true, fileType: 'image/jpeg' as const };
+    const compressed = await imageCompression(file, options);
+
+    const baseSlug = slugify(nom);
+    let fileName = `${baseSlug}.jpg`;
+    // Collision de nom (ex. deux "Marco") : un AUTRE joueur pointe déjà vers ce fichier -> on
+    // suffixe avec un id pour ne pas écraser sa photo.
+    const collision = players.some(p => p.id !== excludePlayerId && p.photo_url === fileName);
+    if (collision) {
+      fileName = `${baseSlug}-${excludePlayerId ?? Date.now()}.jpg`;
+    }
+
+    // upsert: true — un nouvel import pour le même joueur écrase la photo existante au même
+    // chemin plutôt que d'empiler des fichiers orphelins à chaque remplacement.
+    const { error: upError } = await supabase.storage
+      .from('joueurs_photos')
+      .upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });
     if (upError) throw new Error(`Erreur Storage: ${upError.message}`);
-    
+
     return fileName;
   };
 
@@ -113,7 +137,7 @@ export default function ManagePlayersPage() {
       let photoPath = null;
 
       if (selectedFile) {
-        photoPath = await compressAndUpload(selectedFile, nextId);
+        photoPath = await compressAndUpload(selectedFile, newName.trim(), nextId);
       }
 
       const { error: insertError } = await supabase
@@ -132,11 +156,11 @@ export default function ManagePlayersPage() {
     }
   };
 
-  // --- NOUVELLE FONCTION POUR LES JOUEURS EXISTANTS ---
-  const handleUpdatePhoto = async (playerId: number, file: File) => {
+  // --- AJOUT / REMPLACEMENT DE PHOTO POUR UN JOUEUR EXISTANT ---
+  const handleUpdatePhoto = async (playerId: number, nom: string, file: File) => {
     setIsUploading(true);
     try {
-      const photoPath = await compressAndUpload(file, playerId);
+      const photoPath = await compressAndUpload(file, nom, playerId);
       const { error: updError } = await supabase
         .from('profiles')
         .update({ photo_url: photoPath })
@@ -226,13 +250,29 @@ export default function ManagePlayersPage() {
               return (
                 <div key={player.id} className="flex items-center justify-between p-4 bg-zinc-900/30 border border-white/5 rounded-2xl hover:border-white/10 transition-colors group">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-zinc-800 border border-white/10 overflow-hidden flex-shrink-0 shadow-inner relative">
-                      {imageUrl ? (
-                        <img src={imageUrl} className="w-full h-full object-cover" alt={player.nom} />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-400 font-bold uppercase">PST</div>
-                      )}
-                      {isUploading && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 size={12} className="animate-spin" /></div>}
+                    <div className="relative flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-zinc-800 border border-white/10 overflow-hidden shadow-inner relative">
+                        {imageUrl ? (
+                          <img src={imageUrl} className="w-full h-full object-cover" alt={player.nom} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-400 font-bold uppercase">PST</div>
+                        )}
+                        {isUploading && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Loader2 size={12} className="animate-spin" /></div>}
+                      </div>
+                      {/* Badge permanent (pas juste au survol : peu fiable au tap sur iPhone) —
+                          toujours disponible pour ajouter OU remplacer la photo du joueur. */}
+                      <label
+                        className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-800 border-2 border-black flex items-center justify-center text-zinc-300 hover:text-white hover:bg-red-600 active:bg-red-600 transition-colors cursor-pointer"
+                        title={player.photo_url ? 'Remplacer la photo' : 'Ajouter une photo'}
+                      >
+                        <Camera size={10} />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => e.target.files?.[0] && handleUpdatePhoto(player.id, player.nom, e.target.files[0])}
+                        />
+                      </label>
                     </div>
                     <div>
                       <div className="font-bold uppercase leading-tight text-sm md:text-base">{player.nom} <FavoriStar active={player.id === favoriId} /></div>
@@ -241,19 +281,6 @@ export default function ManagePlayersPage() {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {/* BOUTON AJOUT PHOTO SI VIDE */}
-                    {!player.photo_url && (
-                      <label className="p-2 text-zinc-500 hover:text-blue-500 cursor-pointer transition-colors" title="Ajouter une photo">
-                        <Upload size={20} />
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden" 
-                          onChange={(e) => e.target.files?.[0] && handleUpdatePhoto(player.id, e.target.files[0])} 
-                        />
-                      </label>
-                    )}
-
                     {isEngaged ? (
                       <div className="flex items-center gap-1.5 text-purple-500 text-[9px] font-black uppercase tracking-widest bg-zinc-800/80 px-3 py-2 rounded-full border border-white/5 shadow-sm">
                         <AlertCircle size={10} className="text-white" />
