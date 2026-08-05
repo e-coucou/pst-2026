@@ -7,7 +7,6 @@ import { ArrowLeft, Loader2, Trophy } from 'lucide-react';
 
 interface RankedTeam {
   rank: number;
-  label: string;
   pointeurName: string;
   tireurName: string;
 }
@@ -42,13 +41,12 @@ export default function ScreenPodiumPage() {
 
       const { data: teams } = await supabase.from('live_teams').select('*').neq('id', 'Z');
       const { data: matches } = await supabase.from('live_matches').select('*');
-      const { data: steps } = await supabase.from('steps').select('id, value, label');
+      const { data: steps } = await supabase.from('steps').select('id, value');
       const { data: seasons } = await supabase.from('seasons').select('year').eq('is_active', true);
 
       if (seasons && seasons.length > 0) setSeason(seasons[0].year);
 
       const stepValues: Record<string, number> = Object.fromEntries((steps || []).map(s => [s.id, s.value]));
-      const stepLabels: Record<string, string> = Object.fromEntries((steps || []).map(s => [s.id, s.label]));
       const teamsById: Record<string, any> = {};
       (teams || []).forEach(t => { teamsById[t.id] = t; });
 
@@ -62,12 +60,11 @@ export default function ScreenPodiumPage() {
         if (!baseRank) return;
 
         const isTeam1Winner = (m.score_team1 ?? 0) > (m.score_team2 ?? 0);
-        const label = stepLabels[m.type] || m.type;
         const t1 = teamsById[m.team1_id];
         const t2 = teamsById[m.team2_id];
 
-        if (t1) results.push({ rank: isTeam1Winner ? baseRank : baseRank + 1, label, pointeurName: getName(t1.pointeur_id), tireurName: getName(t1.tireur_id) });
-        if (t2) results.push({ rank: isTeam1Winner ? baseRank + 1 : baseRank, label, pointeurName: getName(t2.pointeur_id), tireurName: getName(t2.tireur_id) });
+        if (t1) results.push({ rank: isTeam1Winner ? baseRank : baseRank + 1, pointeurName: getName(t1.pointeur_id), tireurName: getName(t1.tireur_id) });
+        if (t2) results.push({ rank: isTeam1Winner ? baseRank + 1 : baseRank, pointeurName: getName(t2.pointeur_id), tireurName: getName(t2.tireur_id) });
 
         if (baseRank === 1) {
           finaleFound = {
@@ -98,36 +95,35 @@ export default function ScreenPodiumPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-black p-6">
+    <div className="min-h-screen bg-white text-black p-4">
       <div className="max-w-xl mx-auto">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-xs font-black uppercase text-zinc-500 mb-6"
+          className="flex items-center gap-2 text-xs font-black uppercase text-zinc-500 mb-2"
         >
           <ArrowLeft size={14} /> Retour
         </button>
 
-        <div className="text-center mb-8">
-          <Trophy className="text-red-600 mx-auto mb-2" size={36} />
-          <h1 className="text-3xl font-black uppercase">
+        <div className="text-center mb-3">
+          <Trophy className="text-red-600 mx-auto mb-1" size={24} />
+          <h1 className="text-2xl font-black uppercase leading-none">
             Résultats {season && <span className="text-red-600">{season}</span>}
           </h1>
         </div>
 
         {laFinale && (
-          <div className="border-2 border-red-600 rounded-2xl p-5 mb-8 text-center">
-            <div className="text-[10px] font-black uppercase text-red-600 tracking-widest mb-3">La Finale</div>
-            <div className="flex items-center justify-center gap-4">
-              <div className="text-right font-black text-lg leading-tight">
-                <div className="text-purple-600 truncate">{laFinale.pointeur1}</div>
-                <div className="text-orange-600 truncate">{laFinale.tireur1}</div>
+          <div className="border-2 border-red-600 rounded-2xl p-3 mb-3 text-center">
+            <div className="flex items-center justify-center gap-3">
+              <div className="text-right font-black text-base leading-tight">
+                <div className="text-purple-600">{laFinale.pointeur1}</div>
+                <div className="text-orange-600">{laFinale.tireur1}</div>
               </div>
-              <div className="font-mono font-black text-2xl bg-black text-white px-3 py-1 rounded-lg shrink-0">
+              <div className="font-mono font-black text-xl bg-black text-white px-3 py-1 rounded-lg shrink-0">
                 {laFinale.score1}-{laFinale.score2}
               </div>
-              <div className="text-left font-black text-lg leading-tight">
-                <div className="text-purple-600 truncate">{laFinale.pointeur2}</div>
-                <div className="text-orange-600 truncate">{laFinale.tireur2}</div>
+              <div className="text-left font-black text-base leading-tight">
+                <div className="text-purple-600">{laFinale.pointeur2}</div>
+                <div className="text-orange-600">{laFinale.tireur2}</div>
               </div>
             </div>
           </div>
@@ -136,16 +132,15 @@ export default function ScreenPodiumPage() {
         {finalTop8.length > 0 ? (
           <div className="divide-y divide-zinc-200">
             {finalTop8.map((r, idx) => (
-              <div key={idx} className="flex items-center gap-3 py-3">
-                <span className={`font-black text-lg w-8 shrink-0 ${r.rank === 1 ? 'text-red-600' : 'text-zinc-400'}`}>
+              <div key={idx} className="flex items-center gap-3 py-1">
+                <span className={`font-black text-base w-7 shrink-0 ${r.rank === 1 ? 'text-red-600' : 'text-zinc-400'}`}>
                   #{r.rank}
                 </span>
-                <div className="flex-1 min-w-0 font-black text-lg truncate">
+                <div className="flex-1 font-black text-base leading-tight">
                   <span className="text-purple-600">{r.pointeurName}</span>
                   {' / '}
                   <span className="text-orange-600">{r.tireurName}</span>
                 </div>
-                <span className="text-[9px] font-black uppercase text-zinc-400 shrink-0">{r.label}</span>
               </div>
             ))}
           </div>
