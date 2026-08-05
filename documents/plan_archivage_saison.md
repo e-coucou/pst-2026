@@ -207,6 +207,8 @@ Ajouté suite à une inquiétude légitime de l'utilisateur avant d'exécuter le
   - `/live/archive` — bouton discret juste avant le formulaire de confirmation.
   - `/live/next-season` — même bouton, mis en évidence (orange) car c'est ici que `reset_tournament()` est réellement appelé.
 
+Pour une sauvegarde plus complète qu'un export JSON par table (schéma, index, policies RLS inclus), l'option native de Supabase (Dashboard → Database → Backups / Point-in-time recovery, selon le plan tarifaire) reste la référence — à vérifier de votre côté si disponible sur votre offre, en complément de ce bouton plutôt qu'à sa place.
+
 ## 14. Continuité de l'ELO d'une saison à l'autre — vérifié, un trou comblé
 
 Question posée par l'utilisateur avant le premier archivage réel : le graphique de progression de `/live` et le classement ELO doivent-ils repartir de la fin de la saison précédente, et l'ELO global (Classic **et** Modern) doit-il être recalculé à l'archivage ?
@@ -222,5 +224,17 @@ Question posée par l'utilisateur avant le premier archivage réel : le graphiqu
 
 **Action requise de votre part** : le fichier `documents/private/archive_tournament.sql` a été modifié après votre première exécution (nouvelle garde dans `advance_to_next_season`) — à ré-exécuter en entier avant le premier archivage réel (sûr à rejouer : `create or replace function`/`if not exists` partout, transaction explicite).
 
-Pour une sauvegarde plus complète qu'un export JSON par table (schéma, index, policies RLS inclus), l'option native de Supabase (Dashboard → Database → Backups / Point-in-time recovery, selon le plan tarifaire) reste la référence — à vérifier de votre côté si disponible sur votre offre, en complément de ce bouton plutôt qu'à sa place.
+## 15. Premier archivage réel tenté — deux essais, deux erreurs d'id, corrigées
+
+**Constat** : les deux premiers essais réels (2026-08-05) ont échoué à l'insertion dans `teams` puis `games`. **Aucune conséquence sur les données à aucun des deux essais** — `archive_tournament()` est une fonction (= une transaction), chaque échec a tout annulé automatiquement. Vérifié après coup : `games` ne contient toujours aucune ligne pour 2026, `seasons.2026.is_archived` est resté `false`, `teams` toujours à 48 lignes.
+
+**Essai 1 — `duplicate key value violates unique constraint "teams_pkey"`** : l'import initial (`migration-pst.ts`) insère `teams`/`games` avec des `id` explicites (`id: e.id !== undefined ? e.id : index`, `id: m.id`), sans jamais faire avancer les séquences auto-incrémentées sous-jacentes. `archive_tournament()` n'insérait pas d'`id` (le laissait s'auto-générer via `nextval()`) — la séquence de `teams.id` étant restée à une valeur basse, `nextval()` est retombé sur un id déjà pris.
+
+Premier correctif tenté : resynchroniser les séquences via `setval()` avant insertion — **incomplet**, cf. essai 2.
+
+**Essai 2 — `null value in column "id" of relation "games" violates not-null constraint"`** : le `setval()` sur `games.id` ne faisait en réalité rien, car `pg_get_serial_sequence('games','id')` renvoie `NULL` (cette colonne n'a **aucun** `DEFAULT` du tout, contrairement à `teams.id` qui en a un — asymétrie de schéma non documentée, cf. `architecture.md` §11 sur l'absence de schéma versionné). `setval(NULL, ...)` est un no-op silencieux en Postgres (propagation NULL standard), d'où l'absence d'erreur à ce moment-là et l'échec plus loin, au moment de l'insert réel.
+
+**Correction définitive** : abandon de toute dépendance à un `DEFAULT`/une séquence, remplacé par un calcul d'id explicite et déterministe — `select coalesce(max(id),0)+1 into v_next_team_id from teams` (idem pour `games`), puis `v_next_team_id + row_number() over (order by lt.id) - 1` dans le `SELECT` de l'`INSERT`. Fonctionne quel que soit l'état réel du schéma (avec ou sans `DEFAULT`, quel que soit son nom), donc plus robuste que le correctif précédent.
+
+**Action requise de votre part** : ré-exécuter `documents/private/archive_tournament.sql` en entier (troisième fois — toujours sûr à rejouer), puis retenter l'archivage de la saison 2026.
 
