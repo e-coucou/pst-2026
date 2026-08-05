@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Archive, AlertTriangle, Loader2, CheckCircle2, XCircle, DownloadCloud } from 'lucide-react';
+import { Archive, AlertTriangle, Loader2, CheckCircle2, XCircle, DownloadCloud, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { downloadTournamentBackup } from '@/utils/download-backup';
@@ -26,6 +26,12 @@ export default function ArchiveTournamentPage() {
   const [archiving, setArchiving] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [backingUp, setBackingUp] = useState(false);
+  // Distinct de `result` : la copie teams/games a déjà réussi (donc `seasons.is_archived = true`
+  // est déjà posé côté RPC) mais le recalcul ELO qui doit suivre a échoué — état intermédiaire à
+  // ne pas confondre avec un échec total, il faut pouvoir réessayer juste le recalcul sans
+  // relancer archive_tournament (qui refuserait, l'année étant déjà archivée).
+  const [archivedYearPendingElo, setArchivedYearPendingElo] = useState<number | null>(null);
+  const [retryingRecompute, setRetryingRecompute] = useState(false);
 
   useEffect(() => {
     fetchSummary();
@@ -67,25 +73,51 @@ export default function ArchiveTournamentPage() {
     if (confirmText !== 'ARCHIVER' || !canArchive) return;
     setArchiving(true);
     setResult(null);
+    setArchivedYearPendingElo(null);
     try {
       const { data, error } = await supabase.rpc('archive_tournament', { p_year: parseInt(year, 10) });
       if (error) throw error;
 
-      // Reconstruit elo_history/history_all avec la saison qui vient d'être archivée incluse.
-      const recomputeRes = await fetch('/api/admin/recompute-elo', { method: 'POST' });
-      const recomputeData = await recomputeRes.json();
-      if (!recomputeData.success) {
-        throw new Error(`Archivage réussi mais recalcul ELO échoué : ${recomputeData.error}`);
-      }
-
-      setResult({
-        ok: true,
-        message: `Saison ${data.year} archivée (${data.teams_archived} équipes, ${data.games_archived} matchs). ELO recalculé.`,
-      });
+      // La copie teams/games (et seasons.is_archived=true) a déjà réussi à ce stade — un échec
+      // à partir d'ici ne doit plus être présenté comme "l'archivage a échoué", mais comme "il
+      // reste le recalcul ELO à finir" (bouton de retry dédié, sans relancer archive_tournament).
+      await runRecompute(data.year, data.teams_archived, data.games_archived);
     } catch (err: any) {
       setResult({ ok: false, message: err.message || 'Erreur inconnue' });
     } finally {
       setArchiving(false);
+    }
+  };
+
+  const runRecompute = async (archivedYear: number, teamsArchived?: number, gamesArchived?: number) => {
+    // Reconstruit elo_history/history_all (Classic + Modern) avec la saison archivée incluse.
+    const recomputeRes = await fetch('/api/admin/recompute-elo', { method: 'POST' });
+    const recomputeData = await recomputeRes.json();
+    if (!recomputeData.success) {
+      setArchivedYearPendingElo(archivedYear);
+      setResult({
+        ok: false,
+        message: `Saison ${archivedYear} archivée, mais le recalcul ELO a échoué (${recomputeData.error}). Les données sont en sécurité — réessayez le recalcul avant de démarrer la saison suivante.`,
+      });
+      return;
+    }
+
+    setArchivedYearPendingElo(null);
+    setResult({
+      ok: true,
+      message: teamsArchived !== undefined
+        ? `Saison ${archivedYear} archivée (${teamsArchived} équipes, ${gamesArchived} matchs). ELO recalculé (Classic + Modern).`
+        : `Recalcul ELO terminé pour la saison ${archivedYear} (Classic + Modern).`,
+    });
+  };
+
+  const handleRetryRecompute = async () => {
+    if (archivedYearPendingElo === null) return;
+    setRetryingRecompute(true);
+    try {
+      await runRecompute(archivedYearPendingElo);
+    } finally {
+      setRetryingRecompute(false);
     }
   };
 
@@ -201,6 +233,17 @@ export default function ArchiveTournamentPage() {
             {result.ok ? <CheckCircle2 size={18} className="shrink-0 mt-0.5" /> : <XCircle size={18} className="shrink-0 mt-0.5" />}
             <span>{result.message}</span>
           </div>
+        )}
+
+        {archivedYearPendingElo !== null && (
+          <button
+            onClick={handleRetryRecompute}
+            disabled={retryingRecompute}
+            className="w-full py-4 rounded-xl font-black uppercase italic flex items-center justify-center gap-3 bg-orange-600 hover:bg-orange-700 text-white transition-all disabled:opacity-50"
+          >
+            {retryingRecompute ? <Loader2 className="animate-spin" /> : <RefreshCw size={18} />}
+            Réessayer le recalcul ELO
+          </button>
         )}
 
         {result?.ok && (

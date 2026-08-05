@@ -207,5 +207,20 @@ Ajouté suite à une inquiétude légitime de l'utilisateur avant d'exécuter le
   - `/live/archive` — bouton discret juste avant le formulaire de confirmation.
   - `/live/next-season` — même bouton, mis en évidence (orange) car c'est ici que `reset_tournament()` est réellement appelé.
 
+## 14. Continuité de l'ELO d'une saison à l'autre — vérifié, un trou comblé
+
+Question posée par l'utilisateur avant le premier archivage réel : le graphique de progression de `/live` et le classement ELO doivent-ils repartir de la fin de la saison précédente, et l'ELO global (Classic **et** Modern) doit-il être recalculé à l'archivage ?
+
+**Déjà correct par construction, vérifié dans le code (pas juste supposé)** :
+- Le graphique `/live` (RPC `get_full_live`, table `live_history`) n'est jamais touché par `archive_tournament()` — seul `reset_tournament()` (appelé par `advance_to_next_season`) le vide, ce qui est le comportement voulu (nouvelle saison = nouveau graphique).
+- `app/live/(admin)/admin/page.tsx` (`fetchPlayersWithElo`, ligne ~177-188, appelée à chaque ouverture de l'étape JOUEURS) lit déjà, pour chaque joueur, la **dernière** ligne de `elo_history` (triée par `game_id` décroissant) — donc l'ELO de départ d'une nouvelle saison reprend nativement là où la précédente s'est arrêtée, **à condition que `elo_history` ait été reconstruit**.
+- `/api/admin/recompute-elo` recalcule déjà systématiquement **les deux algorithmes** (`calculatePstElo`/`elo_value` et `calculateModernElo`/`elo_modern_value`) sur toute la table `games` — la saison archivée y est automatiquement incluse dès qu'elle y apparaît.
+
+**Trou trouvé et comblé** : `archive_tournament()` marque `seasons.is_archived = true` **dans sa propre transaction**, avant que le client n'appelle `POST /api/admin/recompute-elo` (étape cross-langage, forcément hors de cette transaction SQL). Si cet appel échouait après coup, la saison restait marquée archivée sans que `elo_history` reflète ses résultats — et rien n'empêchait de démarrer la saison suivante dans cet état, avec des joueurs positionnés sur un ELO obsolète. Deux corrections :
+1. **`/live/archive/page.tsx`** distingue maintenant "l'archivage a échoué" de "l'archivage a réussi mais le recalcul ELO a échoué" — dans ce second cas, un bouton dédié **"Réessayer le recalcul ELO"** reste affiché tant que ce n'est pas fait, sans jamais relancer `archive_tournament` (qui de toute façon refuserait, l'année étant déjà marquée archivée).
+2. **`advance_to_next_season()`** (SQL) refuse désormais de continuer si `elo_history` ne contient aucune ligne pour la saison active — garde au niveau base, indépendante de la discipline côté écran.
+
+**Action requise de votre part** : le fichier `documents/private/archive_tournament.sql` a été modifié après votre première exécution (nouvelle garde dans `advance_to_next_season`) — à ré-exécuter en entier avant le premier archivage réel (sûr à rejouer : `create or replace function`/`if not exists` partout, transaction explicite).
+
 Pour une sauvegarde plus complète qu'un export JSON par table (schéma, index, policies RLS inclus), l'option native de Supabase (Dashboard → Database → Backups / Point-in-time recovery, selon le plan tarifaire) reste la référence — à vérifier de votre côté si disponible sur votre offre, en complément de ce bouton plutôt qu'à sa place.
 
