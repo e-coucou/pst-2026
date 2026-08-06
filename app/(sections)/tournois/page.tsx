@@ -175,6 +175,9 @@ export default async function TournamentsPage() {
             </div>
           </Link>
         ))}
+        {tournaments?.length === 0 && (
+          <p className="col-span-full text-center p-20 text-zinc-400 font-black uppercase tracking-widest">Aucun tournoi archivé pour le moment.</p>
+        )}
       </div>
     </div>
   );

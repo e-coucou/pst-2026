@@ -151,6 +151,17 @@ Deux mécanismes posés une fois pour toute l'app, sans instrumenter chaque page
 
 - **Retour tactile** (`app/globals.css`) : `button:active, a:active, [role="button"]:active { transform: scale(0.96); }`, spécificité volontairement basse — toute classe `active:*` déjà présente sur un composant prend le dessus sans conflit.
 - **Barre de chargement globale** (`components/GlobalLoadingBar.tsx`) : fine barre rouge en haut de l'écran, visible dès qu'une requête Supabase est en vol (compteur branché sur le `fetch` custom du client navigateur, pas de logique par page).
+- **Focus clavier** (`app/globals.css`) : `:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; }`, actif uniquement en navigation clavier (souris/tactile non concernés).
+
+### États "page en chargement" — deux registres volontaires selon la famille de page
+
+- **Pages de données** (`render/*`, `live/(super)/*`) : spinner plein écran centré, sans texte — `<div className="min-h-screen bg-black flex items-center justify-center"><Loader2 className="text-red-600 animate-spin" size={40} /></div>`.
+- **Pages de pilotage de match en direct** (`live/(admin)/{poules,ronde,demi,finale,admin}`) et `stats` : texte seul qui pulse, sans icône — `font-black animate-pulse italic uppercase` (ex. `"CHARGEMENT..."`). Choix volontaire pour rester lisible sur un écran de terrain regardé de loin.
+- Dans les deux familles, le **loading d'une action locale** (bouton "Enregistrer", "Actualiser"...) reste toujours `Loader2` + `animate-spin` en petite taille, remplaçant l'icône habituelle du bouton — c'est le seul registre 100% uniforme du projet, à réutiliser par défaut pour tout nouveau bouton asynchrone.
+
+### État "aucune donnée" — référence
+
+Texte centré discret, sans icône : `text-zinc-400 font-black uppercase tracking-widest` (ex. `"Aucun X trouvé/enregistré."`). À utiliser systématiquement en garde après un `.map()` qui peut produire une liste vide, y compris côté Server Component.
 - **Vague de lumière douce** (vignettes `RecordCard` de `/stats`) : bande diagonale animée qui traverse la carte en fondu, couleur dérivée de la classe `text-{couleur}-{nuance}` déjà passée à la carte (variables CSS de palette Tailwind v4, `var(--color-orange-500)` etc.) — pas de configuration par carte.
 
 ## 6. Animations & interactions

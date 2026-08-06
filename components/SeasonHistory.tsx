@@ -24,7 +24,7 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
   const [expandedYear, setExpandedYear] = useState<number | null>(null);
 
   if (!stats || stats.length === 0) {
-    return <div className="p-4 text-gray-500 italic">Aucune donnée historique trouvée.</div>;
+    return <div className="p-4 text-zinc-400 font-black uppercase tracking-widest">Aucune donnée historique trouvée.</div>;
   }
 
 //  console.log('coucou',historyAll);
@@ -225,7 +225,7 @@ export default function SeasonHistory({ stats }: { stats: SeasonStat[] }) {
   //console.log("Stats reçues par le composant :", stats);
   // Vérification de sécurité
   if (!stats || stats.length === 0) {
-    return <div className="p-4 text-gray-500 italic">Aucune donnée historique trouvée.</div>;
+    return <div className="p-4 text-zinc-400 font-black uppercase tracking-widest">Aucune donnée historique trouvée.</div>;
   }
 
   return (

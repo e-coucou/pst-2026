@@ -301,6 +301,9 @@ const finalTop8 = rankedTeams
                   </div>
 		      </div>
 		    ))}
+		    {finalTop8.length === 0 && (
+		      <p className="col-span-full text-center p-10 text-zinc-400 font-black uppercase tracking-widest">Aucun classement disponible pour cette édition.</p>
+		    )}
 		  </div>
 		</section>
 

@@ -78,7 +78,7 @@ export default async function Leaderboard({ searchParams }: { searchParams: Prom
   }).sort((a, b) => b.elo - a.elo);
 
   if (leaderboard.length === 0) {
-    return <div className="p-20 text-center text-white font-black italic">Aucune donnée trouvée.</div>;
+    return <div className="p-20 text-center text-zinc-400 font-black uppercase tracking-widest">Aucune donnée trouvée.</div>;
   }
 
   return (
