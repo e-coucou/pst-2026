@@ -4,7 +4,7 @@ import StatsCard from '@/components/StatsCard';
 import SeasonHistory from '@/components/SeasonHistory';
 import FavoriteButton from '@/components/FavoriteButton';
 import Link from 'next/link';
-import { ChevronLeft, Zap, Target, Award, Swords, Video, Users, Star } from 'lucide-react';
+import { ChevronLeft, Zap, Target, Award, Swords, Video, Users, Star, ArrowRight } from 'lucide-react';
 import { use } from 'react';
 
 
@@ -116,11 +116,23 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 		        <p className="text-zinc-500 font-bold text-sm uppercase tracking-[0.3em]">
 		          Ranking PST : <span className="text-red-500">#{lastEntry?.rank_at_time || "--"}</span>
               </p>
-<FavoriteButton 
-  playerId={player.id} 
-  userId={user.id} 
-  initialIsFavori={favori === player.id} 
-/>
+<div className="flex items-center gap-3">
+  <FavoriteButton
+    playerId={player.id}
+    userId={user.id}
+    initialIsFavori={favori === player.id}
+  />
+  <Link
+    href={`/joueurs/face-a-face?a=${player.id}`}
+    className="group flex items-center gap-2 px-4 py-2 bg-zinc-800/40 hover:bg-red-600/80 border border-white/5 rounded-2xl transition-all"
+  >
+    <Swords size={14} className="text-red-600 group-hover:text-white transition-colors" />
+    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 group-hover:text-white transition-colors">
+      Face-à-face
+    </span>
+    <ArrowRight size={12} className="text-zinc-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
+  </Link>
+</div>
             </div>
 		    </div>
 
