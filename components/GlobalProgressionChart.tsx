@@ -108,11 +108,17 @@ export default function GlobalProgressionChart({
         index,
         label: `S${match.year} — MATCH ${match.game_id}`,
         totalPlayers: match.players?.length || 0,
-        // On attache la couleur fixe à chaque joueur du top 16 pour le tooltip
-        top16: (match.players || []).slice(0, 16).map((p: any) => ({
-          ...p,
-          color: colorMap.get(p.nom) || '#fff'
-        }))
+        // On attache la couleur fixe à chaque joueur du top 16 pour le tooltip. Le RPC renvoie
+        // players déjà trié par elo_value (ORDER BY figé côté SQL) — sans ce re-tri, le tooltip
+        // restait classé par Classic même en vue Modern/Dynamique. On retrie donc ici selon la
+        // méthode actuellement affichée.
+        top16: [...(match.players || [])]
+          .sort((a: any, b: any) => (b[method] ?? -Infinity) - (a[method] ?? -Infinity))
+          .slice(0, 16)
+          .map((p: any) => ({
+            ...p,
+            color: colorMap.get(p.nom) || '#fff'
+          }))
       };
 
       // On remplit le score de TOUS les joueurs pour tracer les 31 lignes
