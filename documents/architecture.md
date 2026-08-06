@@ -27,7 +27,10 @@ PST 2026 est une application web privée de gestion de tournoi de pétanque (cla
 ```
 app/
 ├── layout.tsx                     Layout racine : <Navbar/> + <main/> + <Footer/>
-├── page.tsx                       Accueil (hero, compteur joueurs, accès rapide)
+├── page.tsx                       Accueil (hero, compteur joueurs, accès rapide) — bandeau
+│                                    "live" remplacé par l'annonce des vainqueurs (photos, score)
+│                                    tant que la saison active est archivée sans saison suivante
+│                                    démarrée, voir §12
 ├── globals.css                    Thème Tailwind v4 (@theme, couleurs de base)
 ├── manifest.ts                    PWA manifest
 │
@@ -92,11 +95,16 @@ app/
 │       ├── charte/page.tsx          Visionneuse de charte.md (via /api/dev/charte)
 │       ├── todo/page.tsx            Visionneuse de todo.md (via /api/dev/todo)
 │       ├── activity/page.tsx        Journal d'activité (filtrable par section du site)
-│       └── online/page.tsx          "Qui est en ligne" (activité < 1h, auto-refresh 15s)
+│       ├── online/page.tsx          "Qui est en ligne" (activité < 1h, auto-refresh 15s)
+│       ├── archive/page.tsx         Archivage de la saison live vers teams/games (voir §12)
+│       ├── next-season/page.tsx     Passage à la saison suivante + reset (voir §12)
+│       ├── screen/page.tsx          Écran "composition des équipes" partageable (fond blanc)
+│       └── screen-podium/page.tsx   Écran "résultats" partageable (fond blanc), voir §6
 │
 └── api/
-    ├── admin/recompute-elo/route.ts   Recalcul complet de l'historique ELO (toutes saisons)
-    ├── admin/live-elo/route.ts        Recalcul de l'historique ELO du tournoi live en cours
+    ├── admin/recompute-elo/route.ts   Recalcul complet de l'historique ELO (toutes saisons, 3 méthodes)
+    ├── admin/live-elo/route.ts        Recalcul de l'historique ELO du tournoi live en cours (3 méthodes)
+    ├── admin/backup-tournament-data/route.ts  Export JSON tournoi+historique, réservé super (voir §12)
     ├── auth/reset-password/route.ts   Reset mdp comptes pseudo (client service-role), voir §4d
     └── dev/charte/, dev/todo/route.ts Lecture de fichiers .md locaux (debug/admin)
 ```
@@ -111,12 +119,12 @@ app/
 |---|---|
 | `Navbar.tsx` | Nav sticky, détecte le rôle (`membre`/`admin`/`super`) via `supabase.rpc('get_my_role')`, affiche icônes et accès contextuels, écoute `onAuthStateChange` |
 | `Footer.tsx` | Version de build (`APP_VERSION` + SHA Vercel), lien QR (`/share`) |
-| `EloChart.tsx` | Courbe ELO d'un joueur (Recharts), bascule Classic/Modern, marqueurs par saison |
-| `GlobalProgressionChart.tsx` | Courbe multi-joueurs (jusqu'à ~31 lignes colorées en HSL), tooltip Top 16 |
+| `EloChart.tsx` | Courbe ELO d'un joueur (Recharts), bascule Classic/Modern/Dynamique (rouge/violet/émeraude), marqueurs par saison. Tooltip Dynamique en décimales virgule FR (échelle resserrée, un écart de 0,6 point est significatif) plutôt qu'entier comme les deux autres |
+| `GlobalProgressionChart.tsx` | Courbe multi-joueurs (jusqu'à ~31 lignes colorées en HSL), toggle Classic/Modern/Dynamique (pilote à la fois le tracé des lignes et le tri du Top 16 affiché dans le tooltip — le RPC renvoie les joueurs triés par Classic, retrié côté client selon la méthode active), tooltip Top 16 |
 | `SeasonHistory.tsx` | Accordéon historique saison par saison avec détail des matchs |
 | `StatsCard.tsx` | Tuile de statistique générique (label/valeur/couleur) |
 | `Stepper.tsx` (`RenderStepper`) | Frise de progression du tournoi, liste d'étapes pilotée par le prop `format` : `classique` (6 étapes, avec Demis), `10_equipes` (5, sans Demis), `ronde` (5, "Rondes" puis "Finales" au lieu de "Poules"/"Demis") |
-| `PouleStandingsTable.tsx` | Tableau de classement de poule partagé (Rk/Équipe/J/V-D-N/Pour-Contre/Diff/Pts), réutilisé par `poules`/`finale`/`podium`/`live`/`tournois/[year]` via `utils/live-stats.ts#calculatePouleStandings` — un seul calcul/rendu au lieu de versions "mini" divergentes |
+| `PouleStandingsTable.tsx` | Tableau de classement de poule partagé (Rk/Équipe/J/V-D-N/Pour-Contre/Diff/Pts), réutilisé par `poules`/`finale`/`podium`/`live`/`tournois/[year]` via `utils/live-stats.ts#calculatePouleStandings` — un seul calcul/rendu au lieu de versions "mini" divergentes. Sur mobile, V/D/N et P/C sont fusionnés en une seule colonne empilée sur 2 lignes (la ligne fait déjà 3 lignes de haut à cause du nom pointeur/tireur) plutôt que masqués ; Diff/Pts en padding réduit pour laisser la place |
 | `LiveDraftDraw.tsx` | Tirage des équipes "en direct" (`admin/page.tsx`, étape EQUIPES, `live_tournament.team_mode = 'live'`) : révèle les joueurs par paire en cliquant sur celui annoncé (aucune randomisation côté app), mode "Présélection P/T" (respecte les pools JOUEURS) ou "Rôles aléatoires" (pool unique, rôle alterné par position de tirage) |
 | `FavoriStar.tsx` | Étoile affichée à côté du nom d'un joueur quand c'est le favori de l'utilisateur courant (`utils/favori.ts` côté serveur, `hooks/useFavoriId.ts` côté client) |
 | `FavoriteButton.tsx` | Toggle "joueur favori" (Client Component isolé pour préserver le Server Component parent) |
@@ -197,18 +205,18 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
 - **`session_logs`** — journal des connexions/déconnexions
 
 ### Historique (saisons archivées)
-- **`seasons`** — `year`, `is_active`
-- **`teams`** — doublette d'une saison passée : `tireur_id`, `pointeur_id`
-- **`games`** — match archivé : `team_1_id`, `team_2_id`, `score_1`, `score_2`, `type` (`Poule`/`Demi`/`Finale`), `year`, `poule`
-- **`elo_history`** — un enregistrement par joueur par match : `elo_value`, `elo_modern_value`, `rank_at_time`, `sc_p`/`sc_c`, adversaires, etc. — reconstruite intégralement par `/api/admin/recompute-elo`
-- **`history_all`** — même chronologie mais **tous les joueurs à chaque match** (sert aux graphes globaux `GlobalProgressionChart`)
+- **`seasons`** — `year`, `is_active` (une seule ligne à la fois, garanti par le cycle décrit en §12), `format` (`classique`/`10_equipes`/`ronde`, renseigné à l'archivage), `is_archived` (indépendant de `is_active` — voir §12 pour le cycle de vie complet)
+- **`teams`** — doublette d'une saison passée : `tireur_id`, `pointeur_id`. `id` auto-incrémenté ; ne pas confondre avec `live_teams.id` qui est une lettre (voir §12)
+- **`games`** — match archivé : `team_1_id`, `team_2_id`, `score_1`, `score_2`, `type` (`Poule`/`Demi`/`Finale`/`Finale RangN` selon le format), `year`, `poule` (`Gassin`/`Ramatuelle`/`Ronde`), `tableau`
+- **`elo_history`** — un enregistrement par joueur par match, **3 méthodes de classement en parallèle** (voir §6) : `elo_value`/`rank_at_time` (Classic), `elo_modern_value`/`modern_rank_at_time` (Modern), `skill_ordinal`/`skill_mu`/`skill_sigma`/`skill_rank_at_time` (Dynamique, bayésien) — `sc_p`/`sc_c`, adversaires, etc. — reconstruite intégralement par `/api/admin/recompute-elo`
+- **`history_all`** — même chronologie mais **tous les joueurs à chaque match** (sert aux graphes globaux `GlobalProgressionChart`) : mêmes 3 méthodes (`elo_value`/`rank`, `elo_modern_value`/`rank_modern`, `skill_ordinal`/`skill_mu`/`skill_sigma`/`rank_skill`)
 
 ### Tournoi en direct (saison courante)
 - **`live_tournament`** — ligne unique (`id=1`) avec `status` = étape courante du stepper, `format` (`classique`/`10_equipes`/`ronde`, voir §7), `team_mode` (`auto`/`live`, voir §7 — indépendant du format)
-- **`live_teams`** — doublettes du jour : `elo_start_pointeur`, `elo_start_tireur`, `modern_start`, `poule` (`Gassin`/`Ramatuelle`, ou `Ronde` en format suisse — CHECK constraint étendue en conséquence)
-- **`live_matches`** — match du jour : `team1_id`, `team2_id`, `score_team1/2`, `status` (`EN_COURS`/`TERMINE`), `type`, `poule`, `round` (entier, uniquement renseigné en format `ronde` pour distinguer les 4 rondes suisses), `terrain` (`T1`..`T4`, uniquement renseigné pour les poules du format `10_equipes`, voir §7), `delta_elo_team1/2`, `delta_modern_team1/2` — `type` porte une **FK vers `steps.id`** (non documentée par Supabase, découverte en pratique)
-- **`live_selected`** — joueurs convoqués pour la journée, avec `role` (`Pointeur`/`Tireur`), ELO figé au moment de la sélection
-- **`live_history`** — équivalent de `history_all` mais pour le tournoi live (reconstruit par `/api/admin/live-elo`)
+- **`live_teams`** — doublettes du jour : `elo_start_pointeur`, `elo_start_tireur`, `modern_start` (moyenne d'équipe, pas de version par joueur — suffisant pour le calcul Modern qui opère déjà sur une moyenne), `skill_mu_pointeur`/`skill_sigma_pointeur`/`skill_mu_tireur`/`skill_sigma_tireur` (**4 colonnes séparées, pas de moyenne** — le modèle bayésien met à jour chaque joueur individuellement, voir §6), `poule` (`Gassin`/`Ramatuelle`, ou `Ronde` en format suisse — CHECK constraint étendue en conséquence)
+- **`live_matches`** — match du jour : `team1_id`, `team2_id`, `score_team1/2`, `status` (`EN_COURS`/`TERMINE`), `type`, `poule`, `round` (entier, uniquement renseigné en format `ronde` pour distinguer les 4 rondes suisses), `terrain` (`T1`..`T4`, uniquement renseigné pour les poules du format `10_equipes`, voir §7), `delta_elo_team1/2`, `delta_modern_team1/2`, `delta_skill_team1/2` (mouvement moyen d'ordinal de l'équipe — pas un vrai delta symétrique comme les deux autres, voir §6) — `type` porte une **FK vers `steps.id`** (non documentée par Supabase, découverte en pratique)
+- **`live_selected`** — joueurs convoqués pour la journée, avec `role` (`Pointeur`/`Tireur`), ELO figé au moment de la sélection (`elo_at_selection`, `modern_at_selection`, `skill_mu_at_selection`/`skill_sigma_at_selection`)
+- **`live_history`** — équivalent de `history_all` mais pour le tournoi live (reconstruit par `/api/admin/live-elo`), mêmes 3 méthodes que `history_all`
 - **`steps`** — barème par `type` de match : `value` (rang de base pour `finalTop8`, ex. `Finale Rang1` → 1), `label` (libellé lisible affiché à la place du `type` brut, ex. `Finale Rang2` → "Petite Finale")
 
 ### Résidence (espace réservé, voir §9)
@@ -232,7 +240,7 @@ Aucun fichier de schéma SQL n'est versionné dans le dépôt — le schéma ci-
   - RPC `get_popularity_stats()` (`SECURITY DEFINER`) : agrège `activity_logs` côté base (page/joueur/tournoi/photo les plus consultés) et ne renvoie que l'agrégat — ouverte à `authenticated`, contourne volontairement le RLS restrictif de la table pour ne pas exposer les lignes individuelles.
 
 ### Fonctions RPC utilisées côté client
-`get_my_role`, `is_super`, `get_full_live`, `get_full_timeline`, `get_player_elo`, `get_player_stats`, `verify_invitation_code`, `get_popularity_stats`
+`get_my_role`, `is_super`, `get_full_live`, `get_full_timeline`, `get_player_elo`, `get_player_stats`, `verify_invitation_code`, `get_popularity_stats`, `reset_tournament`, `archive_tournament` (voir §12), `advance_to_next_season` (voir §12)
 
 ### Storage
 - Bucket `joueurs_photos` — accès via URL signée (1h) dans `app/joueurs/[id]/page.tsx` et `admin_joueurs/page.tsx`.
@@ -248,7 +256,7 @@ Le podium live (`live/(admin)/podium/page.tsx`) s'abonne à un channel Supabase 
 
 ## 6. Moteur ELO (`lib/elo-engine.ts`, `utils/elo-logic.ts`)
 
-Deux algorithmes coexistent et sont calculés **en parallèle** sur chaque match, chacun alimentant sa propre colonne (`elo_value` / `elo_modern_value`) :
+Trois algorithmes coexistent et sont calculés **en parallèle** sur chaque match, chacun alimentant ses propres colonnes (`elo_value` / `elo_modern_value` / `skill_ordinal`+`skill_mu`+`skill_sigma`) :
 
 ### PST Classic (inspirée du rugby IRB)
 ```ts
@@ -264,13 +272,30 @@ expected1 = 1 / (1 + 10^((elo2 - elo1)/400))
 gain = k_factor * (résultat_réel - expected1)
 ```
 
-Les réglages (`EloSettings`) sont stockés en base (table `settings`) et parsés via `parseSettings()`. Trois points d'entrée recalculent l'historique :
+### Dynamique (bayésien, `openskill`/Weng-Lin)
+Ajoutée en cours de saison 2026 pour corriger une faiblesse structurelle des deux systèmes ci-dessus : conçus pour un grand volume de parties (le bruit s'y moyenne), ils souffrent avec le volume réel du club (~5 matchs/joueur/saison) — et comme les doublettes sont retirées au sort chaque année, une bonne partie du delta d'un joueur reflète en réalité le niveau de son partenaire du moment, ce qu'aucun réglage de `max_ecart`/`k_factor` ne corrige.
 
-1. **`/api/admin/recompute-elo`** — rejoue **toute** la table `games` (toutes saisons), reconstruit `elo_history` + `history_all` depuis `elo_init` pour chaque joueur.
-2. **`/api/admin/live-elo`** — rejoue uniquement `live_matches` (saison en cours), part des ELO figés dans `live_teams.elo_start_*`, reconstruit `live_history`.
-3. **`utils/elo-logic.ts#updateMatchScore`** — appelé à la saisie d'un score en live : calcule le delta du match et met à jour `live_matches` (`delta_elo_team1/2`, `delta_modern_team1/2`) sans rejouer tout l'historique.
+```ts
+// État par JOUEUR (pas par équipe) : { mu, sigma } — mu = niveau estimé, sigma = incertitude
+rank = score1 > score2 ? [1, 2] : score1 < score2 ? [2, 1] : [1, 1]   // égalité de rang = nul
+[team1, team2] = openskill.rate([team1, team2], { rank })             // met à jour chaque joueur individuellement
+ordinal = openskill.ordinal(rating)                                    // valeur affichée/triable, ≈ mu - 3·sigma
+```
 
-`utils/live-stats.ts#calculateTeamsStats` agrège ensuite les deltas de matchs terminés pour afficher la progression ELO cumulée d'une équipe (utilisé par le podium).
+`lib/elo-engine.ts` : `makeSkillRating()` (défaut `openskill.rating()`, mu=25/sigma≈8.33), `calculateSkillRating(team1, team2, score1, score2)`, `skillOrdinal(rating)`. Contrairement aux deux autres méthodes (delta scalaire partagé, appliqué avec le signe opposé à chaque équipe), la mise à jour bayésienne n'est **pas symétrique** : un joueur incertain (peu d'historique) bouge plus qu'un partenaire déjà établi, sur le même match — c'est justement ce qui règle le problème de bruit du partenaire évoqué plus haut.
+
+**Simplification volontaire (v1, confirmée avec l'utilisateur)** : `openskill.rate()` est basé sur le classement (victoire/nul/défaite), pas sur l'écart de score, et n'a pas d'équivalent aux coefficients `poids_finale`/`poids_finaliste` — une finale est traitée comme un match de poule ordinaire. Décision assumée plutôt qu'un oubli : gonfler artificiellement l'effet d'une finale casserait la cohérence du modèle (sigma ne refléterait plus une vraie incertitude). Si besoin un jour, la piste la moins bricolée serait de rejouer le match plusieurs fois dans la boucle de recalcul plutôt que de trafiquer mu/sigma directement.
+
+Les réglages (`EloSettings`) sont stockés en base (table `settings`) et parsés via `parseSettings()` — ne couvrent que Classic/Modern, Dynamique utilise les valeurs par défaut d'`openskill` (non exposées dans `/live/params_elo`). Trois points d'entrée recalculent l'historique, pour les 3 méthodes désormais :
+
+1. **`/api/admin/recompute-elo`** — rejoue **toute** la table `games` (toutes saisons), reconstruit `elo_history` + `history_all` depuis `elo_init` (Classic/Modern) et `openskill.rating()` (Dynamique) pour chaque joueur.
+2. **`/api/admin/live-elo`** — rejoue uniquement `live_matches` (saison en cours), part des valeurs figées dans `live_teams.elo_start_*`/`modern_start`/`skill_mu_*`/`skill_sigma_*`, reconstruit `live_history`.
+3. **`utils/elo-logic.ts#updateMatchScore`** — appelé à la saisie d'un score en live : calcule le delta du match et met à jour `live_matches` (`delta_elo_team1/2`, `delta_modern_team1/2`, `delta_skill_team1/2`) sans rejouer tout l'historique. `delta_skill_team1/2` est un raccourci d'affichage (mouvement moyen d'ordinal de l'équipe), pas un vrai delta symétrique comme les deux autres — la vraie mise à jour reste par joueur.
+
+`utils/live-stats.ts#calculateTeamsStats` agrège ensuite les deltas de matchs terminés (les 3 méthodes) pour afficher la progression cumulée d'une équipe (utilisé par le podium).
+
+### Constitution des équipes et saisie live — 3 méthodes
+`app/live/(admin)/admin/page.tsx#fetchPlayersWithElo` récupère, pour chaque joueur, sa dernière valeur connue (`elo_history`, triée par `game_id` décroissant) pour les 3 méthodes — `skillMu`/`skillSigma` par défaut (`makeSkillRating()`) si le joueur n'a jamais joué. Propagé jusqu'à `live_selected` (`skill_mu_at_selection`/`skill_sigma_at_selection`) puis `live_teams` (`skill_mu_pointeur`/`skill_sigma_pointeur`/`skill_mu_tireur`/`skill_sigma_tireur`) via **deux points d'insertion distincts à garder synchronisés** : `syncTeamsToDatabase` (mode `auto`/tirage en direct) et `confirmAndCreateTournament` (lancement du tournoi).
 
 ---
 
@@ -291,6 +316,8 @@ Les 3 formats empruntent des chemins différents dans cette même machine à ét
 | `ronde` | 10 (1 seul groupe) | `POULES → FINALE` (saute `DEMI`) | Système suisse (voir `documents/rondes.md`) : 4 rondes générées une par une sur `/live/ronde` (appariement par classement cumulé, anti-rematch), puis une 5ème ronde = 5 finales classées par rang adjacent (1v2, 3v4…), réutilisant le même mécanisme `Finale RangX` que `10_equipes` — `finale/page.tsx` et `podium/page.tsx` sont donc réutilisées telles quelles, sans branche de code dédiée |
 
 `generateRoundRobinPairs(n)` (`admin/page.tsx`) génère le round-robin de façon générique (méthode du cercle, avec bye si impair) pour `classique`/`10_equipes`. `generateRondePairing`/`buildPlayedPairs` (`utils/live-stats.ts`) gèrent l'appariement suisse du format `ronde`.
+
+`utils/live-stats.ts#getShareScreenTarget(status)` — un seul bouton "écran à partager sur WhatsApp" (fond blanc, pensé pour une capture d'écran, cf. `screen/page.tsx`/`screen-podium/page.tsx`), réutilisé sur `poules`/`podium` : pointe vers `/live/screen` (composition des équipes) tant que le tournoi n'est pas `TERMINE`, vers `/live/screen-podium` (palmarès) une fois terminé.
 
 **Terrains (format `10_equipes` uniquement)** — `live_matches.terrain` (`T1`..`T4`), attribué à la génération dans `admin/page.tsx` via deux tables figées `POULE5_COURTS.Gassin`/`.Ramatuelle`. Les 2 poules de 5 équipes jouent **en parallèle sur les 4 mêmes terrains physiques** : à chaque ronde (5 rondes, cf. `generateRoundRobinPairs`), 2 matchs Gassin + 2 matchs Ramatuelle = 4 matchs simultanés, un par terrain. Avec 5 équipes par poule (round-robin = K5), une équipe joue 4 matchs et il est mathématiquement impossible qu'elle couvre 4 terrains distincts avec seulement 4 terrains disponibles (nombre chromatique d'arêtes de K5 = 5, vérifié par recherche exhaustive). Les tables retenues sont la meilleure répartition **conjointe** trouvée (les 2 poules ne s'attribuent jamais le même terrain à la même ronde — condition physique, pas seulement d'équité) : les 10 équipes couvrent chacune au moins 3 terrains sur 4. Affiché en badge sur `poules/page.tsx` (admin) et `app/live/page.tsx` (public). Colonne nullable, absente pour `classique`/`ronde`.
 
@@ -386,3 +413,32 @@ Correspondance avec `data/residence.ts` — **qui ne modélise que le Bâtiment 
 - `app/(sections)/videos/photos/page.tsx` liste les photos dans `private/thumbs/` : les photos uploadées **avant** l'introduction du système vignette+complet (chemin plat `private/{fichier}.webp`, sans sous-dossier) ne sont plus listées — pas de code de migration/rétrocompatibilité.
 - `documents/private/` contient des données personnelles/financières réelles (convocation d'AG, rapprochement nom/lot du Bâtiment B) — ajouté à `.gitignore`, jamais commité, à traiter avec précaution.
 - `residence_documents.external_url` pointe vers un fichier Google Drive externe, hors du contrôle de l'app : si le lien est révoqué, le fichier déplacé/supprimé, ou le partage repassé en privé côté Drive, l'app ne le détecte pas — le lien casse silencieusement (pas de vérification de disponibilité).
+- **Photos joueurs** (`admin_joueurs/page.tsx`) : convention de nommage corrigée en cours de session (`{id}_{timestamp}.ext` → `slug(nom).jpg`, upsert sur le même chemin plutôt qu'un nouveau fichier à chaque remplacement — le bouton de remplacement était par ailleurs masqué dès qu'une photo existait déjà, empêchant toute mise à jour pour 29 des 34 joueurs). Deux fichiers orphelins subsistent dans le bucket `joueurs_photos` depuis avant ce correctif (`33_1785942140372.jpg`, `marco.jpg`), jamais référencés par aucun profil — pas nettoyés. Deux photos historiques (`eric-d.png`, `jean-pierre.png`) resteront en `.png` jusqu'à leur prochain remplacement (la nouvelle convention force systématiquement `.jpg`).
+- `get_full_timeline`/`get_full_live`/`get_player_elo` (RPC) ont été étendues (ajout du champ Dynamique) à partir du corps de fonction fourni par l'utilisateur, sans le `CREATE FUNCTION` d'origine (paramètres/`RETURNS TABLE` non versionnés, cf. point ci-dessus) — reconstruites par inférence. Fonctionnel et vérifié en base réelle au moment de l'écriture, mais à garder en tête si l'une de ces 3 fonctions doit être modifiée à nouveau : le vrai code source vit uniquement dans Supabase (Dashboard → Database → Functions), pas dans ce dépôt.
+
+## 12. Archivage de fin de saison
+
+Ajouté fin de saison 2026 : jusque-là, rien dans le code ne transférait le tournoi live (`live_teams`/`live_matches`) vers l'historique global (`teams`/`games`) — seul précédent, `migration-pst.ts`, un script one-shot déjà exécuté pour l'import initial. Détail complet du raisonnement et des itérations dans `documents/plan_archivage_saison.md` (conservé comme journal de la construction de cette fonctionnalité) ; cette section n'en résume que l'état final.
+
+### Cycle de vie, deux actions distinctes
+
+`seasons` porte deux booléens indépendants : `is_active` (quelle saison afficher comme "en cours" — n'a jamais conditionné l'affichage de `/live`, qui lit directement les tables `live_*`, seulement un libellé d'année sur `app/page.tsx`/`podium/page.tsx`) et `is_archived` (les données de cette saison ont été copiées dans `teams`/`games`). Découplés à dessein pour permettre l'état "saison archivée, mais toujours affichée en direct" :
+
+```mermaid
+flowchart LR
+    A["EN COURS<br/>is_active=true, is_archived=false"] -->|"Archiver<br/>(super, /live/archive)"| B["ARCHIVÉE<br/>toujours affichée en live<br/>is_active=true, is_archived=true"]
+    B -->|"Passer à la saison suivante<br/>(super, /live/next-season)"| C["Nouvelle saison<br/>is_active=true, is_archived=false<br/>(année+1)"]
+```
+
+- **Action 1 — Archiver** (`/live/archive` → RPC `archive_tournament(p_year)`) : copie `live_teams`/`live_matches` (uniquement `status='TERMINE'`) vers `teams`/`games`, marque `seasons.<year>.is_archived = true`. **Ne touche jamais `is_active` ni les tables `live_*`** — `/live` continue d'afficher le tournoi normalement après cet appel. Bloquée si le tournoi n'est pas `status='TERMINE'`, s'il reste des matchs non saisis, ou si l'année est déjà archivée (idempotence).
+  - Id de `teams`/`games` calculés explicitement (`max(id)+1` + `row_number()`), pas de dépendance à un `DEFAULT`/séquence : `teams.id` a une séquence désynchronisée par l'import initial (constaté : `duplicate key value violates unique constraint teams_pkey`), et `games.id` n'a **aucun** `DEFAULT` du tout (constaté : `null value in column id... violates not-null constraint`) — deux échecs réels rencontrés et corrigés pendant la construction, sans conséquence sur les données (une fonction Postgres = une transaction, chaque échec a été intégralement annulé).
+  - Une fois l'archivage réussi, le client appelle `/api/admin/recompute-elo` (cross-langage, hors de la transaction SQL) pour que `elo_history`/`history_all` reflètent la saison qui vient d'être archivée. **Garde à deux niveaux** contre l'oubli de cette étape : `/live/archive` distingue "archivage réussi, recalcul ELO à refaire" (bouton de retry dédié) de "archivage échoué" ; `advance_to_next_season()` (Action 2) refuse de continuer si `elo_history` ne contient aucune ligne pour la saison active — sans quoi la saison suivante démarrerait les joueurs sur un ELO obsolète.
+- **Action 2 — Passer à la saison suivante** (`/live/next-season` → RPC `advance_to_next_season(p_next_year)`) : bloquée tant que `seasons.<année active>.is_archived` n'est pas `true`. Active l'année suivante, désactive l'année courante, puis appelle `reset_tournament()` (inchangé) — **seule et unique action qui vide `live_*`**. L'ordre dangereux (perdre les données avant de les avoir archivées) est donc structurellement impossible, pas seulement recommandé.
+
+### Généralisation des pages d'archives aux 3 formats
+
+`tournois/page.tsx` et `tournois/[year]/page.tsx` étaient câblées pour le format `classique` (finale identifiée par `type='Finale' AND tableau='Principal'`, poules toujours `Gassin`/`Ramatuelle`) — cassaient silencieusement pour `10_equipes`/`ronde`. Généralisées via `steps.value` (même principe que `finalTop8`/`podium/page.tsx` côté live : `steps.value === 1` identifie "LA finale" quel que soit son `type`) et détection du format `ronde` directement depuis les données (`poule === 'Ronde'`), sans dépendre d'une colonne `seasons.format` côté requête. Non-régression vérifiée par comparaison directe sur les 6 saisons déjà archivées (2020-2025, toutes `classique`).
+
+### Sauvegarde manuelle
+
+`POST /api/admin/backup-tournament-data` (vérifie `is_super()`, contrairement à `recompute-elo`/`live-elo` qui n'ont aucune vérification de rôle) exporte en JSON `seasons`, `teams`, `games`, tout le `live_*`, `elo_history`, `history_all`, `steps`, `settings` — délibérément **hors** résidence/utilisateurs/logs (données personnelles). Pas un vrai `pg_dump` (pas de connexion Postgres directe disponible, seulement les clés Supabase), un filet manuel avant les deux actions ci-dessus, particulièrement mis en avant sur `/live/next-season` (la seule qui supprime réellement des données). Bouton réutilisé (`utils/download-backup.ts`) sur `/live/super`, `/live/archive`, `/live/next-season`.
