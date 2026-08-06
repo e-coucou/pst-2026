@@ -82,7 +82,7 @@ export default function AdminControlPanel() {
       {/* HEADER PANEL */}
       <div className="flex items-center gap-4 mb-2 px-2">
         <div className="p-3 bg-red-600/10 rounded-2xl">
-          {/*<Fingerprint className="text-red-600" size={24} />*/}
+          <Fingerprint className="text-red-600" size={24} />
         </div>
         <div>
           <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white">

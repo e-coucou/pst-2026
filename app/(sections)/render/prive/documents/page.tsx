@@ -127,7 +127,7 @@ export default function ResidenceDocumentsPage() {
           <p className="text-zinc-500 mt-2 font-bold uppercase tracking-widest text-[10px]">
             Convocations, comptes-rendus d&apos;AG, procès-verbaux...
           </p>
-          <p className="text-zinc-600 mt-3 text-xs max-w-lg">
+          <p className="text-zinc-400 mt-3 text-xs max-w-lg">
             Les PDF sont hébergés sur Google Drive (certains dépassent la limite de taille de notre stockage) :
             dépose le fichier dans ton Drive, partage-le (&laquo;&nbsp;Toute personne disposant du lien&nbsp;&raquo;), puis colle le lien ici.
             Visible par les membres ayant un accès résidence <span className="text-white font-bold">Consultation</span> ou{' '}

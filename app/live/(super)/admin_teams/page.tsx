@@ -81,7 +81,6 @@ export default function AdminTeamsPage() {
       {/* Header */}
       <div className="max-w-6xl mx-auto mb-8 flex flex-cols justify-between items-center gap-4">
         <h1 className="text-2xl font-black uppercase italic mb-8 tracking-tight">
-            <span className="text-red-600" />
             Gestion des <span className="text-red-600">Équipes</span>
         </h1>
         <button 

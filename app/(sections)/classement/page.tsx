@@ -124,10 +124,10 @@ export default async function Leaderboard({ searchParams }: { searchParams: Prom
           <div className="divide-y divide-white/5">
             {leaderboard.map((player, index) => {
               const isTop3 = index < 3;
-              const rankColor = index === 0 ? 'text-red-600' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-orange-500' : 'text-zinc-400';
+              const rankColor = index === 0 ? 'text-red-600' : index === 1 ? 'text-zinc-300' : index === 2 ? 'text-orange-500' : 'text-zinc-400';
 
               return (
-                <Link key={player.id} href={`/joueurs/${player.id}`} className="flex items-center p-4 sm-p6 hover:bg-white/5 transition-all group">
+                <Link key={player.id} href={`/joueurs/${player.id}`} className="flex items-center p-4 sm:p-6 hover:bg-white/5 transition-all group">
                   {/* RANG */}
                   <div className={`w-8 sm:w-12 flex justify-center text-xl font-black italic ${rankColor}`}>
                     {index + 1}
@@ -160,7 +160,7 @@ export default async function Leaderboard({ searchParams }: { searchParams: Prom
                       </p>
                     </div>
                     <ArrowRight size={14} className="text-zinc-500 group-hover:text-red-600 transition-all" />
-                    <Star size={14} className={`${player.id === favori ? "text-red-600 fill-red-600" : "text-zinc-400 fill-zinc-600"}`} />
+                    <Star size={14} className={`${player.id === favori ? "text-red-600 fill-red-600" : "text-zinc-400 fill-zinc-400"}`} />
                   </div>
                 </Link>
               );

@@ -670,7 +670,7 @@
 	                   <button
 	                     onClick={() => withPending(rmKey, async () => { setSelectedPointeurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); })}
 	                     disabled={pendingRm}
-	                     className="text-purple-500 font-black text-xm px-2 disabled:opacity-40"
+	                     className="text-purple-500 font-black text-xs px-2 disabled:opacity-40"
 	                   >
 	                     {pendingRm ? <Loader2 size={12} className="animate-spin inline" /> : '✕'}
 	                   </button>
@@ -706,7 +706,7 @@
 	                   <button
 	                     onClick={() => withPending(rmKey, async () => { setSelectedTireurs(prev => prev.filter(x => x.id !== p.id)); await removeOneFromDatabase(p.id); })}
 	                     disabled={pendingRm}
-	                     className="text-orange-500 font-black text-xm px-2 disabled:opacity-40"
+	                     className="text-orange-500 font-black text-xs px-2 disabled:opacity-40"
 	                   >
 	                     {pendingRm ? <Loader2 size={12} className="animate-spin inline" /> : '✕'}
 	                   </button>

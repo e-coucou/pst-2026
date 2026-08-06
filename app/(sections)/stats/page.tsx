@@ -310,8 +310,8 @@ export default function StatsPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-4 pb-20">
       {/* HEADER */}
-      <header className="max-w-6xl mx-auto mb-10">
-        <div className="max-w-6xl mx-auto mb-8 flex flex-cols justify-between items-center gap-4">
+      <header className="max-w-7xl mx-auto mb-10">
+        <div className="max-w-7xl mx-auto mb-8 flex flex-cols justify-between items-center gap-4">
           <h1 className="text-4xl font-black italic tracking-tighter uppercase">
             Stats <span className="text-red-600">Academy</span>
           </h1>

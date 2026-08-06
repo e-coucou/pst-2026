@@ -76,9 +76,9 @@ export default function SuperAdminPage() {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-1 font-sans selection:bg-red-600/30">
+    <div className="min-h-screen bg-black text-white p-6 md:p-12 font-sans selection:bg-red-600/30">
       {/* Header PST Style */}
-      <div className="max-w-2xl mx-auto mb-8 flex justify-between items-center">
+      <div className="max-w-7xl mx-auto mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-black italic tracking-tighter uppercase">
             Gestion <span className="text-red-600">Membres</span>
