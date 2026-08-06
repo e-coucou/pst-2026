@@ -775,7 +775,7 @@ export default function StatsPage() {
 
 function StatCard({ label, value, icon, color }: any) {
   return (
-    <div className="bg-zinc-900/50 border border-white/5 p-6 rounded-[2rem] flex flex-col gap-2">
+    <div className="bg-zinc-900/50 border border-white/5 p-6 rounded-[2.5rem] flex flex-col gap-2">
       <div className={`${color} opacity-80`}>{icon}</div>
       <div className="text-2xl font-black italic tracking-tighter">{value}</div>
       <div className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">{label}</div>
@@ -795,7 +795,7 @@ function RecordCard({ title, icon, data, valueKey, suffix, color, nameColor, fav
 
   return (
     <div
-      className={`record-card-wave p-6 rounded-3xl border ${color} flex flex-col justify-between min-h-[160px]`}
+      className={`record-card-wave p-6 rounded-[2.5rem] border ${color} flex flex-col justify-between min-h-[160px]`}
       style={{ '--glow-color': glowColor } as React.CSSProperties}
     >
       <div className="flex items-center gap-3 mb-4">

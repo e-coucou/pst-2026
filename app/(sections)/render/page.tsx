@@ -1242,7 +1242,7 @@ export default function RenderPage() {
           <Link
             href="/render/documents"
             title="Documents"
-            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
           >
             <FileText size={14} /> <span className="hidden sm:inline">Documents</span>
           </Link>
@@ -1251,7 +1251,7 @@ export default function RenderPage() {
           <Link
             href="/render/codes"
             title="Codes"
-            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
           >
             <KeyRound size={14} /> <span className="hidden sm:inline">Codes</span>
           </Link>
@@ -1260,7 +1260,7 @@ export default function RenderPage() {
           <Link
             href="/render/contacts"
             title="Contacts"
-            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
           >
             <Users size={14} /> <span className="hidden sm:inline">Contacts</span>
           </Link>
@@ -1269,7 +1269,7 @@ export default function RenderPage() {
           <Link
             href="/render/lots"
             title="Lots"
-            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
           >
             <Layers size={14} /> <span className="hidden sm:inline">Lots</span>
           </Link>
@@ -1278,7 +1278,7 @@ export default function RenderPage() {
           <Link
             href="/render/prive"
             title="Accès réservé"
-            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-red-600/90 text-white hover:bg-red-600"
+            className="inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg bg-red-600/90 text-white hover:bg-red-600"
           >
             <Lock size={14} /> <span className="hidden sm:inline">Accès réservé</span>
           </Link>
@@ -1287,7 +1287,7 @@ export default function RenderPage() {
           <button
             onClick={() => setOnlyCorridors((v) => !v)}
             title={onlyCorridors ? 'Bâtiment masqué' : 'Masquer le bâtiment'}
-            className={`inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
+            className={`inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
               onlyCorridors
                 ? 'bg-red-600 text-white'
                 : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700'

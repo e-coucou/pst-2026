@@ -110,7 +110,7 @@ const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6 font-sans text-white">
-      <div className="max-w-md w-full bg-zinc-900/50 border border-white/10 p-10 rounded-[3rem] shadow-2xl backdrop-blur-xl">
+      <div className="max-w-md w-full bg-zinc-900/50 border border-white/10 p-10 rounded-[2.5rem] shadow-2xl backdrop-blur-xl">
         <div className="text-center mb-8">
           <div className="bg-red-600/20 text-red-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-600/30">
             <UserPlus size={28} />
@@ -171,7 +171,7 @@ const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
 
           <button 
             disabled={loading}
-            className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black uppercase py-5 rounded-[1.5rem] transition-all shadow-xl shadow-red-600/20 active:scale-95 flex items-center justify-center gap-3 tracking-widest"
+            className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black uppercase py-5 rounded-full transition-all shadow-xl shadow-red-600/20 active:scale-95 flex items-center justify-center gap-3 tracking-widest"
           >
             {loading ? "Vérification..." : "Valider l'inscription"} <ArrowRight size={18} />
           </button>

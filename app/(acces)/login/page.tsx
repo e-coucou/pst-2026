@@ -104,7 +104,7 @@ function LoginForm() {
         </div>
       )}
       
-      <div className="bg-zinc-900/50 border border-white/10 p-10 rounded-[3rem] shadow-2xl backdrop-blur-xl">
+      <div className="bg-zinc-900/50 border border-white/10 p-10 rounded-[2.5rem] shadow-2xl backdrop-blur-xl">
         <div className="text-center mb-10">
           <div className="bg-red-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-600/30">
             <LockKeyhole className="text-white" size={28} />
@@ -167,7 +167,7 @@ function LoginForm() {
           <button 
             type="submit"
             disabled={loading}
-            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-zinc-800 text-white font-black uppercase py-5 rounded-[1.5rem] transition-all shadow-xl shadow-red-600/20 active:scale-95 flex items-center justify-center gap-3 tracking-[0.2em]"
+            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-zinc-800 text-white font-black uppercase py-5 rounded-full transition-all shadow-xl shadow-red-600/20 active:scale-95 flex items-center justify-center gap-3 tracking-[0.2em]"
           >
             {loading ? (
               <>

@@ -39,7 +39,7 @@ export default function Footer() {
             href="/share" 
             className="group flex flex-col items-center gap-1 text-zinc-400 hover:text-white transition-colors"
           >
-            <div className="p-3 rounded-2xl bg-zinc-900 border border-white/5 group-hover:border-red-600/50 group-active:scale-95 transition-all">
+            <div className="p-3 rounded-xl bg-zinc-900 border border-white/5 group-hover:border-red-600/50 group-active:scale-95 transition-all">
               <QrCode size={24} />
             </div>
             <span className="text-[8px] font-black uppercase tracking-widest">Partager</span>
