@@ -72,6 +72,7 @@ export default function StatsPage() {
   const [timeline, setTimeline] = useState<any[]>([]);
   const [allPlayerNames, setAllPlayerNames] = useState<string[]>([]);
   const [nbYears, setNbYears] = useState(0);
+  const [selectedSeason, setSelectedSeason] = useState<'global' | number>('global');
   const [popularity, setPopularity] = useState<PopularityStats>({ topPage: null, topPlayers: [], topTournament: null, topPhoto: null });
 
   useEffect(() => {
@@ -164,6 +165,39 @@ export default function StatsPage() {
 
     return { chartData, totalPoints, matchNuls, avgPoints: (totalPoints / matches.length).toFixed(1) };
   }, [matches]);
+
+  // --- SAISONS DISPONIBLES (pour le sélecteur du graphique des écarts) ---
+  const availableSeasons = useMemo(() => {
+    const years = new Set<number>();
+    matches.forEach(m => { if (m.year) years.add(m.year); });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [matches]);
+
+  // --- DISTRIBUTION DES ÉCARTS FILTRÉE PAR SAISON (le cumul global reste la valeur par défaut) ---
+  const scoreDistribution = useMemo(() => {
+    if (!matches.length) return null;
+
+    const filtered = selectedSeason === 'global' ? matches : matches.filter(m => m.year === selectedSeason);
+    const distribution = Array(14).fill(0);
+    let matchNulsFiltered = 0;
+
+    filtered.forEach(m => {
+      const s1 = m.score_1;
+      const s2 = m.score_2;
+      const diff = Math.abs(s1 - s2);
+
+      distribution[diff]++;
+      if (s1 === s2) matchNulsFiltered++;
+    });
+
+    const chartData = distribution.map((val, idx) => ({
+      name: idx === 0 ? 'Nul' : `${idx}pt${idx > 1 ? 's' : ''}`,
+      quantite: val,
+      gap: idx
+    })).filter(d => d.gap > 0 || matchNulsFiltered > 0);
+
+    return { chartData, total: filtered.length };
+  }, [matches, selectedSeason]);
 
   // --- NOUVEAU CALCUL DES STATS JOUEURS (AVEC SÉRIES ET RECORDS) ---
   const playerStats = useMemo(() => {
@@ -354,15 +388,41 @@ export default function StatsPage() {
         {activeTab === 'scores' && (
           <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
             <div className="bg-zinc-900/50 border border-white/5 p-6 rounded-[2.5rem]">
-              <h3 className="text-sm font-black uppercase tracking-widest mb-8 flex items-center gap-2">
-                <BarChart3 className="text-red-600" size={18} />
-                Distribution des écarts de score
-              </h3>
-              
+              <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
+                <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                  <BarChart3 className="text-red-600" size={18} />
+                  Distribution des écarts de score
+                </h3>
+
+                {availableSeasons.length > 1 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      onClick={() => setSelectedSeason('global')}
+                      className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                        selectedSeason === 'global' ? 'bg-red-600 text-white' : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
+                      }`}
+                    >
+                      Global
+                    </button>
+                    {availableSeasons.map(year => (
+                      <button
+                        key={year}
+                        onClick={() => setSelectedSeason(year)}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                          selectedSeason === year ? 'bg-red-600 text-white' : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
+                        }`}
+                      >
+                        {year}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="w-full">
                 <ResponsiveContainer width="99%" height={300}>
-                  <BarChart 
-                    data={stats?.chartData} 
+                  <BarChart
+                    data={scoreDistribution?.chartData}
                     margin={{ top: 24, right: 10, left: -20, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
@@ -401,6 +461,7 @@ export default function StatsPage() {
               </div>
 
               <p className="text-[10px] text-zinc-500 mt-6 font-bold uppercase italic text-center">
+                {selectedSeason !== 'global' && `Saison ${selectedSeason} — ${scoreDistribution?.total} match(s) · `}
                 Note : La barre en <span className="text-red-600">rouge</span> représente les "Fanny" (13-0).
               </p>
             </div>
