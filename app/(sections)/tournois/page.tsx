@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
-import { Trophy, Swords, ChevronRight, Zap } from 'lucide-react';
+import { Trophy, Swords, ChevronRight, Zap, Search, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import FavoriStar from '@/components/FavoriStar';
 import { getFavoriId } from '@/utils/favori';
@@ -95,6 +95,19 @@ export default async function TournamentsPage() {
           Archives et Palmarès Officiels
         </p>
       </header>
+
+      <div className="max-w-2xl mb-10 flex justify-end">
+        <Link
+          href="/tournois/recherche"
+          className="group flex items-center gap-3 px-5 py-2 bg-zinc-800/40 hover:bg-red-600/80 border border-white/5 rounded-2xl transition-all"
+        >
+          <Search size={14} className="text-red-600 group-hover:text-white transition-colors" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 group-hover:text-white transition-colors">
+            Recherche de matchs
+          </span>
+          <ArrowRight size={12} className="text-zinc-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         {tournaments?.map((t) => (
