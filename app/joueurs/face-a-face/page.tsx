@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import FaceAFaceSelector from '@/components/FaceAFaceSelector';
 import StatsCard from '@/components/StatsCard';
 import FavoriStar from '@/components/FavoriStar';
+import ShareMatchButton from '@/components/ShareMatchButton';
 import Link from 'next/link';
 import { ChevronLeft, Swords, Users, Trophy } from 'lucide-react';
 
@@ -193,6 +194,7 @@ export default async function FaceAFacePage({
                         <th className="px-4 py-3 text-center">Score</th>
                         <th className="px-4 py-3">Équipe {playerB.nom}</th>
                         <th className="px-4 py-3 text-center">Résultat</th>
+                        <th className="px-4 py-3 text-center"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -215,6 +217,9 @@ export default async function FaceAFacePage({
                             }`}>
                               {c.result === 1 ? 'Victoire' : c.result === -1 ? 'Défaite' : 'Nul'}
                             </span>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <ShareMatchButton gameId={c.gameId} />
                           </td>
                         </tr>
                       ))}
