@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, LineChart, Line
+  PieChart, Pie, LineChart, Line, LabelList
 } from 'recharts';
 import {
   Trophy, Users, Target, Activity,
@@ -363,7 +363,7 @@ export default function StatsPage() {
                 <ResponsiveContainer width="99%" height={300}>
                   <BarChart 
                     data={stats?.chartData} 
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    margin={{ top: 24, right: 10, left: -20, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
                     <XAxis 
@@ -388,7 +388,14 @@ export default function StatsPage() {
                       }}
                       formatter={(value) => [`${value} match(s)`, 'Quantité']}
                     />
-                    <Bar dataKey="quantite" shape={<CustomBar />} />
+                    <Bar dataKey="quantite" shape={<CustomBar />}>
+                      <LabelList
+                        dataKey="quantite"
+                        position="top"
+                        formatter={(value: any) => (value > 0 ? value : '')}
+                        style={{ fill: '#a1a1aa', fontSize: 11, fontWeight: 'bold' }}
+                      />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
