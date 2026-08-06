@@ -139,6 +139,9 @@ export default function EloChart({ history }: { history: any[] }) {
               itemStyle={{ color: METHOD_COLOR[method] }}
               labelStyle={{ color: '#71717a', marginBottom: '4px', fontSize: '10px' }}
               labelFormatter={(index) => `Match #${data[index]?.gameId || index} — ${data[index]?.year}`}
+              // Dynamique : échelle resserrée, un chiffre après la virgule (format FR) plutôt que
+              // le point décimal par défaut de Recharts.
+              formatter={(value) => method === 'skill' && typeof value === 'number' ? value.toFixed(1).replace('.', ',') : value}
               cursor={{ stroke: '#3f3f46', strokeWidth: 1 }}
             />
 

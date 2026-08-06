@@ -45,7 +45,10 @@ const Top16Tooltip = ({ active, payload, favoriId }: any) => {
                 <span className="text-[10px] font-mono font-black text-white italic">{Math.round(player.elo)}</span>
                 <span className="text-[10px] font-mono font-black italic text-purple-500"> / {Math.round(player.modern)}</span>
                 {player.skill != null && (
-                  <span className="text-[10px] font-mono font-black italic text-emerald-500"> / {Math.round(player.skill)}</span>
+                  // Échelle bien plus resserrée que Classic/Modern (un écart de 0,6 point peut
+                  // être significatif, cf. session) — un chiffre après la virgule plutôt
+                  // qu'arrondi à l'entier, qui écraserait des écarts pourtant réels.
+                  <span className="text-[10px] font-mono font-black italic text-emerald-500"> / {player.skill.toFixed(1).replace('.', ',')}</span>
                 )}
               </div>
             </div>
