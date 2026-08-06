@@ -3,8 +3,10 @@ import EloChart from '@/components/EloChart';
 import StatsCard from '@/components/StatsCard';
 import SeasonHistory from '@/components/SeasonHistory';
 import FavoriteButton from '@/components/FavoriteButton';
+import PlayerBadges from '@/components/PlayerBadges';
+import { computePlayerAchievements } from '@/utils/player-achievements';
 import Link from 'next/link';
-import { ChevronLeft, Zap, Target, Award, Swords, Video, Users, Star, ArrowRight } from 'lucide-react';
+import { ChevronLeft, Zap, Target, Award, Swords, Video, Users, Star, ArrowRight, ShieldCheck } from 'lucide-react';
 import { use } from 'react';
 
 
@@ -178,6 +180,18 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
           value={(seasonStats?.reduce((acc: number, curr: any) => acc + Number(curr.goalavg), 0) || 0)} 
           color={winRatio > 50 ? "red" : "orange"} 
         />
+      </div>
+
+      {/* DISTINCTIONS PERSONNELLES */}
+      <div className="pt-4">
+        <div className="flex items-center gap-6 mb-8">
+          <div className="flex items-center gap-3">
+            <ShieldCheck size={22} className="text-red-600" />
+            <h2 className="text-2xl font-black uppercase italic tracking-tighter">Distinctions</h2>
+          </div>
+          <div className="h-px flex-1 bg-zinc-800"></div>
+        </div>
+        <PlayerBadges achievements={computePlayerAchievements(eloHistory)} />
       </div>
 
       {/* HISTORIQUE PAR SAISON */}
