@@ -57,7 +57,7 @@ export default function VideosGalleryPage() {
             </div>
             <span className="text-red-600 font-black uppercase tracking-[0.3em] text-xs">Galerie Vidéos</span>
           </div>
-          <h1 className="text-5xl md:text-8xl font-black uppercase italic tracking-tighter">
+          <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter">
             PST <span className="text-red-600">TV</span>
           </h1>
           <p className="text-zinc-500 mt-4 max-w-xl font-bold uppercase tracking-widest text-[10px] md:text-xs">

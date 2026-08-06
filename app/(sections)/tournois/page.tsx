@@ -87,7 +87,7 @@ export default async function TournamentsPage() {
     <div className="max-w-7xl mx-auto p-6 md:p-16 min-h-screen bg-black text-white">
       <header className="mb-20 relative">
         <div className="absolute -left-8 top-0 w-1.5 h-full bg-red-600 rounded-full hidden md:block" />
-        <h1 className="text-7xl md:text-9xl font-black uppercase italic tracking-tighter leading-[0.8]">
+        <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter leading-[0.8]">
           LES <br />
           <span className="text-red-600">TOURNOIS</span>
         </h1>

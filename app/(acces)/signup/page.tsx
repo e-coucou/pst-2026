@@ -115,7 +115,7 @@ const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
           <div className="bg-red-600/20 text-red-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-600/30">
             <UserPlus size={28} />
           </div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter">Devenir <span className="text-red-600">Membre</span></h1>
+          <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter">Devenir <span className="text-red-600">Membre</span></h1>
           <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.2em] mt-2 italic">Accès exclusif Paris Saint-Tropez</p>
         </div>
 

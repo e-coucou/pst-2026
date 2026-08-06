@@ -282,7 +282,7 @@ export default function PodiumPage() {
 
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-12 pb-32">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         
         <header className="mb-12 text-center">
           {(() => {

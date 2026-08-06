@@ -1,7 +1,7 @@
 export default function AboutPage() {
   return (
-    <div className="max-w-3xl mx-auto p-6 md:p-20 text-white min-h-screen">
-      <h1 className="text-5xl font-black uppercase italic tracking-tighter mb-8">L'Esprit PST</h1>
+    <div className="max-w-4xl mx-auto p-6 md:p-20 text-white min-h-screen">
+      <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter mb-8">L'Esprit PST</h1>
       
       <div className="space-y-6 text-zinc-400 text-lg leading-relaxed">
         <p className="text-white font-bold">

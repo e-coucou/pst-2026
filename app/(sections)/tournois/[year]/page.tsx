@@ -185,12 +185,12 @@ const finalTop8 = rankedTeams
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 min-h-screen bg-black text-white">
+    <div className="max-w-7xl mx-auto p-4 md:p-8 min-h-screen bg-black text-white">
       
       {/* HEADER COMPACT */}
       <div className="flex justify-between items-end mb-12 border-b border-red-900/30 pb-6">
         <div>
-          <h1 className="text-7xl font-black italic uppercase leading-none tracking-tighter">
+          <h1 className="text-5xl md:text-7xl font-black italic uppercase leading-none tracking-tighter">
             Édition <span className="text-red-600">{year}</span>
           </h1>
         </div>

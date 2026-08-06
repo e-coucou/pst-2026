@@ -90,7 +90,7 @@ export default function AdminTeamsPage() {
         <X size={24} />
         </button>
      </div>
-        <div className="flex flex-cols relative">
+        <div className="max-w-6xl mx-auto flex flex-cols relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
           <input 
             type="text"
