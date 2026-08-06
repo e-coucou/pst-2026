@@ -337,7 +337,7 @@ export default function StatsPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto space-y-8">
+      <main className="max-w-7xl mx-auto space-y-8">
         
         {/* ONGLET GLOBAL */}
         {activeTab === 'global' && (
@@ -415,7 +415,7 @@ export default function StatsPage() {
                   <thead>
                     <tr className="bg-black/20 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
                       <th className="px-3 py-4">Rang</th>
-                      <th className="px-15 py-4">Joueur</th>
+                      <th className="px-14 py-4">Joueur</th>
                       <th className="px-4 py-4 text-center">Winrate</th>
                       <th className="px-4 py-4 text-center">Matches</th>
                       <th className="px-4 py-4 text-center">Diff. Pts</th>
@@ -560,11 +560,11 @@ export default function StatsPage() {
 
             <RecordCard
               title="Roi de la Fanny"
-              icon={<Frown className="text-slate-400" size={24} />}
+              icon={<Frown className="text-zinc-400" size={24} />}
               data={topByMetric(playerStats, p => p.fannyTaken)}
               valueKey="fannyTaken"
               suffix="Fanny subies (0-13)"
-              color="border-slate-500/30 bg-slate-500/5 text-slate-400"
+              color="border-zinc-500/30 bg-zinc-500/5 text-zinc-400"
               favoriId={favoriId}
             />
 

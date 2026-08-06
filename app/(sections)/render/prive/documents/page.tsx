@@ -204,7 +204,7 @@ export default function ResidenceDocumentsPage() {
                   </a>
                   <div className="flex gap-2 shrink-0">
                     <button onClick={() => toggleExpand(doc)} title="Résumé (markdown)"
-                      className={`p-2.5 rounded-xl transition-colors ${doc.resume ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
+                      className={`p-2.5 rounded-xl transition-colors ${doc.resume ? 'bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
                       <AlignLeft size={16} />
                     </button>
                     <button onClick={() => handleDelete(doc)} title="Supprimer"
@@ -221,7 +221,7 @@ export default function ResidenceDocumentsPage() {
                         placeholder="## Points clés&#10;- ...&#10;- ..."
                         className="bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-red-600/50 resize-y" />
                       <button onClick={() => saveResume(doc)} disabled={savingResume}
-                        className="self-end inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-black uppercase tracking-widest text-[10px] px-4 py-2 rounded-lg transition-all">
+                        className="self-end inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-black uppercase tracking-widest text-[10px] px-4 py-2 rounded-lg transition-all">
                         {savingResume ? <Loader2 className="animate-spin" size={14} /> : <Check size={14} />} Enregistrer
                       </button>
                     </div>

@@ -48,6 +48,14 @@ Principe de hiérarchie observé dans tout le code :
 
 > Il n'existe pas de token nommé (`--color-red`, `pst-red`, etc.) : chaque composant utilise l'échelle Tailwind par défaut directement.
 
+### Exceptions documentées (hors palette core)
+
+Deux usages sortent volontairement de la palette rouge/violet/orange/vert/jaune ci-dessus — à ne pas étendre à d'autres cas sans revoir cette section :
+
+- **Tags de catégorie (résidence)** — `render/contacts`, `render/lots` : bleu/cyan/ambre/émeraude/violet utilisés uniquement pour distinguer visuellement des catégories (gardien, studio, partie commune...) quand la palette à 5 couleurs ne suffit pas à différencier 5-7 valeurs. Jamais utilisés pour un état actif/primaire — un bouton "actif"/"sélectionné" reste toujours rouge (`bg-red-600`), quelle que soit la page.
+- **Info neutre** — `params_elo/page.tsx` : bleu réservé aux encadrés d'information non actionnable (icône `Info` + texte explicatif). Cas unique, à ne pas généraliser.
+- **Palmarès distinctif** — `stats/page.tsx` (onglet Records) : chaque carte-record (Diplomate, Punching-Ball, Serial Vainqueur...) a une couleur dédiée (cyan/rose/ambre...) pour se différencier visuellement des autres trophées sur la même page. Famille neutre toujours `zinc`, jamais `slate`/`gray`.
+
 ---
 
 ## 3. Typographie

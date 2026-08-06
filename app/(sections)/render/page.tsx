@@ -1289,7 +1289,7 @@ export default function RenderPage() {
             title={onlyCorridors ? 'Bâtiment masqué' : 'Masquer le bâtiment'}
             className={`inline-flex items-center gap-1.5 p-2.5 sm:px-3 sm:py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
               onlyCorridors
-                ? 'bg-blue-600 text-white'
+                ? 'bg-red-600 text-white'
                 : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700'
             }`}
           >

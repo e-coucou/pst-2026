@@ -134,7 +134,7 @@ export default function PublicResidenceDocumentsPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     {doc.resume && (
                       <button onClick={() => setExpandedId(v => v === doc.id ? null : doc.id)} title="Voir le résumé"
-                        className={`p-2.5 rounded-xl transition-colors ${expandedId === doc.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
+                        className={`p-2.5 rounded-xl transition-colors ${expandedId === doc.id ? 'bg-red-600 text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
                         <AlignLeft size={16} />
                       </button>
                     )}
