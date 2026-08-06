@@ -70,3 +70,30 @@ export function buildOpponentsByPlayer(matrix: MatchupMatrix): Record<number, nu
   });
   return result;
 }
+
+export interface PairRanking {
+  aId: number;
+  bId: number;
+  matches: number;
+}
+
+// Classement des paires de joueurs qui se sont le plus affrontées — une seule entrée par
+// paire (A,B) et (B,A) partagent le même nombre de matchs, donc dédupliquées ici.
+export function rankMostFrequentPairs(matrix: MatchupMatrix, limit?: number): PairRanking[] {
+  const seen = new Set<string>();
+  const pairs: PairRanking[] = [];
+
+  Object.entries(matrix).forEach(([aIdStr, row]) => {
+    const aId = Number(aIdStr);
+    Object.entries(row).forEach(([bIdStr, cell]) => {
+      const bId = Number(bIdStr);
+      const key = aId < bId ? `${aId}-${bId}` : `${bId}-${aId}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      pairs.push({ aId, bId, matches: cell.matches });
+    });
+  });
+
+  pairs.sort((x, y) => y.matches - x.matches);
+  return limit ? pairs.slice(0, limit) : pairs;
+}
