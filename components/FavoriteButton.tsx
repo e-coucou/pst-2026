@@ -43,17 +43,18 @@ const toggleFavori = async () => {
     
     
   return (
-    <button 
-      onClick={toggleFavori} 
+    <button
+      onClick={toggleFavori}
       disabled={loading}
+      aria-label={isFavori ? "Retirer des favoris" : "Ajouter aux favoris"}
       className="hover:scale-110 transition-transform active:opacity-70 p-2"
     >
       {loading ? (
         <Loader2 size={20} className="animate-spin text-zinc-500" />
       ) : (
-        <Star 
-          size={20} 
-          className={isFavori ? "text-red-600 fill-red-600" : "text-zinc-400 fill-zinc-600"} 
+        <Star
+          size={20}
+          className={isFavori ? "text-red-600 fill-red-600" : "text-zinc-400 fill-zinc-400"}
         />
       )}
     </button>

@@ -361,7 +361,7 @@ export default function LivePoulesPage() {
  
                   <div className="flex shrink-0">
                     {isTermine ? (
-                      <button onClick={() => unlockMatch(m.id)} disabled={savingMatch === m.id} className="text-red-500 p-1 hover:text-white transition-colors disabled:opacity-40">
+                      <button onClick={() => unlockMatch(m.id)} disabled={savingMatch === m.id} aria-label="Déverrouiller le match pour modification" className="text-red-500 p-1 hover:text-white transition-colors disabled:opacity-40">
                         {savingMatch === m.id ? <Loader2 size={20} className="animate-spin" /> : <Edit2 size={20} className="md:w-6 md:h-6" />}
                       </button>
                     ) : (

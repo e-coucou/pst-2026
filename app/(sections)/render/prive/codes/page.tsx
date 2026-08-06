@@ -146,8 +146,8 @@ export default function ResidenceCodesPage() {
                 <input value={editForm.code} onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm font-mono outline-none focus:border-red-600/50" />
                 <input value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes" className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-600/50" />
                 <div className="flex justify-end gap-2 mt-1">
-                  <button onClick={() => handleSaveEdit(c.id)} disabled={saving} className="p-2 rounded-lg bg-green-600/20 text-green-500 hover:bg-green-600 hover:text-white transition-colors"><Check size={14} /></button>
-                  <button onClick={() => setEditingId(null)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 transition-colors"><X size={14} /></button>
+                  <button onClick={() => handleSaveEdit(c.id)} disabled={saving} aria-label="Enregistrer la modification" className="p-2 rounded-lg bg-green-600/20 text-green-500 hover:bg-green-600 hover:text-white transition-colors"><Check size={14} /></button>
+                  <button onClick={() => setEditingId(null)} aria-label="Annuler la modification" className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 transition-colors"><X size={14} /></button>
                 </div>
               </div>
             ) : (
@@ -158,11 +158,11 @@ export default function ResidenceCodesPage() {
                   {c.notes && <p className="text-xs text-zinc-500 mt-1">{c.notes}</p>}
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button onClick={() => handleCopy(c.id, c.code)} className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors">
+                  <button onClick={() => handleCopy(c.id, c.code)} aria-label={copiedId === c.id ? "Code copié" : "Copier le code"} className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors">
                     {copiedId === c.id ? <CopyCheck size={16} /> : <Copy size={16} />}
                   </button>
-                  <button onClick={() => startEdit(c)} className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors opacity-0 group-hover:opacity-100"><Pencil size={16} /></button>
-                  <button onClick={() => handleDelete(c.id)} className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                  <button onClick={() => startEdit(c)} aria-label="Modifier le code" className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors opacity-0 group-hover:opacity-100"><Pencil size={16} /></button>
+                  <button onClick={() => handleDelete(c.id)} aria-label="Supprimer le code" className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
                 </div>
               </div>
             ))}

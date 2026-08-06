@@ -272,8 +272,8 @@ export default function ResidenceContactsPage() {
                   <td className="px-4 py-4"><input value={editForm.apartment_num} onChange={e => setEditForm(f => ({ ...f, apartment_num: e.target.value }))} className="bg-zinc-800/50 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-20 outline-none focus:border-red-600/50" /></td>
                   <td className="px-4 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => handleSaveEdit(c.id)} disabled={saving} className="p-2 rounded-lg bg-green-600/20 text-green-500 hover:bg-green-600 hover:text-white transition-colors"><Check size={14} /></button>
-                      <button onClick={() => setEditingId(null)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 transition-colors"><X size={14} /></button>
+                      <button onClick={() => handleSaveEdit(c.id)} disabled={saving} aria-label="Enregistrer la modification" className="p-2 rounded-lg bg-green-600/20 text-green-500 hover:bg-green-600 hover:text-white transition-colors"><Check size={14} /></button>
+                      <button onClick={() => setEditingId(null)} aria-label="Annuler la modification" className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 transition-colors"><X size={14} /></button>
                     </div>
                   </td>
                 </tr>
@@ -309,8 +309,8 @@ export default function ResidenceContactsPage() {
                     <div className="flex justify-end gap-2">
                       <button onClick={() => shareContact(c)} title="Partager" className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors"><Share2 size={14} /></button>
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => startEdit(c)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors"><Pencil size={14} /></button>
-                        <button onClick={() => handleDelete(c.id)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors"><Trash2 size={14} /></button>
+                        <button onClick={() => startEdit(c)} aria-label="Modifier le contact" className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors"><Pencil size={14} /></button>
+                        <button onClick={() => handleDelete(c.id)} aria-label="Supprimer le contact" className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-red-600 hover:text-white transition-colors"><Trash2 size={14} /></button>
                       </div>
                     </div>
                   </td>

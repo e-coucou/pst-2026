@@ -56,8 +56,17 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
           } rounded-xl overflow-hidden`}>
             
             {/* LIGNE PRINCIPALE */}
-			<div 
+			<div
 			  onClick={() => setExpandedYear(isExpanded ? null : s.annee)}
+			  onKeyDown={(e) => {
+			    if (e.key === 'Enter' || e.key === ' ') {
+			      e.preventDefault();
+			      setExpandedYear(isExpanded ? null : s.annee);
+			    }
+			  }}
+			  role="button"
+			  tabIndex={0}
+			  aria-expanded={isExpanded}
 			  className="grid grid-cols-12 items-center p-4 md:px-6 cursor-pointer gap-2"
 			>
 			  {/* Saison & Rôle */}

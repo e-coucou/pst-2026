@@ -203,6 +203,7 @@ export default function ManagePlayersPage() {
         <button 
           onClick={() => router.push('/live/super')}
           className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors"
+          aria-label="Fermer"
         >
           <X size={24} />
         </button>
@@ -290,6 +291,7 @@ export default function ManagePlayersPage() {
                       <button
                         onClick={() => handleDeletePlayer(player.id, player.nom, player.photo_url)}
                         disabled={deletingId === player.id}
+                        aria-label={`Supprimer ${player.nom}`}
                         className="text-zinc-400 hover:text-red-500 p-2 transition-all hover:bg-red-500/10 rounded-lg disabled:opacity-40"
                       >
                         {deletingId === player.id ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}

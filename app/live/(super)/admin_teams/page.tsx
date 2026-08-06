@@ -86,6 +86,7 @@ export default function AdminTeamsPage() {
         <button 
           onClick={() => router.push('/live/super')}
           className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors"
+          aria-label="Fermer"
         >
         <X size={24} />
         </button>

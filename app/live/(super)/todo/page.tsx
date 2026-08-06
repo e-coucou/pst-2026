@@ -79,10 +79,10 @@ export default function DevTodoDashboardPage() {
               {sessionUser.email}
             </div>
           )}
-          <button onClick={fetchTodoData} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors group">
+          <button onClick={fetchTodoData} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors group" aria-label="Actualiser">
             <RefreshCw size={20} className={`text-zinc-500 group-hover:text-white transition-colors ${loading ? "animate-spin" : ""}`} />
           </button>
-          <button onClick={() => router.push('/live/super')} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors group">
+          <button onClick={() => router.push('/live/super')} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors group" aria-label="Fermer">
             <X size={24} className="text-zinc-500 group-hover:text-red-600 transition-colors" />
           </button>
         </div>

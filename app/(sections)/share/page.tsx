@@ -13,6 +13,7 @@ export default function SharePage() {
       <button 
         onClick={() => router.back()}
         className="absolute top-6 right-6 p-4 text-black hover:bg-zinc-100 rounded-full transition-colors"
+        aria-label="Fermer"
       >
         <X size={32} />
       </button>

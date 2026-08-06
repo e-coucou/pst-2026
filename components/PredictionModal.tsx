@@ -446,6 +446,7 @@ export default function PredictionModal({
 
         <button
           onClick={onClose}
+          aria-label="Fermer"
           className="absolute top-4 right-4 text-zinc-500 hover:text-white z-10"
         >
           <X size={24} />

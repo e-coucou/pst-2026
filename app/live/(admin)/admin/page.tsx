@@ -770,8 +770,8 @@
 	                     <div key={p.id} className="flex items-center justify-between p-3 bg-black rounded-xl border border-white/5">
 	                       <span className="text-[10px] font-bold uppercase truncate max-w-[80px] text-purple-400">{p.nom} <FavoriStar active={p.id === favoriId} size={10} /></span>
 	                       <div className="flex gap-1">
-	                         <button onClick={() => movePlayer(i, -1, draftP, setDraftP)} className="p-1 hover:text-red-600 transition-colors"><ChevronUp size={16}/></button>
-	                         <button onClick={() => movePlayer(i, 1, draftP, setDraftP)} className="p-1 hover:text-red-600 transition-colors"><ChevronDown size={16}/></button>
+	                         <button onClick={() => movePlayer(i, -1, draftP, setDraftP)} aria-label="Monter dans la liste" className="p-1 hover:text-red-600 transition-colors"><ChevronUp size={16}/></button>
+	                         <button onClick={() => movePlayer(i, 1, draftP, setDraftP)} aria-label="Descendre dans la liste" className="p-1 hover:text-red-600 transition-colors"><ChevronDown size={16}/></button>
 	                       </div>
 	                     </div>
 	                   ))}
@@ -781,8 +781,8 @@
 	                   {draftT.map((t, i) => (
 	                     <div key={t.id} className="flex items-center justify-between p-3 bg-black rounded-xl border border-white/5">
 	                       <div className="flex gap-1">
-	                         <button onClick={() => movePlayer(i, -1, draftT, setDraftT)} className="p-1 hover:text-red-600 transition-colors"><ChevronUp size={16}/></button>
-	                         <button onClick={() => movePlayer(i, 1, draftT, setDraftT)} className="p-1 hover:text-red-600 transition-colors"><ChevronDown size={16}/></button>
+	                         <button onClick={() => movePlayer(i, -1, draftT, setDraftT)} aria-label="Monter dans la liste" className="p-1 hover:text-red-600 transition-colors"><ChevronUp size={16}/></button>
+	                         <button onClick={() => movePlayer(i, 1, draftT, setDraftT)} aria-label="Descendre dans la liste" className="p-1 hover:text-red-600 transition-colors"><ChevronDown size={16}/></button>
 	                       </div>
 	                       <span className="text-[10px] font-bold uppercase truncate max-w-[80px] text-orange-400">{t.nom} <FavoriStar active={t.id === favoriId} size={10} /></span>
 	                     </div>
