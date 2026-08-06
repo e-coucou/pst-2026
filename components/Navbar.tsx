@@ -224,7 +224,7 @@ function MobileIconLink({ href, icon, active, title }: { href: string, icon: Rea
       href={href}
       title={title}
       className={`p-2 rounded-xl transition-all ${
-        active ? 'text-red-600 bg-red-600/10' : 'text-zinc-500 hover:text-red-500'
+        active ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-zinc-800/60 text-white hover:bg-zinc-700'
       }`}
     >
       {icon}

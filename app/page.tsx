@@ -278,7 +278,7 @@ export default function Home() {
         </Link>
         )}
 
-        <h2 className="group relative text-5xl md:text-8xl font-black leading-[0.8] uppercase italic tracking-tighter mb-8">
+        <h2 className="group relative text-5xl md:text-7xl font-black leading-[0.8] uppercase italic tracking-tighter mb-8">
           <span className="text-white group-hover:text-red-600">Paris</span>
           <span className="mx-4 text-red-600 inline-block scale-150"> </span>
           <span className="text-red-600 group-hover:text-white">Saint-Tropez</span>
@@ -298,7 +298,7 @@ export default function Home() {
         </div>
 
         {/* GRILLE DE NAVIGATION PRINCIPALE */}
-        <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto px-4">
+        <div className="mt-16 hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto px-4">
 
           <Link href="/tournois" className="group relative bg-zinc-800/50 border border-white/10 p-8 rounded-3xl hover:bg-red-900  hover:border-red-600 transition-all duration-500 flex flex-col items-center text-center overflow-hidden">
             <div className="bg-zinc-700 p-4 rounded-2xl mb-6 group-hover:scale-[1.6] group-hover:bg-red-600 transition-all duration-500 shadow-xl">

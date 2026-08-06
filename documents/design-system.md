@@ -57,7 +57,7 @@ Aucune police custom n'est réellement importée dans l'usage courant du texte :
 ### Échelle observée
 | Rôle | Classes typiques |
 |---|---|
-| Hero (accueil) | `text-5xl md:text-8xl font-black uppercase italic tracking-tighter leading-[0.8]` |
+| Hero (accueil) | `text-5xl md:text-7xl font-black uppercase italic tracking-tighter leading-[0.8]` |
 | Titre de section | `text-4xl md:text-5xl font-black uppercase italic tracking-tighter` |
 | Titre de carte | `text-xl font-black uppercase italic tracking-tighter` |
 | Corps de texte | `text-sm` / `text-base`, `text-gray-300`/`text-zinc-400`, `leading-relaxed` |
