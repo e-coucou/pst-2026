@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { UserPlus, ArrowRight } from 'lucide-react'; // On enlève Chrome ici
 
 // Petit composant SVG pour le logo Google (plus propre que Lucide pour du branding)
@@ -129,7 +130,7 @@ const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
           />
         </div>
         
-        {error && <div className="bg-red-600/10 border border-red-600/20 p-4 rounded-xl text-red-500 text-[10px] font-black uppercase text-center">{error}</div>}
+        {error && <p className="text-red-600 text-[10px] font-black uppercase text-center italic tracking-widest mb-4">{error}</p>}
 
         <button 
           type="button"
@@ -150,7 +151,7 @@ const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-zinc-500 ml-4 tracking-widest">Nickname (Unique)</label>
             <input 
-              className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:border-red-600 transition-all font-bold"
+              className="w-full bg-black border border-white/5 rounded-2xl px-6 py-4 outline-none focus:border-red-600 transition-all font-bold"
               placeholder="Ex: Pedro_83"
               onChange={(e) => setFormData({...formData, nickname: e.target.value})}
               required={!loading}
@@ -161,7 +162,7 @@ const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
             <label className="text-[10px] font-black uppercase text-zinc-500 ml-4 tracking-widest">Mot de passe</label>
             <input 
               type="password"
-              className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:border-red-600 transition-all"
+              className="w-full bg-black border border-white/5 rounded-2xl px-6 py-4 outline-none focus:border-red-600 transition-all"
               placeholder="••••••••"
               onChange={(e) => setFormData({...formData, password: e.target.value})}
               required={!loading}
@@ -175,6 +176,15 @@ const handleGoogleSignup = async (e?: React.MouseEvent<HTMLButtonElement>) => {
             {loading ? "Vérification..." : "Valider l'inscription"} <ArrowRight size={18} />
           </button>
         </form>
+
+        <div className="mt-8 text-center border-t border-white/5 pt-8">
+          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+            Déjà un compte ?
+            <Link href="/login" className="text-white hover:text-red-600 underline ml-2 transition-colors">
+              Se connecter
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

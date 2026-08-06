@@ -263,14 +263,14 @@ function AdminNavButton({ icon, label, desc, onClick }: any) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-4 p-5 bg-zinc-900/50 border border-white/5 rounded-[2rem] hover:bg-zinc-200 hover:text-black transition-all duration-300 group text-left"
+      className="flex items-center gap-4 p-5 bg-zinc-900/50 border border-white/5 rounded-[2rem] hover:bg-red-900 hover:border-red-600 transition-all duration-300 group text-left"
     >
-      <div className="p-3 bg-zinc-800 group-hover:bg-black/20 rounded-xl text-red-600 transition-colors">
+      <div className="p-3 bg-zinc-800 group-hover:bg-red-600 rounded-xl text-red-600 group-hover:text-white transition-colors">
         {icon}
       </div>
       <div>
         <div className="font-bold uppercase italic tracking-tighter text-sm">{label}</div>
-        <div className="text-[10px] text-zinc-500 group-hover:text-black/60 font-medium uppercase tracking-tight">{desc}</div>
+        <div className="text-[10px] text-zinc-500 group-hover:text-white/70 font-medium uppercase tracking-tight">{desc}</div>
       </div>
     </button>
   );
@@ -280,7 +280,7 @@ function AdminNavButton({ icon, label, desc, onClick }: any) {
 function AdminActionButton({ icon, label, onClick, loading, variant }: any) {
   const colors = variant === 'danger' 
     ? 'bg-red-600 hover:bg-red-500 shadow-red-900/20' 
-    : 'bg-orange-600 hover:bg-purple-500 shadow-orange-900/20';
+    : 'bg-orange-600 hover:bg-orange-500 shadow-orange-900/20';
 
   return (
     <button
