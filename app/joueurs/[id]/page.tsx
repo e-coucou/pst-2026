@@ -4,6 +4,7 @@ import StatsCard from '@/components/StatsCard';
 import SeasonHistory from '@/components/SeasonHistory';
 import FavoriteButton from '@/components/FavoriteButton';
 import PlayerBadges from '@/components/PlayerBadges';
+import ShareCardButton from '@/components/ShareCardButton';
 import { computePlayerAchievements } from '@/utils/player-achievements';
 import Link from 'next/link';
 import { ChevronLeft, Zap, Target, Award, Swords, Video, Users, Star, ArrowRight, ShieldCheck } from 'lucide-react';
@@ -118,7 +119,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 		        <p className="text-zinc-500 font-bold text-sm uppercase tracking-[0.3em]">
 		          Ranking PST : <span className="text-red-500">#{lastEntry?.rank_at_time || "--"}</span>
               </p>
-<div className="flex items-center gap-3">
+<div className="flex items-center flex-wrap gap-3">
   <FavoriteButton
     playerId={player.id}
     userId={user.id}
@@ -134,6 +135,11 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
     </span>
     <ArrowRight size={12} className="text-zinc-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
   </Link>
+  <ShareCardButton
+    imageUrl={`/api/card/player/${player.id}`}
+    fileName={`pst-joueur-${player.id}.png`}
+    label="Partager ma fiche"
+  />
 </div>
             </div>
 		    </div>

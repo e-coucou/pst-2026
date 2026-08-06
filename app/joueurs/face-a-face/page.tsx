@@ -1,8 +1,10 @@
 import { createClient } from '@/utils/supabase/server';
+import { computeHeadToHead } from '@/utils/head-to-head';
 import FaceAFaceSelector from '@/components/FaceAFaceSelector';
 import StatsCard from '@/components/StatsCard';
 import FavoriStar from '@/components/FavoriStar';
 import ShareMatchButton from '@/components/ShareMatchButton';
+import ShareCardButton from '@/components/ShareCardButton';
 import Link from 'next/link';
 import { ChevronLeft, Swords, Users, Trophy } from 'lucide-react';
 
@@ -10,19 +12,6 @@ interface PlayerLite {
   id: number;
   nom: string;
   photo?: string | null;
-}
-
-interface Confrontation {
-  gameId: number;
-  year: number;
-  type: string;
-  poule: string;
-  role: string;
-  scorePour: number;
-  scoreContre: number;
-  result: number; // 1 victoire / -1 défaite / 0 nul (du point de vue du joueur A)
-  partnerName: string | null;
-  opponentPartnerName: string | null;
 }
 
 export default async function FaceAFacePage({
@@ -68,72 +57,9 @@ export default async function FaceAFacePage({
     ? { id: bId, nom: nameMap.get(bId) || `Joueur #${bId}`, photo: selectedProfiles.find(p => p.id === bId)?.photo_url ? photoMap[selectedProfiles.find(p => p.id === bId)!.photo_url!] : null }
     : null;
 
-  let confrontations: Confrontation[] = [];
-
-  if (hasSelection) {
-    const { data: rows } = await supabase
-      .from('elo_history')
-      .select('*')
-      .eq('player_id', aId)
-      .or(`tireur_id.eq.${bId},pointeur_id.eq.${bId}`)
-      .order('game_id', { ascending: false });
-
-    if (rows && rows.length > 0) {
-      const gameIds = rows.map(r => r.game_id);
-      const { data: games } = await supabase
-        .from('games')
-        .select('id, team_1_id, team_2_id')
-        .in('id', gameIds);
-      const gamesMap = new Map((games || []).map(g => [g.id, g]));
-
-      const teamIds = new Set<number>();
-      (games || []).forEach(g => { teamIds.add(g.team_1_id); teamIds.add(g.team_2_id); });
-      const { data: teams } = await supabase
-        .from('teams')
-        .select('id, tireur_id, pointeur_id')
-        .in('id', Array.from(teamIds));
-      const teamsMap = new Map((teams || []).map(t => [t.id, t]));
-
-      confrontations = rows.map(r => {
-        const game = gamesMap.get(r.game_id);
-        let partnerName: string | null = null;
-        if (game) {
-          const candidates = [teamsMap.get(game.team_1_id), teamsMap.get(game.team_2_id)];
-          const myTeam = candidates.find(t => t && (t.tireur_id === aId || t.pointeur_id === aId));
-          if (myTeam) {
-            const partnerId = myTeam.tireur_id === aId ? myTeam.pointeur_id : myTeam.tireur_id;
-            partnerName = nameMap.get(partnerId) ?? null;
-          }
-        }
-
-        const opponentIsTireur = r.tireur_id === bId;
-        const opponentPartnerId = opponentIsTireur ? r.pointeur_id : r.tireur_id;
-        const opponentPartnerName = nameMap.get(opponentPartnerId) ?? (opponentIsTireur ? r.pointeur : r.tireur) ?? null;
-
-        return {
-          gameId: r.game_id,
-          year: r.year,
-          type: r.type,
-          poule: r.poule,
-          role: r.role,
-          scorePour: r.sc_p,
-          scoreContre: r.sc_c,
-          result: r.win,
-          partnerName,
-          opponentPartnerName,
-        };
-      });
-    }
-  }
-
-  const summary = confrontations.length > 0 ? {
-    total: confrontations.length,
-    wins: confrontations.filter(c => c.result === 1).length,
-    losses: confrontations.filter(c => c.result === -1).length,
-    draws: confrontations.filter(c => c.result === 0).length,
-    pointsPour: confrontations.reduce((s, c) => s + c.scorePour, 0),
-    pointsContre: confrontations.reduce((s, c) => s + c.scoreContre, 0),
-  } : null;
+  const { confrontations, summary } = hasSelection
+    ? await computeHeadToHead(supabase, aId!, bId!)
+    : { confrontations: [], summary: null };
 
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-12 space-y-8 bg-black text-white min-h-screen">
@@ -176,6 +102,14 @@ export default async function FaceAFacePage({
                 <StatsCard label={`Victoires ${playerB.nom}`} value={summary!.losses} color="orange" />
                 <StatsCard label="Nuls" value={summary!.draws} color="zinc" />
                 <StatsCard label="Diff. Pts" value={summary!.pointsPour - summary!.pointsContre} color="purple" />
+              </div>
+
+              <div className="flex justify-center">
+                <ShareCardButton
+                  imageUrl={`/api/card/face-a-face?a=${playerA.id}&b=${playerB.id}`}
+                  fileName={`pst-face-a-face-${playerA.id}-${playerB.id}.png`}
+                  label="Partager ce face-à-face"
+                />
               </div>
 
               {/* LISTE DES CONFRONTATIONS */}
