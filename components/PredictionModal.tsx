@@ -12,8 +12,12 @@ import { normalCDF } from '@/utils/probability';
 // ============================================================================
 const PREDICTION_CONFIG = {
   // Volatilité du modèle probabiliste (normal CDF)
-  // À CALIBRER : calculer depuis l'historique des différences d'ELO observées
-  // Placeholder : 150 est raisonnable mais doit être validé sur 6 ans de données
+  // VALIDÉ (session du 2026-08-07, cf. utils/prediction-calibration.ts) : recherche en grille sur
+  // les 145 matchs archivés donnant un score de Brier minimal à ~192 en écart-type total pour ELO
+  // Modern (soit ~136/joueur), contre 212 (150/joueur) ici — gain quasi nul (0,23225 vs 0,23230,
+  // précision identique à la décimale). 150 reste donc un choix raisonnable ; la calibration
+  // utilise 136 pour rester cohérente avec Classic (voir utils/model-config.ts), mais rien
+  // n'impose de changer cette constante côté module live.
   volatilityPerPlayer: 150,
 
   // Bonus de forme : plafonnage et stabilisation
@@ -32,6 +36,14 @@ const PREDICTION_CONFIG = {
 
   // Logique de Poule
   poule: {
+    // VALIDÉ (session du 2026-08-07) : recherche en grille sur les 92 matchs de Poule archivés
+    // (7 nuls) minimisant le score de Brier multiclasse (A/B/Nul), testé de 0 à 60 par pas de
+    // 0,5 — optimum empirique à 18-20,5 (plateau très plat), 20 est donc déjà quasi-optimal.
+    // Une tentative de calcul "principled" façon predictDraw() d'openskill (drawMargin dérivé de
+    // sqrt(n)·beta·Φ⁻¹((1+1/n)/2) avec beta=volatilityPerPlayer) donne un score bien PIRE (0,66
+    // contre 0,555) — la formule openskill ne se transpose pas telle quelle à ce modèle CDF
+    // simplifié, l'analogie beta≈volatilityPerPlayer n'est pas valide. Conclusion : la constante
+    // choisie à la main était la bonne, aucun changement recommandé ici.
     drawMargin: 20, // Écart en points pour calculer prob de nul
     maxScoreWhenDominating: 13,
     minScoreLossThreshold: 1, // Scores type 11-1 si super domination
