@@ -11,7 +11,7 @@ import {
   TrendingUp, BarChart3, ChevronRight, Zap, X,
   Flame, Skull, HeartPulse, Crosshair, Crown,
   Eye, ArrowUpRight, Rocket, ShieldOff, Swords, Frown, Focus, Handshake,
-  Medal, ThumbsDown, Thermometer, ImageIcon
+  Medal, ThumbsDown, Thermometer, ImageIcon, Waves, Shuffle
 } from 'lucide-react';
 import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import MatchupMatrixGrid from '@/components/MatchupMatrixGrid';
@@ -80,7 +80,7 @@ export default function StatsPage() {
   const [selectedSeason, setSelectedSeason] = useState<'global' | number>('global');
   const [popularity, setPopularity] = useState<PopularityStats>({ topPage: null, topPlayers: [], topTournament: null, topPhoto: null });
   const [teammateMatrix, setTeammateMatrix] = useState<MatchupMatrix>({});
-  const [teams, setTeams] = useState<any[]>([]);
+  const [teams, setTeams] = useState<{ id: number; tireur_id: number; pointeur_id: number }[]>([]);
 
   useEffect(() => {
     logActivity(supabase, 'PAGE_VIEW', { path: '/stats', tab: activeTab });
@@ -258,7 +258,9 @@ export default function StatsPage() {
           tireurMatches: 0,
           tireurWins: 0,
           pointeurMatches: 0,
-          pointeurWins: 0
+          pointeurWins: 0,
+          diffSum: 0,
+          diffSumSq: 0
         });
       }
 
@@ -288,6 +290,14 @@ export default function StatsPage() {
       if (isFannyTaken) p.fannyTaken += 1;
       if (isCloseLoss) p.closeLosses += 1;
 
+      // --- RÉGULARITÉ (écart-type du différentiel de points) ---
+      // Formule à passage unique : variance = E[X²] - E[X]², cohérente avec le reste de la boucle.
+      if (!isNaN(scP) && !isNaN(scC)) {
+        const diff = scP - scC;
+        p.diffSum += diff;
+        p.diffSumSq += diff * diff;
+      }
+
       // --- INDICE CLUTCH (Gagné 13-12) ---
       if (isWin && scP === 13 && scC === 12) {
         p.clutchWins += 1;
@@ -312,11 +322,15 @@ export default function StatsPage() {
     return Array.from(playersMap.values())
       .map(p => {
         const winrateCalc = p.matches > 0 ? (p.wins / p.matches) * 100 : 0;
+        const meanDiff = p.matches > 0 ? p.diffSum / p.matches : 0;
+        const variance = p.matches > 0 ? Math.max(0, p.diffSumSq / p.matches - meanDiff * meanDiff) : 0;
         return {
           ...p,
           winrate: winrateCalc.toFixed(1),
           winrateNum: winrateCalc, // Gardé sous forme numérique pour le tri correct
           goalAverage: p.pointsPour - p.pointsContre,
+          stdDevDiff: Math.sqrt(variance),
+          stdDevDiffDisplay: Math.sqrt(variance).toFixed(1),
           tireurWinrate: p.tireurMatches > 0 ? ((p.tireurWins / p.tireurMatches) * 100).toFixed(1) : "-",
           pointeurWinrate: p.pointeurMatches > 0 ? ((p.pointeurWins / p.pointeurMatches) * 100).toFixed(1) : "-",
           peakElo: p.peakElo.toFixed(1)
@@ -732,6 +746,26 @@ export default function StatsPage() {
               valueKey="closeLosses"
               suffix="Défaites sur le fil (11 ou 12-13)"
               color="border-orange-500/30 bg-orange-500/5 text-orange-500"
+              favoriId={favoriId}
+            />
+
+            <RecordCard
+              title="Le Métronome"
+              icon={<Waves className="text-sky-500" size={24} />}
+              data={[...playerStats].filter(p => p.matches >= 10).sort((a, b) => a.stdDevDiff - b.stdDevDiff)[0]}
+              valueKey="stdDevDiffDisplay"
+              suffix="Écart-type le plus faible (régularité, min. 10 matchs)"
+              color="border-sky-500/30 bg-sky-500/5 text-sky-500"
+              favoriId={favoriId}
+            />
+
+            <RecordCard
+              title="L'Électron Libre"
+              icon={<Shuffle className="text-fuchsia-500" size={24} />}
+              data={topByMetric(playerStats.filter(p => p.matches >= 10), p => p.stdDevDiff)}
+              valueKey="stdDevDiffDisplay"
+              suffix="Écart-type le plus élevé (imprévisible, min. 10 matchs)"
+              color="border-fuchsia-500/30 bg-fuchsia-500/5 text-fuchsia-500"
               favoriId={favoriId}
             />
 
