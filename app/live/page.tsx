@@ -7,6 +7,7 @@ import RenderStepper from '@/components/Stepper';
 import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import { Brain, Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List, Calendar } from 'lucide-react';
 import PredictionModal from '@/components/PredictionModal';
+import MatchPredictionButton from '@/components/MatchPredictionButton';
 import { calculateTeamsStats, calculatePouleStandings } from '@/utils/live-stats';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
 import FavoriStar from '@/components/FavoriStar';
@@ -431,6 +432,13 @@ export default function PodiumPage() {
 						      </span>
 						    </button>
 						  )}
+						  {m.status === 'TERMINE' && (
+						    <MatchPredictionButton
+						      gameId={m.id}
+						      mode="live"
+						      className="mb-2 p-1.5 rounded-full bg-zinc-800 text-zinc-500 hover:bg-emerald-500/20 hover:text-emerald-500 transition-colors"
+						    />
+						  )}
 
 						  {/* LE SCORE */}
 						  <div className="bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center w-full">
@@ -497,6 +505,13 @@ export default function PodiumPage() {
 						        IA Prono
 						      </span>
 						    </button>
+						  )}
+						  {m.status === 'TERMINE' && (
+						    <MatchPredictionButton
+						      gameId={m.id}
+						      mode="live"
+						      className="mb-2 p-1.5 rounded-full bg-zinc-800 text-zinc-500 hover:bg-emerald-500/20 hover:text-emerald-500 transition-colors"
+						    />
 						  )}
 
 						  {/* LE SCORE */}
@@ -582,6 +597,13 @@ export default function PodiumPage() {
 						        IA Prono
 						      </span>
 						    </button>
+						  )}
+						  {m.status === 'TERMINE' && (
+						    <MatchPredictionButton
+						      gameId={m.id}
+						      mode="live"
+						      className="mb-2 p-1.5 rounded-full bg-zinc-800 text-zinc-500 hover:bg-emerald-500/20 hover:text-emerald-500 transition-colors"
+						    />
 						  )}
 
 						  {/* LE SCORE */}

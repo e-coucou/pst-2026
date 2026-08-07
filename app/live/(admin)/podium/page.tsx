@@ -10,6 +10,7 @@ import PouleStandingsTable from '@/components/PouleStandingsTable';
 import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
 import { useIsSuper } from '@/hooks/useIsSuper';
+import MatchPredictionButton from '@/components/MatchPredictionButton';
 
 export default function PodiumPage() {
   const favoriId = useFavoriId();
@@ -240,8 +241,15 @@ export default function PodiumPage() {
 
 				      {/* SCORE - Bloc central */}
 				      {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
-				      <div className="shrink-0 mx-4 bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
-				        {m.score_team1} - {m.score_team2}
+				      <div className="shrink-0 mx-4 flex flex-col items-center gap-1.5">
+				        <div className="bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
+				          {m.score_team1} - {m.score_team2}
+				        </div>
+				        <MatchPredictionButton
+				          gameId={m.id}
+				          mode="live"
+				          className="p-1.5 rounded-full bg-zinc-800 text-zinc-500 hover:bg-emerald-500/20 hover:text-emerald-500 transition-colors"
+				        />
 				      </div>
 
 				      {/* ÉQUIPE 2 - Bloc de droite */}
@@ -287,8 +295,15 @@ export default function PodiumPage() {
 
 				      {/* SCORE - Bloc central */}
 				      {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
-				      <div className="shrink-0 mx-4 bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
-				        {m.score_team1} - {m.score_team2}
+				      <div className="shrink-0 mx-4 flex flex-col items-center gap-1.5">
+				        <div className="bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
+				          {m.score_team1} - {m.score_team2}
+				        </div>
+				        <MatchPredictionButton
+				          gameId={m.id}
+				          mode="live"
+				          className="p-1.5 rounded-full bg-zinc-800 text-zinc-500 hover:bg-emerald-500/20 hover:text-emerald-500 transition-colors"
+				        />
 				      </div>
 
 				      {/* ÉQUIPE 2 - Bloc de droite */}
@@ -349,8 +364,15 @@ export default function PodiumPage() {
 
 				       {/* SCORE - Bloc central */}
 				       {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
-				       <div className="shrink-0 mx-4 bg-black px-4 py-1 rounded-xl font-black text-xl border border-white/5 text-white text-center">
-				         {m.score_team1} - {m.score_team2}
+				       <div className="shrink-0 mx-4 flex flex-col items-center gap-1.5">
+				         <div className="bg-black px-4 py-1 rounded-xl font-black text-xl border border-white/5 text-white text-center">
+				           {m.score_team1} - {m.score_team2}
+				         </div>
+				         <MatchPredictionButton
+				           gameId={m.id}
+				           mode="live"
+				           className="p-1.5 rounded-full bg-zinc-800 text-zinc-500 hover:bg-emerald-500/20 hover:text-emerald-500 transition-colors"
+				         />
 				       </div>
 
 				       {/* ÉQUIPE 2 - Bloc de droite */}

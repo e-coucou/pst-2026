@@ -10,6 +10,7 @@ import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, LayoutGrid,
 import { logActivity } from '@/utils/log-activity';
 import { simulateRandomScores } from '@/utils/simulate';
 import FavoriStar from '@/components/FavoriStar';
+import MatchPredictionButton from '@/components/MatchPredictionButton';
 import { useFavoriId } from '@/hooks/useFavoriId';
 import { useIsSuper } from '@/hooks/useIsSuper';
 
@@ -268,6 +269,13 @@ export default function LiveDemiPage() {
 				        <Brain size={20} className="text-zinc-500 group-hover:text-white md:h-6 " />
 				      </div>
 				    </button>
+				   )}
+				   {isTermine && (
+				     <MatchPredictionButton
+				       gameId={m.id}
+				       mode="live"
+				       className="p-1.5 bg-zinc-800 rounded-full text-zinc-500 transition-colors hover:bg-emerald-500 hover:text-white hover:scale-[1.3]"
+				     />
 				   )}
 				  </div>
                   <div className="flex shrink-0 group">

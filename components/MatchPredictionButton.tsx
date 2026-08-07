@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Brain, X, Loader2, Check, X as XIcon } from 'lucide-react';
 
 interface PredictionResponse {
-  game: { id: number; year: number; type: string; poule: string | null; score1: number; score2: number };
+  game: { id: number; year: number | null; type: string; poule: string | null; score1: number; score2: number };
   team1: { tireur: string; pointeur: string };
   team2: { tireur: string; pointeur: string };
   classic: { probA: number; probB: number };
@@ -23,10 +23,22 @@ function calledRight(probA: number, probB: number, actualWinner: 'team1' | 'team
   return favorite === actualWinner;
 }
 
-export default function MatchPredictionButton({ gameId, className }: { gameId: number; className?: string }) {
+export default function MatchPredictionButton({
+  gameId,
+  mode = 'archived',
+  className,
+}: {
+  gameId: number;
+  // 'archived' = match déjà archivé (table games), 'live' = match du tournoi en cours (table
+  // live_matches) — deux routes distinctes, même format de réponse.
+  mode?: 'archived' | 'live';
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<PredictionResponse | null>(null);
+
+  const endpoint = mode === 'live' ? `/api/predict/live-match/${gameId}` : `/api/predict/match/${gameId}`;
 
   const handleOpen = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -34,7 +46,7 @@ export default function MatchPredictionButton({ gameId, className }: { gameId: n
     if (data) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/predict/match/${gameId}`);
+      const res = await fetch(endpoint);
       if (res.ok) setData(await res.json());
     } finally {
       setLoading(false);
