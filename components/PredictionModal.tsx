@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { Loader2, X, Zap, TrendingUp, Target, Swords, Clock } from 'lucide-react';
 import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
+import { normalCDF } from '@/utils/probability';
 
 // ============================================================================
 // CONFIGURATION DU MODÈLE DE PRÉDICTION
@@ -49,34 +50,6 @@ const PREDICTION_CONFIG = {
 // ============================================================================
 // OUTILS MATHÉMATIQUES DE PRÉCISION
 // ============================================================================
-
-/**
- * Approximation de la fonction d'erreur (erf) - Abramowitz & Stegun
- * Utilisée pour la CDF de la loi normale
- */
-function erf(x: number): number {
-  const sign = x >= 0 ? 1 : -1;
-  x = Math.abs(x);
-  const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
-  const t = 1.0 / (1.0 + p * x);
-  return sign * (1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x));
-}
-
-/**
- * CDF de la loi normale
- * P(X ≤ x) pour X ~ N(mean, stdDev²)
- * 
- * @param mean Moyenne
- * @param stdDev Écart-type
- * @param x Valeur à évaluer (défaut 0)
- * @returns Probabilité cumulative [0, 1]
- */
-function normalCDF(mean: number, stdDev: number, x: number = 0): number {
-  if (stdDev === 0) return x >= mean ? 1 : 0;
-  const res = 0.5 * (1 + erf((x - mean) / (stdDev * Math.sqrt(2))));
-  // Protection contre NaN
-  return isNaN(res) ? 0.5 : Math.max(0, Math.min(1, res));
-}
 
 /**
  * Calcul du ratio de domination avec formule linéaire

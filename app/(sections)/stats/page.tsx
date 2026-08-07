@@ -16,7 +16,9 @@ import {
 import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import MatchupMatrixGrid from '@/components/MatchupMatrixGrid';
 import TopDuos from '@/components/TopDuos';
+import CalibrationChart from '@/components/CalibrationChart';
 import { computeTeammateMatrix, rankBestDuos, type MatchupMatrix } from '@/utils/matchup-matrix';
+import { computeCalibration } from '@/utils/prediction-calibration';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logActivity } from '@/utils/log-activity';
@@ -78,6 +80,7 @@ export default function StatsPage() {
   const [selectedSeason, setSelectedSeason] = useState<'global' | number>('global');
   const [popularity, setPopularity] = useState<PopularityStats>({ topPage: null, topPlayers: [], topTournament: null, topPhoto: null });
   const [teammateMatrix, setTeammateMatrix] = useState<MatchupMatrix>({});
+  const [teams, setTeams] = useState<any[]>([]);
 
   useEffect(() => {
     logActivity(supabase, 'PAGE_VIEW', { path: '/stats', tab: activeTab });
@@ -91,6 +94,8 @@ export default function StatsPage() {
       const { data: eloData } = await supabase.from('elo_history').select('*');
       if (eloData) setEloHistory(eloData);
       computeTeammateMatrix(supabase).then(setTeammateMatrix);
+      const { data: teamsData } = await supabase.from('teams').select('id, tireur_id, pointeur_id');
+      if (teamsData) setTeams(teamsData);
 
       // On lance les deux requêtes en parallèle pour la performance
       const [timelineRes, profilesRes, seasons, popularityRes] = await Promise.all([
@@ -324,6 +329,11 @@ export default function StatsPage() {
 
   const bestDuos = useMemo(() => rankBestDuos(teammateMatrix, 3, 10), [teammateMatrix]);
 
+  const calibration = useMemo(
+    () => computeCalibration(matches, teams, eloHistory),
+    [matches, teams, eloHistory]
+  );
+
   const CustomBar = (props: any) => {
     const { x, y, width, height, payload } = props;
     
@@ -365,7 +375,7 @@ export default function StatsPage() {
           </button>
         </div>
         <div className="flex gap-4 mt-6 overflow-x-auto pb-2 no-scrollbar">
-          {['global', 'scores', 'joueurs', 'duos', 'records', 'évolution', 'popularité'].map((tab) => (
+          {['global', 'scores', 'joueurs', 'duos', 'records', 'calibration', 'évolution', 'popularité'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -727,6 +737,36 @@ export default function StatsPage() {
 
           </div>
         )}
+
+        {/* ONGLET CALIBRATION DU MODÈLE ELO */}
+        {activeTab === 'calibration' && (
+          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest max-w-2xl">
+              Rejoue, sur les {calibration.totalMatches} matchs archivés, la probabilité de victoire
+              que donnerait le cœur du moteur ELO Modern (écart d&apos;ELO + loi normale) — sans le
+              bonus de forme du jour ni l&apos;explosivité, propres au module de pronostic live. Une
+              courbe &quot;Réel&quot; collée à la diagonale &quot;Idéal&quot; signifie que le modèle est bien calibré.
+            </p>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <StatCard label="Matchs analysés" value={calibration.totalMatches} icon={<Activity size={20} />} color="text-white" />
+              <StatCard label="Précision du favori" value={`${calibration.accuracy.toFixed(0)}%`} icon={<Target size={20} />} color="text-red-600" />
+              <StatCard label="Score de Brier" value={calibration.brierScore.toFixed(3)} icon={<TrendingUp size={20} />} color="text-purple-400" />
+            </div>
+
+            <div className="bg-zinc-900/50 border border-white/5 p-6 rounded-[2.5rem]">
+              <h3 className="text-sm font-black uppercase tracking-widest mb-8 flex items-center gap-2">
+                <Target className="text-red-600" size={18} />
+                Courbe de calibration
+              </h3>
+              <CalibrationChart buckets={calibration.buckets} />
+              <p className="text-[10px] text-zinc-500 mt-6 font-bold uppercase italic text-center">
+                Score de Brier : 0 = parfait, 0,25 = équivalent à toujours prédire 50/50.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ONGLET RECORDS & TROPHÉES */}
         {activeTab === 'évolution' && (
           <div className="flex flex-col min-w-0 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in zoom-in-95 duration-300">
