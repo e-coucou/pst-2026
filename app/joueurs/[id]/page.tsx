@@ -5,6 +5,7 @@ import SeasonHistory from '@/components/SeasonHistory';
 import FavoriteButton from '@/components/FavoriteButton';
 import PlayerBadges from '@/components/PlayerBadges';
 import ShareCardButton from '@/components/ShareCardButton';
+import RecentForm from '@/components/RecentForm';
 import { computePlayerAchievements } from '@/utils/player-achievements';
 import Link from 'next/link';
 import { ChevronLeft, Zap, Target, Award, Swords, Video, Users, Star, ArrowRight, ShieldCheck } from 'lucide-react';
@@ -119,6 +120,7 @@ export default async function PlayerProfile({ params }: { params: Promise<{ id: 
 		        <p className="text-zinc-500 font-bold text-sm uppercase tracking-[0.3em]">
 		          Ranking PST : <span className="text-red-500">#{lastEntry?.rank_at_time || "--"}</span>
               </p>
+<RecentForm history={eloHistory} />
 <div className="flex items-center flex-wrap gap-3">
   <FavoriteButton
     playerId={player.id}
