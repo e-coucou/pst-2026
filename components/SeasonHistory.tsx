@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Swords, Trophy, Target } from 'lucide-react';
 import ShareMatchButton from '@/components/ShareMatchButton';
+import MatchPredictionButton from '@/components/MatchPredictionButton';
 
 interface SeasonStat {
   annee: number;
@@ -148,6 +149,10 @@ export default function SeasonHistory({ stats, fullHistory,historyAll }: { stats
 					      <ShareMatchButton
 					        gameId={m.game_id}
 					        className="p-1.5 rounded-full bg-black/40 text-gray-400 hover:text-red-600 hover:bg-red-600/10 transition-all"
+					      />
+					      <MatchPredictionButton
+					        gameId={m.game_id}
+					        className="p-1.5 rounded-full bg-black/40 text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all"
 					      />
 					    </div>
 					  </div>

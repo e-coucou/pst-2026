@@ -7,6 +7,7 @@ import TopRivalries from '@/components/TopRivalries';
 import StatsCard from '@/components/StatsCard';
 import FavoriStar from '@/components/FavoriStar';
 import ShareMatchButton from '@/components/ShareMatchButton';
+import MatchPredictionButton from '@/components/MatchPredictionButton';
 import ShareCardButton from '@/components/ShareCardButton';
 import Link from 'next/link';
 import { ChevronLeft, Swords, Users, Trophy } from 'lucide-react';
@@ -169,7 +170,10 @@ export default async function FaceAFacePage({
                             </span>
                           </td>
                           <td className="px-4 py-4 text-center">
-                            <ShareMatchButton gameId={c.gameId} />
+                            <div className="flex justify-center gap-1.5">
+                              <ShareMatchButton gameId={c.gameId} />
+                              <MatchPredictionButton gameId={c.gameId} />
+                            </div>
                           </td>
                         </tr>
                       ))}

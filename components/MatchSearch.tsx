@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import ShareMatchButton from '@/components/ShareMatchButton';
+import MatchPredictionButton from '@/components/MatchPredictionButton';
 
 interface TeamRef {
   tireurId: number | null;
@@ -163,8 +164,9 @@ export default function MatchSearch({
                       <TeamNames team={m.team2} bold={win2} align="left" />
                     </div>
 
-                    <div className="flex justify-center md:w-10 shrink-0">
+                    <div className="flex justify-center gap-1.5 md:w-20 shrink-0">
                       <ShareMatchButton gameId={m.id} />
+                      <MatchPredictionButton gameId={m.id} />
                     </div>
                   </div>
                 );
