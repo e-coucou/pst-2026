@@ -61,6 +61,53 @@ export async function computeMatchupMatrix(supabase: SupabaseClient): Promise<Ma
   return matrix;
 }
 
+// Même principe que computeMatchupMatrix, mais pour les COÉQUIPIERS (jamais adversaires) : pour
+// chaque match, les deux membres de chaque équipe cumulent un "match joué ensemble", avec le
+// résultat (victoire/défaite/nul) DE L'ÉQUIPE — contrairement à la matrice d'adversaires,
+// wins/losses/draws sont donc symétriques ici (une victoire en duo est une victoire pour les
+// deux joueurs). Alimente l'onglet "Duos" de /stats.
+export async function computeTeammateMatrix(supabase: SupabaseClient): Promise<MatchupMatrix> {
+  const [{ data: games }, { data: teams }] = await Promise.all([
+    supabase.from('games').select('team_1_id, team_2_id, score_1, score_2'),
+    supabase.from('teams').select('id, tireur_id, pointeur_id'),
+  ]);
+
+  const teamsMap = new Map((teams || []).map((t) => [t.id, t]));
+  const matrix: MatchupMatrix = {};
+
+  const bump = (a: number, b: number, field: keyof MatchupCell) => {
+    if (!matrix[a]) matrix[a] = {};
+    if (!matrix[a][b]) matrix[a][b] = { matches: 0, wins: 0, losses: 0, draws: 0 };
+    matrix[a][b][field] += 1;
+  };
+
+  (games || []).forEach((g) => {
+    const draw = g.score_1 === g.score_2;
+    [
+      { team: teamsMap.get(g.team_1_id), won: g.score_1 > g.score_2 },
+      { team: teamsMap.get(g.team_2_id), won: g.score_2 > g.score_1 },
+    ].forEach(({ team, won }) => {
+      if (!team) return;
+      const { tireur_id: a, pointeur_id: b } = team;
+
+      bump(a, b, 'matches');
+      bump(b, a, 'matches');
+      if (draw) {
+        bump(a, b, 'draws');
+        bump(b, a, 'draws');
+      } else if (won) {
+        bump(a, b, 'wins');
+        bump(b, a, 'wins');
+      } else {
+        bump(a, b, 'losses');
+        bump(b, a, 'losses');
+      }
+    });
+  });
+
+  return matrix;
+}
+
 // Pour chaque joueur, la liste des adversaires qu'il a déjà affrontés au moins une fois —
 // utilisée pour restreindre les options du sélecteur B une fois le joueur A choisi.
 export function buildOpponentsByPlayer(matrix: MatchupMatrix): Record<number, number[]> {

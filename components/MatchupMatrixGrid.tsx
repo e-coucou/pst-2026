@@ -48,9 +48,21 @@ function cellBackground(cell: MatchupCell | undefined, metric: MetricKey): strin
 export default function MatchupMatrixGrid({
   players,
   matrix,
+  title = 'Matrice des confrontations',
+  relationLabel = 'contre',
+  positiveLabel = 'domine',
+  negativeLabel = 'dominé',
+  getHref = (aId, bId) => `/joueurs/face-a-face?a=${aId}&b=${bId}`,
 }: {
   players: PlayerOption[];
   matrix: Record<number, Record<number, MatchupCell>>;
+  title?: string;
+  // Verbe reliant les deux joueurs dans la légende, ex. "contre" (adversaires) ou "avec" (coéquipiers).
+  relationLabel?: string;
+  positiveLabel?: string;
+  negativeLabel?: string;
+  // Retourne le lien de la case, ou null pour désactiver le clic (pas de page de détail pour cette relation).
+  getHref?: (aId: number, bId: number) => string | null;
 }) {
   const [metric, setMetric] = useState<MetricKey>('matches');
 
@@ -69,7 +81,7 @@ export default function MatchupMatrixGrid({
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h2 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
           <Grid3x3 size={18} className="text-red-600" />
-          Matrice des confrontations
+          {title}
         </h2>
 
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -88,9 +100,9 @@ export default function MatchupMatrixGrid({
       </div>
 
       <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-        Chaque case = bilan du joueur de la ligne contre celui de la colonne.{' '}
-        <span className="text-green-500">Vert</span> = domine,{' '}
-        <span className="text-red-500">rouge</span> = dominé,{' '}
+        Chaque case = bilan du joueur de la ligne {relationLabel} celui de la colonne.{' '}
+        <span className="text-green-500">Vert</span> = {positiveLabel},{' '}
+        <span className="text-red-500">rouge</span> = {negativeLabel},{' '}
         <span className="text-zinc-400">gris</span> = 50/50 ou nuls uniquement.
       </p>
 
@@ -143,6 +155,10 @@ export default function MatchupMatrixGrid({
 
                   const cell = matrix[rowP.id]?.[colP.id];
                   const value = cell ? cell[metric] : 0;
+                  const href = cell ? getHref(rowP.id, colP.id) : null;
+                  const tooltip = cell
+                    ? `${rowP.nom} ${relationLabel} ${colP.nom} — ${cell.matches} match(s), ${cell.wins}V / ${cell.losses}D / ${cell.draws}N`
+                    : undefined;
 
                   return (
                     <td
@@ -150,16 +166,19 @@ export default function MatchupMatrixGrid({
                       className="border border-white/[0.03] p-0"
                       style={{ width: CELL_SIZE, height: CELL_SIZE, backgroundColor: cellBackground(cell, metric) }}
                     >
-                      {cell ? (
+                      {href ? (
                         <Link
-                          href={`/joueurs/face-a-face?a=${rowP.id}&b=${colP.id}`}
-                          title={`${rowP.nom} vs ${colP.nom} — ${cell.matches} match(s), ${cell.wins}V / ${cell.losses}D / ${cell.draws}N`}
+                          href={href}
+                          title={tooltip}
                           className="flex items-center justify-center w-full h-full text-[10px] font-mono font-bold text-white hover:outline hover:outline-1 hover:outline-red-600 transition-all"
                         >
                           {value}
                         </Link>
                       ) : (
-                        <div className="flex items-center justify-center w-full h-full text-[10px] font-mono text-zinc-700">
+                        <div
+                          title={tooltip}
+                          className={`flex items-center justify-center w-full h-full text-[10px] font-mono font-bold ${cell ? 'text-white' : 'text-zinc-700'}`}
+                        >
                           {value}
                         </div>
                       )}

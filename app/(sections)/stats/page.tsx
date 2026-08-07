@@ -14,6 +14,8 @@ import {
   Medal, ThumbsDown, Thermometer, ImageIcon
 } from 'lucide-react';
 import GlobalProgressionChart from '@/components/GlobalProgressionChart';
+import MatchupMatrixGrid from '@/components/MatchupMatrixGrid';
+import { computeTeammateMatrix, type MatchupMatrix } from '@/utils/matchup-matrix';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logActivity } from '@/utils/log-activity';
@@ -74,6 +76,7 @@ export default function StatsPage() {
   const [nbYears, setNbYears] = useState(0);
   const [selectedSeason, setSelectedSeason] = useState<'global' | number>('global');
   const [popularity, setPopularity] = useState<PopularityStats>({ topPage: null, topPlayers: [], topTournament: null, topPhoto: null });
+  const [teammateMatrix, setTeammateMatrix] = useState<MatchupMatrix>({});
 
   useEffect(() => {
     logActivity(supabase, 'PAGE_VIEW', { path: '/stats', tab: activeTab });
@@ -86,6 +89,7 @@ export default function StatsPage() {
       if (data) setMatches(data);
       const { data: eloData } = await supabase.from('elo_history').select('*');
       if (eloData) setEloHistory(eloData);
+      computeTeammateMatrix(supabase).then(setTeammateMatrix);
 
       // On lance les deux requêtes en parallèle pour la performance
       const [timelineRes, profilesRes, seasons, popularityRes] = await Promise.all([
@@ -358,7 +362,7 @@ export default function StatsPage() {
           </button>
         </div>
         <div className="flex gap-4 mt-6 overflow-x-auto pb-2 no-scrollbar">
-          {['global', 'scores', 'joueurs', 'records', 'évolution', 'popularité'].map((tab) => (
+          {['global', 'scores', 'joueurs', 'duos', 'records', 'évolution', 'popularité'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -539,6 +543,21 @@ export default function StatsPage() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ONGLET DUOS (COÉQUIPIERS) */}
+        {activeTab === 'duos' && (
+          <div className="animate-in fade-in zoom-in-95 duration-300">
+            <MatchupMatrixGrid
+              players={playerStats.map(p => ({ id: p.id, nom: p.name }))}
+              matrix={teammateMatrix}
+              title="Matrice des duos (coéquipiers)"
+              relationLabel="avec"
+              positiveLabel="duo gagnant"
+              negativeLabel="duo en difficulté"
+              getHref={() => null}
+            />
           </div>
         )}
 
