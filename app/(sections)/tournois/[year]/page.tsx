@@ -5,6 +5,7 @@ import PouleStandingsTable from '@/components/PouleStandingsTable';
 import FavoriStar from '@/components/FavoriStar';
 import { getFavoriId } from '@/utils/favori';
 import { PouleStanding } from '@/utils/live-stats';
+import MatchPredictionButton from '@/components/MatchPredictionButton';
 
 export default async function TournamentDetailPage({
   params
@@ -437,8 +438,14 @@ function MatchRow({ match, size = 'md', favoriId }: { match: any, size?: 'xs' | 
           <span className="text-purple-500 uppercase leading-none">{match.team_1?.pointeur?.nom} <FavoriStar active={match.team_1?.pointeur?.id === favoriId} /></span>
         </div>
       </div>
-      <div className={`font-mono font-black italic bg-black border border-red-600/20 rounded px-3 py-1 ${isLarge ? 'md:text-4xl text-xl' : 'text-sm'}`}>
-        {match.score_1}-{match.score_2}
+      <div className="flex flex-col items-center gap-1.5 shrink-0">
+        <div className={`font-mono font-black italic bg-black border border-red-600/20 rounded px-3 py-1 ${isLarge ? 'md:text-4xl text-xl' : 'text-sm'}`}>
+          {match.score_1}-{match.score_2}
+        </div>
+        <MatchPredictionButton
+          gameId={match.id}
+          className="p-1.5 rounded-full bg-black/40 text-zinc-500 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all"
+        />
       </div>
       <div className="flex-1 text-center">
         <div className={`flex flex-col ${isLarge ? 'md:text-2xl text-md' : 'text-[11px]'} font-bold items-start`}>
