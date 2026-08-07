@@ -6,6 +6,7 @@ import { Loader2, X, Zap, TrendingUp, Target, Swords, Clock } from 'lucide-react
 import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
 import { normalCDF } from '@/utils/probability';
+import { CLASSIC_SIGMA } from '@/utils/model-config';
 
 // ============================================================================
 // CONFIGURATION DU MODÈLE DE PRÉDICTION
@@ -122,7 +123,7 @@ export default function PredictionModal({
     // 1. HISTORIQUE ELO & EXPLOSIVITÉ (Table elo_history)
     const { data: history } = await supabase
       .from('elo_history')
-      .select('elo_modern_value, sc_p, sc_c')
+      .select('elo_modern_value, elo_value, sc_p, sc_c')
       .eq('player_id', playerId)
       .order('created_at', { ascending: false })
       .limit(PREDICTION_CONFIG.explosivity.historicalMatchesRequired);
@@ -171,6 +172,10 @@ export default function PredictionModal({
     // sans historique (cf. fetchPlayersWithElo dans admin/page.tsx) — l'échelle "modern" est
     // centrée autour de 100, pas 1500 (qui aurait créé un écart artificiel écrasant le modèle).
     const lastElo = history?.[0]?.elo_modern_value ?? 100;
+    // Classic (secondaire, affichage seulement) : pas de bonus de forme — le coefficient de
+    // formBonus est calibré pour l'échelle Modern, pas transposable telle quelle à l'échelle
+    // Classic, beaucoup plus resserrée (cf. utils/model-config.ts).
+    const classicElo = history?.[0]?.elo_value ?? 100;
 
     // 5. EXPLOSIVITÉ (variance des scores marqués)
     let explosivity = 1.0;
@@ -200,6 +205,7 @@ export default function PredictionModal({
 
     return {
       mu: lastElo + formBonus,
+      classicElo,
       explosivity,
       formBonus,
       nHistoricalMatches: validScores.length,
@@ -226,6 +232,14 @@ export default function PredictionModal({
       // (Alternative documentée : pondérer tireur/pointeur différemment, mais pas de donnée pour justifier)
       const muA = (pointeurTeam1.mu + tireurTeam1.mu) / 2;
       const muB = (pointeurTeam2.mu + tireurTeam2.mu) / 2;
+
+      // PROBABILITÉ CLASSIC (secondaire, affichage seulement — Modern reste le modèle principal).
+      // Sigma validé par recherche en grille (session du 2026-08-07, cf. utils/model-config.ts) :
+      // Classic n'a pas la même échelle que Modern (beaucoup plus resserrée), on ne peut pas
+      // réutiliser volatilityPerPlayer tel quel.
+      const classicMuA = (pointeurTeam1.classicElo + tireurTeam1.classicElo) / 2;
+      const classicMuB = (pointeurTeam2.classicElo + tireurTeam2.classicElo) / 2;
+      const classicProbA = normalCDF(0, 1, (classicMuA - classicMuB) / CLASSIC_SIGMA);
 
       // EXPLOSIVITÉ MOYENNE DES 4 JOUEURS
       const avgExplosivity =
@@ -402,6 +416,8 @@ export default function PredictionModal({
         probA: (probA * 100).toFixed(0),
         probB: (probB * 100).toFixed(0),
         probTie: (probTie * 100).toFixed(0),
+        classicProbA: (classicProbA * 100).toFixed(0),
+        classicProbB: ((1 - classicProbA) * 100).toFixed(0),
         scoreA,
         scoreB,
         namesA: `${getPlayerName(t1.pointeur_id)} / ${getPlayerName(t1.tireur_id)}`,
@@ -469,6 +485,9 @@ export default function PredictionModal({
                 <div className="text-5xl font-black text-white tracking-tighter">
                   {prediction.probA}%
                 </div>
+                <div className="text-[9px] font-bold text-red-500 uppercase tracking-widest -mt-2">
+                  Classic {prediction.classicProbA}%
+                </div>
                 <div className="flex flex-col gap-1">
                   <div className="text-[10px] font-bold leading-tight uppercase min-h-[32px] flex items-center justify-center px-1 gap-1">
                     <span className="text-purple-400">{getPlayerName(prediction.pointeurAId)}</span> <FavoriStar active={prediction.pointeurAId === favoriId} size={10} />
@@ -495,6 +514,9 @@ export default function PredictionModal({
               <div className="col-span-3 text-center space-y-3">
                 <div className="text-5xl font-black text-white tracking-tighter">
                   {prediction.probB}%
+                </div>
+                <div className="text-[9px] font-bold text-red-500 uppercase tracking-widest -mt-2">
+                  Classic {prediction.classicProbB}%
                 </div>
                 <div className="flex flex-col gap-1">
                   <div className="text-[10px] font-bold leading-tight uppercase min-h-[32px] flex items-center justify-center px-1 gap-1">
