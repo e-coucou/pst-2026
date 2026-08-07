@@ -11,12 +11,15 @@ interface CalibrationBucket {
 const IDEAL_LINE = [{ x: 0, y: 0 }, { x: 100, y: 100 }];
 
 export default function CalibrationChart({
+  classicBuckets,
   modernBuckets,
   dynamicBuckets,
 }: {
+  classicBuckets: CalibrationBucket[];
   modernBuckets: CalibrationBucket[];
   dynamicBuckets: CalibrationBucket[];
 }) {
+  const classicData = classicBuckets.map(b => ({ x: b.predictedMid, y: b.actualRate, count: b.count }));
   const modernData = modernBuckets.map(b => ({ x: b.predictedMid, y: b.actualRate, count: b.count }));
   const dynamicData = dynamicBuckets.map(b => ({ x: b.predictedMid, y: b.actualRate, count: b.count }));
 
@@ -68,6 +71,16 @@ export default function CalibrationChart({
           strokeWidth={2}
           strokeDasharray="4 4"
           dot={false}
+          isAnimationActive={false}
+        />
+        <Line
+          data={classicData}
+          dataKey="y"
+          name="Classic"
+          stroke="#dc2626"
+          strokeWidth={2}
+          dot={{ r: 4, fill: '#dc2626' }}
+          connectNulls={false}
           isAnimationActive={false}
         />
         <Line

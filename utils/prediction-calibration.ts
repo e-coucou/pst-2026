@@ -1,22 +1,30 @@
 import { predictWin } from 'openskill';
 import { normalCDF } from '@/utils/probability';
 
-// Calibration a posteriori de DEUX moteurs de prédiction, rejoués sur chaque match archivé et
+// Calibration a posteriori de TROIS moteurs de prédiction, rejoués sur chaque match archivé et
 // comparés aux résultats réels :
+// - "Classic" : écart d'ELO Classic (elo_value, moteur rugby-inspiré) → CDF normale. Échelle très
+//   resserrée (max_ecart borne les mises à jour, écart observé ~85-114 sur l'historique complet)
+//   — inutilisable avec la même volatilité que Modern (tout s'écraserait vers 50/50). Volatilité
+//   fixée à 24 par recherche en grille minimisant le score de Brier sur les 145 matchs archivés
+//   (145 * 12 sigmas testés, cf. session du 2026-08-07 ; à raffiner si le volume de données grossit).
 // - "Modern" : cœur du modèle ELO Modern utilisé par PredictionModal.tsx (diffMu / sigma fixe →
-//   CDF normale). Volatilité par joueur figée à 150 pour tout le monde (cf. commentaire "à
-//   calibrer" dans PredictionModal.tsx).
+//   CDF normale). Volatilité 150 (valeur d'origine, marquée "à calibrer" dans PredictionModal.tsx)
+//   — la même recherche en grille donne un optimum proche (~180-212), 150 reste donc un choix
+//   raisonnable, pas aberrant.
 // - "Dynamique" : predictWin() natif d'openskill, appliqué aux skill_mu/skill_sigma pré-match de
-//   chaque joueur — contrairement à Modern, l'incertitude (sigma) est propre à chaque joueur
-//   (élevée pour un joueur peu vu, faible pour un joueur établi), pas une constante globale.
+//   chaque joueur — contrairement à Classic/Modern, l'incertitude (sigma) est propre à chaque
+//   joueur (élevée pour un joueur peu vu, faible pour un joueur établi), pas une constante globale.
 //
-// Les deux versions sont DÉLIBÉRÉMENT SIMPLIFIÉES par rapport au module de prédiction live : pas
+// Les trois versions sont DÉLIBÉRÉMENT SIMPLIFIÉES par rapport au module de prédiction live : pas
 // de bonus de forme du jour (repose sur live_matches, non disponible pour l'archive), pas de
 // facteur d'explosivité, pas de marge de nul spécifique aux poules — sert à comparer objectivement
-// les deux signaux d'écart de niveau, pas à auditer chaque réglage du module live.
+// les trois signaux d'écart de niveau, pas à auditer chaque réglage du module live.
 
-const VOLATILITY_PER_PLAYER = 150; // même valeur que PREDICTION_CONFIG.volatilityPerPlayer
-const TOTAL_SIGMA = Math.sqrt(VOLATILITY_PER_PLAYER * VOLATILITY_PER_PLAYER * 2);
+const CLASSIC_VOLATILITY = 24; // recherche en grille (Brier), échelle Classic très resserrée
+const CLASSIC_SIGMA = Math.sqrt(CLASSIC_VOLATILITY * CLASSIC_VOLATILITY * 2);
+const MODERN_VOLATILITY = 150; // même valeur que PREDICTION_CONFIG.volatilityPerPlayer
+const MODERN_SIGMA = Math.sqrt(MODERN_VOLATILITY * MODERN_VOLATILITY * 2);
 const ELO_INIT = 100; // même valeur par défaut que le reste de l'app pour un joueur sans historique
 const SKILL_MU_INIT = 25; // défauts openskill (rating() sans argument), mêmes que lib/elo-engine.ts
 const SKILL_SIGMA_INIT = 25 / 3;
@@ -38,6 +46,7 @@ interface TeamRow {
 interface EloHistoryRow {
   player_id: number;
   game_id: number;
+  elo_value: number;
   elo_modern_value: number;
   skill_mu: number;
   skill_sigma: number;
@@ -56,6 +65,7 @@ export interface CalibrationSeries {
 }
 
 export interface CalibrationResult {
+  classic: CalibrationSeries;
   modern: CalibrationSeries;
   dynamic: CalibrationSeries;
   totalMatches: number;
@@ -140,21 +150,15 @@ function accumulateSeries(
   };
 }
 
-export function computeCalibration(
+// Série de calibration partagée par Classic et Modern : même formule (écart de moyenne d'équipe
+// → CDF normale), seuls le champ ELO lu et la volatilité changent.
+function computeEloSeries(
   games: GameRow[],
-  teams: TeamRow[],
-  eloHistory: EloHistoryRow[]
-): CalibrationResult {
-  const teamsMap = new Map(teams.map((t) => [t.id, t]));
-
-  const preMatchElo = buildPreMatchLookup(eloHistory, (r) => r.elo_modern_value, ELO_INIT);
-  const preMatchSkill = buildPreMatchLookup(
-    eloHistory,
-    (r) => ({ mu: r.skill_mu, sigma: r.skill_sigma }),
-    { mu: SKILL_MU_INIT, sigma: SKILL_SIGMA_INIT }
-  );
-
-  const modern = accumulateSeries(games, teamsMap, (g, team1, team2) => {
+  teamsMap: Map<number, TeamRow>,
+  preMatchElo: Map<string, number>,
+  sigma: number
+): CalibrationSeries {
+  return accumulateSeries(games, teamsMap, (g, team1, team2) => {
     const e1a = preMatchElo.get(`${team1.tireur_id}-${g.id}`);
     const e1b = preMatchElo.get(`${team1.pointeur_id}-${g.id}`);
     const e2a = preMatchElo.get(`${team2.tireur_id}-${g.id}`);
@@ -163,8 +167,27 @@ export function computeCalibration(
 
     const muA = (e1a + e1b) / 2;
     const muB = (e2a + e2b) / 2;
-    return normalCDF(0, 1, (muA - muB) / TOTAL_SIGMA);
+    return normalCDF(0, 1, (muA - muB) / sigma);
   });
+}
+
+export function computeCalibration(
+  games: GameRow[],
+  teams: TeamRow[],
+  eloHistory: EloHistoryRow[]
+): CalibrationResult {
+  const teamsMap = new Map(teams.map((t) => [t.id, t]));
+
+  const preMatchClassicElo = buildPreMatchLookup(eloHistory, (r) => r.elo_value, ELO_INIT);
+  const preMatchModernElo = buildPreMatchLookup(eloHistory, (r) => r.elo_modern_value, ELO_INIT);
+  const preMatchSkill = buildPreMatchLookup(
+    eloHistory,
+    (r) => ({ mu: r.skill_mu, sigma: r.skill_sigma }),
+    { mu: SKILL_MU_INIT, sigma: SKILL_SIGMA_INIT }
+  );
+
+  const classic = computeEloSeries(games, teamsMap, preMatchClassicElo, CLASSIC_SIGMA);
+  const modern = computeEloSeries(games, teamsMap, preMatchModernElo, MODERN_SIGMA);
 
   const dynamic = accumulateSeries(games, teamsMap, (g, team1, team2) => {
     const r1a = preMatchSkill.get(`${team1.tireur_id}-${g.id}`);
@@ -177,5 +200,5 @@ export function computeCalibration(
     return probA;
   });
 
-  return { modern, dynamic, totalMatches: games.length };
+  return { classic, modern, dynamic, totalMatches: games.length };
 }
