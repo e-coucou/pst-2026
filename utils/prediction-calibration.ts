@@ -1,5 +1,6 @@
 import { predictWin } from 'openskill';
 import { normalCDF } from '@/utils/probability';
+import { CLASSIC_SIGMA, MODERN_SIGMA, ELO_INIT } from '@/utils/model-config';
 
 // Calibration a posteriori de TROIS moteurs de prédiction, rejoués sur chaque match archivé et
 // comparés aux résultats réels :
@@ -9,9 +10,11 @@ import { normalCDF } from '@/utils/probability';
 //   fixée à 24 par recherche en grille minimisant le score de Brier sur les 145 matchs archivés
 //   (145 * 12 sigmas testés, cf. session du 2026-08-07 ; à raffiner si le volume de données grossit).
 // - "Modern" : cœur du modèle ELO Modern utilisé par PredictionModal.tsx (diffMu / sigma fixe →
-//   CDF normale). Volatilité 150 (valeur d'origine, marquée "à calibrer" dans PredictionModal.tsx)
-//   — la même recherche en grille donne un optimum proche (~180-212), 150 reste donc un choix
-//   raisonnable, pas aberrant.
+//   CDF normale). Volatilité recalibrée à 136 par la même recherche en grille (optimum fin à
+//   192 en écart-type total, soit ~136/joueur) — gain quasi nul par rapport à l'ancienne valeur
+//   150 (Brier 0,23225 vs 0,23230, précision identique à la décimale) : la valeur d'origine
+//   n'était pas aberrante, ce recalibrage est une question de méthode/cohérence avec Classic,
+//   pas un vrai problème corrigé.
 // - "Dynamique" : predictWin() natif d'openskill, appliqué aux skill_mu/skill_sigma pré-match de
 //   chaque joueur — contrairement à Classic/Modern, l'incertitude (sigma) est propre à chaque
 //   joueur (élevée pour un joueur peu vu, faible pour un joueur établi), pas une constante globale.
@@ -21,11 +24,8 @@ import { normalCDF } from '@/utils/probability';
 // facteur d'explosivité, pas de marge de nul spécifique aux poules — sert à comparer objectivement
 // les trois signaux d'écart de niveau, pas à auditer chaque réglage du module live.
 
-const CLASSIC_VOLATILITY = 24; // recherche en grille (Brier), échelle Classic très resserrée
-const CLASSIC_SIGMA = Math.sqrt(CLASSIC_VOLATILITY * CLASSIC_VOLATILITY * 2);
-const MODERN_VOLATILITY = 150; // même valeur que PREDICTION_CONFIG.volatilityPerPlayer
-const MODERN_SIGMA = Math.sqrt(MODERN_VOLATILITY * MODERN_VOLATILITY * 2);
-const ELO_INIT = 100; // même valeur par défaut que le reste de l'app pour un joueur sans historique
+// CLASSIC_SIGMA/MODERN_SIGMA/ELO_INIT : voir utils/model-config.ts (partagées avec le "brain" a
+// posteriori pour prédire pareil sur un même match).
 const SKILL_MU_INIT = 25; // défauts openskill (rating() sans argument), mêmes que lib/elo-engine.ts
 const SKILL_SIGMA_INIT = 25 / 3;
 

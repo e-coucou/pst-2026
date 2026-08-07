@@ -2,26 +2,24 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { normalCDF } from '@/utils/probability';
 import { predictMatch, getPreMatchSkillRating } from '@/utils/dynamic-prediction';
+import { CLASSIC_SIGMA, MODERN_SIGMA, ELO_INIT } from '@/utils/model-config';
 
-const VOLATILITY_PER_PLAYER = 150; // même valeur que PREDICTION_CONFIG.volatilityPerPlayer (PredictionModal)
-const TOTAL_SIGMA = Math.sqrt(VOLATILITY_PER_PLAYER * VOLATILITY_PER_PLAYER * 2);
-const ELO_INIT = 100;
-
-async function getPreMatchModernElo(
+async function getPreMatchElo(
   supabase: Awaited<ReturnType<typeof createClient>>,
+  field: 'elo_value' | 'elo_modern_value',
   playerId: number,
   gameId: number
 ): Promise<number> {
   const { data } = await supabase
     .from('elo_history')
-    .select('elo_modern_value')
+    .select('elo_value, elo_modern_value')
     .eq('player_id', playerId)
     .lt('game_id', gameId)
     .order('game_id', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  return data?.elo_modern_value ?? ELO_INIT;
+  return (field === 'elo_value' ? data?.elo_value : data?.elo_modern_value) ?? ELO_INIT;
 }
 
 export async function GET(
@@ -73,18 +71,24 @@ export async function GET(
     getPreMatchSkillRating(supabase, team2.pointeur_id, gameId),
   ]);
 
-  const [eloT1a, eloT1b, eloT2a, eloT2b] = await Promise.all([
-    getPreMatchModernElo(supabase, team1.tireur_id, gameId),
-    getPreMatchModernElo(supabase, team1.pointeur_id, gameId),
-    getPreMatchModernElo(supabase, team2.tireur_id, gameId),
-    getPreMatchModernElo(supabase, team2.pointeur_id, gameId),
+  const [classicT1a, classicT1b, classicT2a, classicT2b] = await Promise.all([
+    getPreMatchElo(supabase, 'elo_value', team1.tireur_id, gameId),
+    getPreMatchElo(supabase, 'elo_value', team1.pointeur_id, gameId),
+    getPreMatchElo(supabase, 'elo_value', team2.tireur_id, gameId),
+    getPreMatchElo(supabase, 'elo_value', team2.pointeur_id, gameId),
+  ]);
+
+  const [modernT1a, modernT1b, modernT2a, modernT2b] = await Promise.all([
+    getPreMatchElo(supabase, 'elo_modern_value', team1.tireur_id, gameId),
+    getPreMatchElo(supabase, 'elo_modern_value', team1.pointeur_id, gameId),
+    getPreMatchElo(supabase, 'elo_modern_value', team2.tireur_id, gameId),
+    getPreMatchElo(supabase, 'elo_modern_value', team2.pointeur_id, gameId),
   ]);
 
   const dynamic = predictMatch([skillT1a, skillT1b], [skillT2a, skillT2b]);
 
-  const muA = (eloT1a + eloT1b) / 2;
-  const muB = (eloT2a + eloT2b) / 2;
-  const modernProbA = normalCDF(0, 1, (muA - muB) / TOTAL_SIGMA);
+  const classicProbA = normalCDF(0, 1, ((classicT1a + classicT1b) / 2 - (classicT2a + classicT2b) / 2) / CLASSIC_SIGMA);
+  const modernProbA = normalCDF(0, 1, ((modernT1a + modernT1b) / 2 - (modernT2a + modernT2b) / 2) / MODERN_SIGMA);
 
   const actualWinner = game.score_1 === game.score_2 ? 'draw' : game.score_1 > game.score_2 ? 'team1' : 'team2';
 
@@ -92,6 +96,7 @@ export async function GET(
     game: { id: game.id, year: game.year, type: game.type, poule: game.poule, score1: game.score_1, score2: game.score_2 },
     team1: { tireur: nameMap.get(team1.tireur_id) ?? '?', pointeur: nameMap.get(team1.pointeur_id) ?? '?' },
     team2: { tireur: nameMap.get(team2.tireur_id) ?? '?', pointeur: nameMap.get(team2.pointeur_id) ?? '?' },
+    classic: { probA: classicProbA, probB: 1 - classicProbA },
     modern: { probA: modernProbA, probB: 1 - modernProbA },
     dynamic: { probA: dynamic.probA, probB: dynamic.probB, probDraw: dynamic.probDraw },
     actualWinner,

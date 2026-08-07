@@ -7,6 +7,7 @@ interface PredictionResponse {
   game: { id: number; year: number; type: string; poule: string | null; score1: number; score2: number };
   team1: { tireur: string; pointeur: string };
   team2: { tireur: string; pointeur: string };
+  classic: { probA: number; probB: number };
   modern: { probA: number; probB: number };
   dynamic: { probA: number; probB: number; probDraw: number };
   actualWinner: 'team1' | 'team2' | 'draw';
@@ -92,6 +93,14 @@ export default function MatchPredictionButton({ gameId, className }: { gameId: n
                 <div className="text-center font-mono text-2xl font-black italic">
                   {data.game.score1} - {data.game.score2}
                 </div>
+
+                <PredictionRow
+                  label="Classic"
+                  color="text-red-500"
+                  probA={data.classic.probA}
+                  probB={data.classic.probB}
+                  right={calledRight(data.classic.probA, data.classic.probB, data.actualWinner)}
+                />
 
                 <PredictionRow
                   label="Modern"
