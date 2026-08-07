@@ -777,15 +777,19 @@ export default function StatsPage() {
           <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
             <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest max-w-2xl">
               Rejoue, sur les {calibration.totalMatches} matchs archivés, la probabilité de victoire
-              que donnerait le cœur du moteur ELO Modern (écart d&apos;ELO + loi normale) — sans le
-              bonus de forme du jour ni l&apos;explosivité, propres au module de pronostic live. Une
-              courbe &quot;Réel&quot; collée à la diagonale &quot;Idéal&quot; signifie que le modèle est bien calibré.
+              que donnerait le cœur de deux moteurs — <span className="text-purple-400">Modern</span> (écart
+              d&apos;ELO + volatilité fixe) et <span className="text-emerald-400">Dynamique</span> (openskill,
+              incertitude propre à chaque joueur) — sans le bonus de forme du jour ni l&apos;explosivité,
+              propres au module de pronostic live. Une courbe collée à la diagonale &quot;Idéal&quot;
+              signifie que le modèle est bien calibré.
             </p>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <StatCard label="Matchs analysés" value={calibration.totalMatches} icon={<Activity size={20} />} color="text-white" />
-              <StatCard label="Précision du favori" value={`${calibration.accuracy.toFixed(0)}%`} icon={<Target size={20} />} color="text-red-600" />
-              <StatCard label="Score de Brier" value={calibration.brierScore.toFixed(3)} icon={<TrendingUp size={20} />} color="text-purple-400" />
+              <StatCard label="Précision Modern" value={`${calibration.modern.accuracy.toFixed(0)}%`} icon={<Target size={20} />} color="text-purple-400" />
+              <StatCard label="Précision Dynamique" value={`${calibration.dynamic.accuracy.toFixed(0)}%`} icon={<Target size={20} />} color="text-emerald-400" />
+              <StatCard label="Brier Modern" value={calibration.modern.brierScore.toFixed(3)} icon={<TrendingUp size={20} />} color="text-purple-400" />
+              <StatCard label="Brier Dynamique" value={calibration.dynamic.brierScore.toFixed(3)} icon={<TrendingUp size={20} />} color="text-emerald-400" />
             </div>
 
             <div className="bg-zinc-900/50 border border-white/5 p-6 rounded-[2.5rem]">
@@ -793,7 +797,7 @@ export default function StatsPage() {
                 <Target className="text-red-600" size={18} />
                 Courbe de calibration
               </h3>
-              <CalibrationChart buckets={calibration.buckets} />
+              <CalibrationChart modernBuckets={calibration.modern.buckets} dynamicBuckets={calibration.dynamic.buckets} />
               <p className="text-[10px] text-zinc-500 mt-6 font-bold uppercase italic text-center">
                 Score de Brier : 0 = parfait, 0,25 = équivalent à toujours prédire 50/50.
               </p>

@@ -10,8 +10,15 @@ interface CalibrationBucket {
 
 const IDEAL_LINE = [{ x: 0, y: 0 }, { x: 100, y: 100 }];
 
-export default function CalibrationChart({ buckets }: { buckets: CalibrationBucket[] }) {
-  const data = buckets.map(b => ({ x: b.predictedMid, y: b.actualRate, count: b.count }));
+export default function CalibrationChart({
+  modernBuckets,
+  dynamicBuckets,
+}: {
+  modernBuckets: CalibrationBucket[];
+  dynamicBuckets: CalibrationBucket[];
+}) {
+  const modernData = modernBuckets.map(b => ({ x: b.predictedMid, y: b.actualRate, count: b.count }));
+  const dynamicData = dynamicBuckets.map(b => ({ x: b.predictedMid, y: b.actualRate, count: b.count }));
 
   return (
     <ResponsiveContainer width="99%" height={320}>
@@ -47,7 +54,7 @@ export default function CalibrationChart({ buckets }: { buckets: CalibrationBuck
           }}
           formatter={(value, name, props) => {
             const count = (props?.payload as { count?: number } | undefined)?.count;
-            const suffix = name === 'Réel' && count != null ? ` (n=${count})` : '';
+            const suffix = name !== 'Idéal' && count != null ? ` (n=${count})` : '';
             return [`${Number(value).toFixed(0)}%${suffix}`, name];
           }}
           labelFormatter={(v) => `Prédit ~${v}%`}
@@ -64,12 +71,22 @@ export default function CalibrationChart({ buckets }: { buckets: CalibrationBuck
           isAnimationActive={false}
         />
         <Line
-          data={data}
+          data={modernData}
           dataKey="y"
-          name="Réel"
-          stroke="#dc2626"
+          name="Modern"
+          stroke="#a855f7"
           strokeWidth={2}
-          dot={{ r: 4, fill: '#dc2626' }}
+          dot={{ r: 4, fill: '#a855f7' }}
+          connectNulls={false}
+          isAnimationActive={false}
+        />
+        <Line
+          data={dynamicData}
+          dataKey="y"
+          name="Dynamique"
+          stroke="#10b981"
+          strokeWidth={2}
+          dot={{ r: 4, fill: '#10b981' }}
           connectNulls={false}
           isAnimationActive={false}
         />
