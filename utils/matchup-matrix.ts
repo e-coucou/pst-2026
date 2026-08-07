@@ -144,3 +144,37 @@ export function rankMostFrequentPairs(matrix: MatchupMatrix, limit?: number): Pa
   pairs.sort((x, y) => y.matches - x.matches);
   return limit ? pairs.slice(0, limit) : pairs;
 }
+
+export interface DuoRanking {
+  aId: number;
+  bId: number;
+  matches: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winrate: number; // 0-100, victoires / (victoires + défaites), nuls exclus du ratio
+}
+
+// Classement des meilleurs duos par taux de victoire — un seuil minimum de matchs évite qu'une
+// paire ayant joué 1 fois et gagné écrase le classement avec 100%.
+export function rankBestDuos(matrix: MatchupMatrix, minMatches: number, limit?: number): DuoRanking[] {
+  const seen = new Set<string>();
+  const duos: DuoRanking[] = [];
+
+  Object.entries(matrix).forEach(([aIdStr, row]) => {
+    const aId = Number(aIdStr);
+    Object.entries(row).forEach(([bIdStr, cell]) => {
+      const bId = Number(bIdStr);
+      const key = aId < bId ? `${aId}-${bId}` : `${bId}-${aId}`;
+      if (seen.has(key) || cell.matches < minMatches) return;
+      seen.add(key);
+
+      const decisive = cell.wins + cell.losses;
+      const winrate = decisive > 0 ? (cell.wins / decisive) * 100 : 0;
+      duos.push({ aId, bId, matches: cell.matches, wins: cell.wins, losses: cell.losses, draws: cell.draws, winrate });
+    });
+  });
+
+  duos.sort((x, y) => y.winrate - x.winrate || y.matches - x.matches);
+  return limit ? duos.slice(0, limit) : duos;
+}

@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import GlobalProgressionChart from '@/components/GlobalProgressionChart';
 import MatchupMatrixGrid from '@/components/MatchupMatrixGrid';
-import { computeTeammateMatrix, type MatchupMatrix } from '@/utils/matchup-matrix';
+import TopDuos from '@/components/TopDuos';
+import { computeTeammateMatrix, rankBestDuos, type MatchupMatrix } from '@/utils/matchup-matrix';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logActivity } from '@/utils/log-activity';
@@ -321,6 +322,8 @@ export default function StatsPage() {
 
   }, [eloHistory]);
 
+  const bestDuos = useMemo(() => rankBestDuos(teammateMatrix, 3, 10), [teammateMatrix]);
+
   const CustomBar = (props: any) => {
     const { x, y, width, height, payload } = props;
     
@@ -548,7 +551,12 @@ export default function StatsPage() {
 
         {/* ONGLET DUOS (COÉQUIPIERS) */}
         {activeTab === 'duos' && (
-          <div className="animate-in fade-in zoom-in-95 duration-300">
+          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+            <TopDuos
+              duos={bestDuos}
+              players={playerStats.map(p => ({ id: p.id, nom: p.name }))}
+              minMatches={3}
+            />
             <MatchupMatrixGrid
               players={playerStats.map(p => ({ id: p.id, nom: p.name }))}
               matrix={teammateMatrix}
