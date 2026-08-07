@@ -14,14 +14,17 @@ export default function CalibrationChart({
   classicBuckets,
   modernBuckets,
   dynamicBuckets,
+  combinedBuckets,
 }: {
   classicBuckets: CalibrationBucket[];
   modernBuckets: CalibrationBucket[];
   dynamicBuckets: CalibrationBucket[];
+  combinedBuckets: CalibrationBucket[];
 }) {
   const classicData = classicBuckets.map(b => ({ x: b.predictedMid, y: b.actualRate, count: b.count }));
   const modernData = modernBuckets.map(b => ({ x: b.predictedMid, y: b.actualRate, count: b.count }));
   const dynamicData = dynamicBuckets.map(b => ({ x: b.predictedMid, y: b.actualRate, count: b.count }));
+  const combinedData = combinedBuckets.map(b => ({ x: b.predictedMid, y: b.actualRate, count: b.count }));
 
   return (
     <ResponsiveContainer width="99%" height={320}>
@@ -100,6 +103,16 @@ export default function CalibrationChart({
           stroke="#10b981"
           strokeWidth={2}
           dot={{ r: 4, fill: '#10b981' }}
+          connectNulls={false}
+          isAnimationActive={false}
+        />
+        <Line
+          data={combinedData}
+          dataKey="y"
+          name="Combiné"
+          stroke="#f59e0b"
+          strokeWidth={2}
+          dot={{ r: 4, fill: '#f59e0b' }}
           connectNulls={false}
           isAnimationActive={false}
         />

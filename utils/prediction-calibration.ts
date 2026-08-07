@@ -1,6 +1,7 @@
 import { predictWin } from 'openskill';
 import { normalCDF } from '@/utils/probability';
 import { CLASSIC_SIGMA, MODERN_SIGMA, ELO_INIT } from '@/utils/model-config';
+import { fitLogisticRegression, predictProba } from '@/utils/logistic-model';
 
 // Calibration a posteriori de TROIS moteurs de prédiction, rejoués sur chaque match archivé et
 // comparés aux résultats réels :
@@ -18,11 +19,19 @@ import { CLASSIC_SIGMA, MODERN_SIGMA, ELO_INIT } from '@/utils/model-config';
 // - "Dynamique" : predictWin() natif d'openskill, appliqué aux skill_mu/skill_sigma pré-match de
 //   chaque joueur — contrairement à Classic/Modern, l'incertitude (sigma) est propre à chaque
 //   joueur (élevée pour un joueur peu vu, faible pour un joueur établi), pas une constante globale.
+// - "Combiné" : régression logistique (utils/logistic-model.ts) sur les 3 écarts (Classic, Modern,
+//   skill_mu) — évaluée en LEAVE-ONE-OUT (ré-entraînée à chaque match exclu), pas en simple fit
+//   in-sample, pour donner un score honnête plutôt qu'artificiellement optimiste. Résultat validé
+//   sur cette session (Python/sklearn puis TS, mêmes conclusions à la marge d'implémentation
+//   près) : NE bat PAS Classic seul (Brier ~0,25 contre ~0,233-0,245 pour Classic) — 145 matchs
+//   est trop peu pour 3 features corrélées (les trois ELO dérivent des mêmes matchs), le modèle
+//   surapprend légèrement plutôt que d'apporter un vrai signal complémentaire. Conservé affiché
+//   pour la transparence de la comparaison, pas parce qu'il gagne.
 //
-// Les trois versions sont DÉLIBÉRÉMENT SIMPLIFIÉES par rapport au module de prédiction live : pas
+// Les quatre versions sont DÉLIBÉRÉMENT SIMPLIFIÉES par rapport au module de prédiction live : pas
 // de bonus de forme du jour (repose sur live_matches, non disponible pour l'archive), pas de
 // facteur d'explosivité, pas de marge de nul spécifique aux poules — sert à comparer objectivement
-// les trois signaux d'écart de niveau, pas à auditer chaque réglage du module live.
+// les signaux d'écart de niveau, pas à auditer chaque réglage du module live.
 
 // CLASSIC_SIGMA/MODERN_SIGMA/ELO_INIT : voir utils/model-config.ts (partagées avec le "brain" a
 // posteriori pour prédire pareil sur un même match).
@@ -68,6 +77,7 @@ export interface CalibrationResult {
   classic: CalibrationSeries;
   modern: CalibrationSeries;
   dynamic: CalibrationSeries;
+  combined: CalibrationSeries;
   totalMatches: number;
 }
 
@@ -171,6 +181,80 @@ function computeEloSeries(
   });
 }
 
+// Régression logistique sur (diffClassic, diffModern, diffSkillMu), évaluée en leave-one-out sur
+// les matchs décisifs (les nuls ne participent pas à l'entraînement binaire, mais reçoivent une
+// prédiction du modèle entraîné sur tout le jeu décisif — pas de fuite possible puisqu'un nul n'a
+// jamais été vu à l'entraînement).
+function computeCombinedSeries(
+  games: GameRow[],
+  teamsMap: Map<number, TeamRow>,
+  preMatchClassicElo: Map<string, number>,
+  preMatchModernElo: Map<string, number>,
+  preMatchSkillMu: Map<string, number>
+): CalibrationSeries {
+  const featuresByGame = new Map<number, number[]>();
+  const decisiveX: number[][] = [];
+  const decisiveY: number[] = [];
+  const decisiveGameIds: number[] = [];
+  const drawGameIds: number[] = [];
+
+  games.forEach((g) => {
+    const team1 = teamsMap.get(g.team_1_id);
+    const team2 = teamsMap.get(g.team_2_id);
+    if (!team1 || !team2) return;
+
+    const c1a = preMatchClassicElo.get(`${team1.tireur_id}-${g.id}`);
+    const c1b = preMatchClassicElo.get(`${team1.pointeur_id}-${g.id}`);
+    const c2a = preMatchClassicElo.get(`${team2.tireur_id}-${g.id}`);
+    const c2b = preMatchClassicElo.get(`${team2.pointeur_id}-${g.id}`);
+    const m1a = preMatchModernElo.get(`${team1.tireur_id}-${g.id}`);
+    const m1b = preMatchModernElo.get(`${team1.pointeur_id}-${g.id}`);
+    const m2a = preMatchModernElo.get(`${team2.tireur_id}-${g.id}`);
+    const m2b = preMatchModernElo.get(`${team2.pointeur_id}-${g.id}`);
+    const s1a = preMatchSkillMu.get(`${team1.tireur_id}-${g.id}`);
+    const s1b = preMatchSkillMu.get(`${team1.pointeur_id}-${g.id}`);
+    const s2a = preMatchSkillMu.get(`${team2.tireur_id}-${g.id}`);
+    const s2b = preMatchSkillMu.get(`${team2.pointeur_id}-${g.id}`);
+    if ([c1a, c1b, c2a, c2b, m1a, m1b, m2a, m2b, s1a, s1b, s2a, s2b].some((v) => v == null)) return;
+
+    const diffClassic = (c1a! + c1b!) / 2 - (c2a! + c2b!) / 2;
+    const diffModern = (m1a! + m1b!) / 2 - (m2a! + m2b!) / 2;
+    const diffSkill = (s1a! + s1b!) / 2 - (s2a! + s2b!) / 2;
+    const features = [diffClassic, diffModern, diffSkill];
+    featuresByGame.set(g.id, features);
+
+    if (g.score_1 === g.score_2) {
+      drawGameIds.push(g.id);
+    } else {
+      decisiveX.push(features);
+      decisiveY.push(g.score_1 > g.score_2 ? 1 : 0);
+      decisiveGameIds.push(g.id);
+    }
+  });
+
+  const probByGame = new Map<number, number>();
+
+  // Leave-one-out sur les matchs décisifs : honnête hors-échantillon, pas un simple fit in-sample.
+  decisiveGameIds.forEach((gameId, i) => {
+    const trainX = decisiveX.filter((_, idx) => idx !== i);
+    const trainY = decisiveY.filter((_, idx) => idx !== i);
+    if (trainX.length === 0) return;
+    const fit = fitLogisticRegression(trainX, trainY);
+    probByGame.set(gameId, predictProba(fit, decisiveX[i]));
+  });
+
+  // Les nuls n'ont jamais participé à l'entraînement : un seul fit sur tout le jeu décisif suffit.
+  if (drawGameIds.length > 0 && decisiveX.length > 0) {
+    const fullFit = fitLogisticRegression(decisiveX, decisiveY);
+    drawGameIds.forEach((gameId) => {
+      const features = featuresByGame.get(gameId);
+      if (features) probByGame.set(gameId, predictProba(fullFit, features));
+    });
+  }
+
+  return accumulateSeries(games, teamsMap, (g) => probByGame.get(g.id) ?? null);
+}
+
 export function computeCalibration(
   games: GameRow[],
   teams: TeamRow[],
@@ -200,5 +284,8 @@ export function computeCalibration(
     return probA;
   });
 
-  return { classic, modern, dynamic, totalMatches: games.length };
+  const preMatchSkillMu = buildPreMatchLookup(eloHistory, (r) => r.skill_mu, SKILL_MU_INIT);
+  const combined = computeCombinedSeries(games, teamsMap, preMatchClassicElo, preMatchModernElo, preMatchSkillMu);
+
+  return { classic, modern, dynamic, combined, totalMatches: games.length };
 }
