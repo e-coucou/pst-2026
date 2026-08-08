@@ -26,7 +26,18 @@ interface Lot {
   observation: string | null;
   plan_kind: string | null;
   plan_num: string | null;
+  proprietaire_officiel: string | null;
+  proprietaire_confiance: string | null;
+  autres_lots_du_meme_proprietaire: number[] | null;
+  historique_proprietaires: string[] | null;
+  anomalie_signalee: string | null;
+  concordance_residence_ts: string | null;
+  charges_reparties_total: number | null;
+  charges_solde_total: number | null;
+  charges_comptes: { code: string; nom: string; E: number; H: number }[] | null;
 }
+
+const formatEuros = (n: number) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
 const CATEGORIES: { value: Categorie; label: string; icon: React.ReactNode }[] = [
   { value: 'studio', label: 'Studio', icon: <Home size={12} /> },
@@ -71,6 +82,9 @@ export default function ResidenceLotsPage() {
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const lotsByNumero: Record<number, Lot> = {};
+  lots.forEach(l => { if (l.numero_lot != null) lotsByNumero[l.numero_lot] = l; });
 
   const q = search.trim().toLowerCase();
   const lotsInBatiment = activeBatiment === 'all' ? lots : lots.filter(l => l.batiment === activeBatiment);
@@ -183,6 +197,37 @@ export default function ResidenceLotsPage() {
                       {lot.observation && (
                         <p className="text-xs text-amber-400/80 mt-3 italic">{lot.observation}</p>
                       )}
+
+                      <p className="text-[9px] font-black uppercase text-zinc-500 tracking-widest mb-2 mt-5">Propriétaire</p>
+                      <p className="text-sm text-zinc-300">
+                        {lot.proprietaire_officiel
+                          ? <span className="text-white font-semibold">{lot.proprietaire_officiel}</span>
+                          : <span className="text-zinc-500 italic">Non identifié dans les documents disponibles</span>}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {lot.proprietaire_officiel && lot.proprietaire_confiance !== 'officiel_confirme_PV_ou_convocation_AG' && (
+                          <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-md">Source non confirmée</span>
+                        )}
+                        {lot.concordance_residence_ts === 'DISCORDANT_a_verifier' && (
+                          <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-md">À vérifier — nom 3D différent</span>
+                        )}
+                        {lot.anomalie_signalee && (
+                          <span className="px-2 py-1 bg-red-600/20 text-red-400 text-[9px] font-black uppercase tracking-widest rounded-md">Anomalie : {lot.anomalie_signalee}</span>
+                        )}
+                      </div>
+                      {lot.autres_lots_du_meme_proprietaire && lot.autres_lots_du_meme_proprietaire.length > 0 && (
+                        <p className="text-xs text-zinc-400 mt-2">
+                          Autres lots du même propriétaire : {lot.autres_lots_du_meme_proprietaire.map((n) => lotsByNumero[n]?.identifiant_local || `Lot ${n}`).join(', ')}
+                        </p>
+                      )}
+                      {lot.historique_proprietaires && lot.historique_proprietaires.length > 0 && (
+                        <details className="text-[11px] text-zinc-400 mt-2">
+                          <summary className="cursor-pointer">Historique des propriétaires</summary>
+                          <ul className="mt-1 space-y-0.5">
+                            {lot.historique_proprietaires.map((h, i) => <li key={i}>• {h}</li>)}
+                          </ul>
+                        </details>
+                      )}
                     </div>
                     <div>
                       <p className="text-[9px] font-black uppercase text-zinc-500 tracking-widest mb-2">Composition</p>
@@ -197,6 +242,26 @@ export default function ResidenceLotsPage() {
                           <p className="text-sm text-zinc-300 font-mono">{lot.tantieme_numerateur}/{lot.tantieme_denominateur}</p>
                           {lot.tantieme_texte_original && <p className="text-[10px] text-zinc-500 italic">{lot.tantieme_texte_original}</p>}
                         </>
+                      )}
+                      {lot.charges_comptes && lot.charges_comptes.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-white/5">
+                          <p className="text-[9px] font-black uppercase text-zinc-500 tracking-widest mb-2">Charges réparties (AG 2026)</p>
+                          <p className="text-sm text-zinc-300">
+                            Réparties : <span className="text-white font-semibold">{formatEuros(lot.charges_reparties_total!)}</span>
+                            {' · '}
+                            Solde : <span className={lot.charges_solde_total! > 0 ? 'text-red-400 font-semibold' : 'text-emerald-400 font-semibold'}>{formatEuros(lot.charges_solde_total!)}</span>
+                          </p>
+                          {lot.charges_comptes.length > 1 && (
+                            <details className="text-[11px] text-zinc-400 mt-2">
+                              <summary className="cursor-pointer">{lot.charges_comptes.length} comptes rattachés à ce lot</summary>
+                              <ul className="mt-1 space-y-0.5">
+                                {lot.charges_comptes.map((c) => (
+                                  <li key={c.code}>• {c.nom} ({c.code}) — {formatEuros(c.E)}, solde {formatEuros(c.H)}</li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
