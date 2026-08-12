@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, ChevronRight, Users, FileText, KeyRound, Lock } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Users, FileText, KeyRound, Lock, ScrollText } from 'lucide-react';
 
 export default function ResidencePriveHubPage() {
   return (
@@ -29,7 +29,7 @@ export default function ResidencePriveHubPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <HubTile
             href="/render/prive/contacts"
             icon={<Users size={32} />}
@@ -47,6 +47,12 @@ export default function ResidencePriveHubPage() {
             icon={<KeyRound size={32} />}
             title="Codes"
             desc="Accès portails et digicodes"
+          />
+          <HubTile
+            href="/render/prive/acte-1957"
+            icon={<ScrollText size={32} />}
+            title="Acte 1957"
+            desc="État descriptif, règlement de copropriété"
             accent
           />
         </div>
