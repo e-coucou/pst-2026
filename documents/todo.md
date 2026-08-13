@@ -8,7 +8,8 @@
 
 ## 🔴 PRIORITÉS CRITIQUES
 - [ ] **Data :** Vérifier l'intégrité des schémas de base de données pour la version 2026.
-- [ ] **Sécurité :** Vérifier les policies RLS de `activity_logs`, `photos_import` et la fonction `get_popularity_stats` dans un schéma SQL versionné (rien n'est commité à ce jour, tout vit dans le dashboard Supabase).
+- [ ] **Data :** Versionner l'intégralité du schéma SQL (aucune migration commitée à ce jour, tout vit dans le dashboard Supabase — le point le plus fragile de l'architecture actuelle, revue le confirme) : au minimum les policies RLS de `activity_logs`/`photos_import`, la fonction `get_popularity_stats`, et surtout les RPC `get_full_timeline`/`get_full_live`/`get_player_elo` (étendues pour le classement Dynamique à partir du corps de fonction fourni par l'utilisateur, sans le `CREATE FUNCTION` d'origine — reconstruites par inférence, cf. `documents/architecture.md` §11) ainsi que `archive_tournament`/`advance_to_next_season`/`reset_tournament` (jamais versionnées non plus). Tant que ce n'est pas fait, toute modification via le dashboard Supabase est sans trace ni rollback possible.
+- [ ] **Sécurité :** `/api/admin/recompute-elo` et `/api/admin/live-elo` n'effectuent **aucune vérification de rôle**, contrairement à `/api/admin/backup-tournament-data` qui vérifie `is_super()` — n'importe qui connaissant l'URL (même non authentifié) peut déclencher un recalcul complet de l'historique ELO (`elo_history`/`history_all`/`live_history`, les 3 méthodes). Ce sont des routes qui réécrivent des données partagées par tout le club, à corriger en priorité.
 - [ ] **Sécurité :** `lib/auth-actions.ts` non importé nulle part (`verifyInvitationCode` semble remplacée par le RPC Supabase `verify_invitation_code`, `isAdmin` inutilisée aussi) — **à revérifier avant suppression**, sujet sensible car même thématique que la faille d'inscription Google OAuth déjà corrigée (code d'invitation non revérifié côté serveur). Ne pas supprimer tant que ce point n'est pas confirmé.
 
 ## 🛠️ EN COURS (Sprint Actuel)
@@ -19,6 +20,8 @@
 - [ ] **Documentation :** Générer un fichier `notes.md` basé sur le `README.md` et les logs de commit GitHub.
 - [ ] **Vidéos :** Tracking "vidéo lue" mis de côté (contrainte iframe YouTube cross-origin — nécessiterait l'API IFrame officielle de YouTube, hors scope pour l'instant).
 - [ ] **Stockage :** Suivre l'usage du bucket `photos_import` (quota 1 Go / plan Supabase free) à mesure que la galerie grossit.
+- [ ] **Refactoring :** Extraire la logique métier des pages `live/(admin)` les plus volumineuses en hooks/services dédiés — `admin/page.tsx` (832 lignes), `poules/page.tsx` (480), `demi/page.tsx` (456), `ronde/page.tsx` (421), `finale/page.tsx` (414), `podium/page.tsx` (407). Logique et UI actuellement mélangées dans le composant de page : reste lisible aujourd'hui mais complique la maintenance à mesure que les formats/fonctionnalités s'accumulent.
+- [ ] **Robustesse :** `syncTeamsToDatabase` (mode `auto`/tirage en direct) et `confirmAndCreateTournament` (lancement du tournoi) sont deux points d'insertion distincts qui propagent l'ELO de départ (`skill_mu`/`skill_sigma`/etc.) vers `live_selected` puis `live_teams`, et doivent être gardés synchronisés manuellement à chaque évolution (cf. `documents/architecture.md` §6) — envisager de factoriser en une seule fonction partagée pour éliminer ce risque de divergence silencieuse.
 
 ## 💡 BOÎTE À IDÉES (V2 / Futur)
 - [ ] Système de commentaires internes sur les tâches pour les futurs collaborateurs (si extension).
