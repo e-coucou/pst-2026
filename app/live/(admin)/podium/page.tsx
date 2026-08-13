@@ -7,10 +7,10 @@ import RenderStepper from '@/components/Stepper';
 import { Trophy, Swords, Medal, ArrowLeft, Loader2, Star, List, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { calculateTeamsStats, calculatePouleStandings, getShareScreenTarget } from '@/utils/live-stats';
 import PouleStandingsTable from '@/components/PouleStandingsTable';
+import LiveResultCard from '@/components/LiveResultCard';
 import FavoriStar from '@/components/FavoriStar';
 import { useFavoriId } from '@/hooks/useFavoriId';
 import { useIsSuper } from '@/hooks/useIsSuper';
-import MatchPredictionButton from '@/components/MatchPredictionButton';
 
 export default function PodiumPage() {
   const favoriId = useFavoriId();
@@ -225,43 +225,17 @@ export default function PodiumPage() {
             {matches.map(m => {
               const t1 = teams.find(t => t.id === m.team1_id);
               const t2 = teams.find(t => t.id === m.team2_id);
-				return (
-				  <div key={m.id} className="bg-zinc-900/30 border border-white/5 p-5 rounded-2xl flex flex-col items-center gap-3">
-				    <span className="text-sm font-black text-red-600 uppercase tracking-widest">{stepLabelMap[m.type] || m.type}</span>
-				    
-				    {/* Conteneur principal (La ligne) */}
-				    <div className="flex items-center justify-between w-full font-bold uppercase text-sm md:text-md">
-				      
-				      {/* ÉQUIPE 1 - Bloc de gauche */}
-				      {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
-				      <div className="flex flex-col flex-1 text-right truncate space-y-0">
-				        <span className="truncate text-purple-400">{playersMap[t1?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t1?.pointeur_id === favoriId} /></span>
-				        <span className="truncate text-orange-400">{playersMap[t1?.tireur_id]?.split(' ')[0]} <FavoriStar active={t1?.tireur_id === favoriId} /></span>
-				      </div>
-
-				      {/* SCORE - Bloc central */}
-				      {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
-				      <div className="shrink-0 mx-4 flex flex-col items-center gap-1.5">
-				        <div className="bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
-				          {m.score_team1} - {m.score_team2}
-				        </div>
-				        <MatchPredictionButton
-				          gameId={m.id}
-				          mode="live"
-				          className="p-1.5 rounded-full bg-zinc-800 text-zinc-500 hover:bg-emerald-500/20 hover:text-emerald-500 transition-colors"
-				        />
-				      </div>
-
-				      {/* ÉQUIPE 2 - Bloc de droite */}
-				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
-				      <div className="flex flex-col flex-1 text-left truncate space-y-0">
-				        <span className="truncate text-purple-400">{playersMap[t2?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t2?.pointeur_id === favoriId} /></span>
-				        <span className="truncate text-orange-400">{playersMap[t2?.tireur_id]?.split(' ')[0]} <FavoriStar active={t2?.tireur_id === favoriId} /></span>
-				      </div>
-
-				    </div>
-				  </div>
-				);
+              return (
+                <LiveResultCard
+                  key={m.id}
+                  match={m}
+                  team1={t1}
+                  team2={t2}
+                  playersMap={playersMap}
+                  favoriId={favoriId}
+                  label={stepLabelMap[m.type] || m.type}
+                />
+              );
             })}
           </div>
         </section>
@@ -278,45 +252,17 @@ export default function PodiumPage() {
             {demiMatches.map(m => {
               const t1 = teams.find(t => t.id === m.team1_id);
               const t2 = teams.find(t => t.id === m.team2_id);
-
-				return (
-				  <div key={m.id} className="bg-zinc-900/30 border border-white/5 p-2 rounded-2xl flex flex-col items-center gap-3">
-				    <span className="text-sm font-black text-red-600 uppercase tracking-widest">Tableau {m.tableau}</span>
-				    
-				    {/* Conteneur principal (La ligne) */}
-				    <div className="flex items-center justify-between w-full font-bold uppercase text-sm md:text-md">
-				      
-				      {/* ÉQUIPE 1 - Bloc de gauche */}
-				      {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
-				      <div className="flex flex-col flex-1 text-right truncate space-y-0">
-				        <span className="truncate text-purple-400">{playersMap[t1?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t1?.pointeur_id === favoriId} /></span>
-				        <span className="truncate text-orange-400">{playersMap[t1?.tireur_id]?.split(' ')[0]} <FavoriStar active={t1?.tireur_id === favoriId} /></span>
-				      </div>
-
-				      {/* SCORE - Bloc central */}
-				      {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
-				      <div className="shrink-0 mx-4 flex flex-col items-center gap-1.5">
-				        <div className="bg-black px-4 py-2 rounded-xl font-black text-xl border border-white/5 text-white text-center">
-				          {m.score_team1} - {m.score_team2}
-				        </div>
-				        <MatchPredictionButton
-				          gameId={m.id}
-				          mode="live"
-				          className="p-1.5 rounded-full bg-zinc-800 text-zinc-500 hover:bg-emerald-500/20 hover:text-emerald-500 transition-colors"
-				        />
-				      </div>
-
-				      {/* ÉQUIPE 2 - Bloc de droite */}
-				      {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
-				      <div className="flex flex-col flex-1 text-left truncate space-y-0">
-				        <span className="truncate text-purple-400">{playersMap[t2?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t2?.pointeur_id === favoriId} /></span>
-				        <span className="truncate text-orange-400">{playersMap[t2?.tireur_id]?.split(' ')[0]} <FavoriStar active={t2?.tireur_id === favoriId} /></span>
-				      </div>
-
-				    </div>
-				  </div>
-				);
-
+              return (
+                <LiveResultCard
+                  key={m.id}
+                  match={m}
+                  team1={t1}
+                  team2={t2}
+                  playersMap={playersMap}
+                  favoriId={favoriId}
+                  label={`Tableau ${m.tableau}`}
+                />
+              );
             })}
           </div>
         </section>
@@ -349,42 +295,16 @@ export default function PodiumPage() {
                 {pouleMatches.filter(m => m.poule === poule).map(m => {
                   const t1 = teams.find(t => t.id === m.team1_id);
                   const t2 = teams.find(t => t.id === m.team2_id);
-				 return (
-				   <div key={m.id} className="bg-zinc-900/30 border border-white/5 p-3 rounded-2xl flex flex-col items-center gap-1">
-				     
-				     {/* Conteneur principal (La ligne) */}
-				     <div className="flex items-center justify-between w-full font-bold uppercase text-sm md:text-md">
-				       
-				       {/* ÉQUIPE 1 - Bloc de gauche */}
-				       {/* flex-1 : prend la moitié de l'espace dispo / text-right : justifie à droite / flex-col : empile sur 2 lignes */}
-				       <div className="flex flex-col flex-1 text-right truncate">
-				         <span className="truncate text-purple-400">{playersMap[t1?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t1?.pointeur_id === favoriId} /></span>
-				         <span className="truncate text-orange-400">{playersMap[t1?.tireur_id]?.split(' ')[0]} <FavoriStar active={t1?.tireur_id === favoriId} /></span>
-				       </div>
-
-				       {/* SCORE - Bloc central */}
-				       {/* shrink-0 : empêche le score d'être écrasé par les noms longs */}
-				       <div className="shrink-0 mx-4 flex flex-col items-center gap-1.5">
-				         <div className="bg-black px-4 py-1 rounded-xl font-black text-xl border border-white/5 text-white text-center">
-				           {m.score_team1} - {m.score_team2}
-				         </div>
-				         <MatchPredictionButton
-				           gameId={m.id}
-				           mode="live"
-				           className="p-1.5 rounded-full bg-zinc-800 text-zinc-500 hover:bg-emerald-500/20 hover:text-emerald-500 transition-colors"
-				         />
-				       </div>
-
-				       {/* ÉQUIPE 2 - Bloc de droite */}
-				       {/* flex-1 : prend l'autre moitié / text-left : justifie à gauche / flex-col : empile sur 2 lignes */}
-				       <div className="flex flex-col flex-1 text-left truncate">
-				         <span className="truncate text-purple-400">{playersMap[t2?.pointeur_id]?.split(' ')[0]} <FavoriStar active={t2?.pointeur_id === favoriId} /></span>
-				         <span className="truncate text-orange-400">{playersMap[t2?.tireur_id]?.split(' ')[0]} <FavoriStar active={t2?.tireur_id === favoriId} /></span>
-				       </div>
-
-				     </div>
-				   </div>
-				 );
+                  return (
+                    <LiveResultCard
+                      key={m.id}
+                      match={m}
+                      team1={t1}
+                      team2={t2}
+                      playersMap={playersMap}
+                      favoriId={favoriId}
+                    />
+                  );
                 })}
               </div>
             ))}

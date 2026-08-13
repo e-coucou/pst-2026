@@ -6,12 +6,11 @@ import { createClient } from '@/utils/supabase/client';
 import RenderStepper from '@/components/Stepper';
 import { updateMatchScore, calculateMatchImpact, parseSettings } from '@/utils/elo-logic';
 import PredictionModal from '@/components/PredictionModal';
-import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, LayoutGrid, Dices, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Trophy, Loader2, Dices, RefreshCw } from 'lucide-react';
 import { logActivity } from '@/utils/log-activity';
 import { simulateRandomScores } from '@/utils/simulate';
 import { calculatePouleStandings } from '@/utils/live-stats';
-import FavoriStar from '@/components/FavoriStar';
-import MatchPredictionButton from '@/components/MatchPredictionButton';
+import LiveMatchCard from '@/components/LiveMatchCard';
 import { useFavoriId } from '@/hooks/useFavoriId';
 import { useIsSuper } from '@/hooks/useIsSuper';
 
@@ -197,83 +196,24 @@ export default function LiveDemiPage() {
         </h2>
         <div className="space-y-4">
           {tableauMatches.map(m => {
-            const isTermine = m.status === 'TERMINE';
-            const s = localScores[m.id] || { s1: '', s2: '' };
             const t1 = teams.find(t => t.id === m.team1_id);
             const t2 = teams.find(t => t.id === m.team2_id);
             return (
-              <div key={m.id} className={`p-4 rounded-xl border ${isTermine ? 'bg-red-600/5 border-red-600/20' : 'bg-black border-white/10'} flex items-center justify-between gap-4`}>
-                  {/* Team 1 */}
-                  <div className="flex-1 text-right min-w-0">
-                    <div className="text-[10px] text-zinc-500 font-black">#{m.team1_id}</div>
-                    <div className="text-[11px] md:text-[14px] font-bold uppercase truncate leading-tight">
-                        <span className="text-purple-500">{playersMap[t1?.pointeur_id] || t1?.pointeur_id} <FavoriStar active={t1?.pointeur_id === favoriId} /></span><br className="md:hidden" />
-                        <span className="hidden md:inline"> & </span>
-                        <span className="text-orange-500">{playersMap[t1?.tireur_id] || t1?.tireur_id} <FavoriStar active={t1?.tireur_id === favoriId} /></span>
-                    </div>
-                  </div>
-                  {/* Inputs */}
-                  <div className="flex items-center gap-1 md:gap-2 bg-zinc-900 p-1 md:p-2 rounded-lg md:rounded-xl">
-                    <input 
-                      type="number" 
-                      inputMode="numeric"
-                      value={s.s1} 
-                      onChange={(e) => handleScoreChange(m.id, 1, e.target.value)} 
-                      disabled={isTermine} 
-                      className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" 
-                    />
-                    <span className="text-zinc-400 font-bold">-</span>
-                    <input 
-                      type="number" 
-                      inputMode="numeric"
-                      value={s.s2} 
-                      onChange={(e) => handleScoreChange(m.id, 2, e.target.value)} 
-                      disabled={isTermine} 
-                      className="w-8 h-8 md:w-10 md:h-10 bg-black text-center font-black rounded-md md:rounded-lg disabled:text-green-500 text-sm md:text-base focus:ring-1 focus:ring-red-600 outline-none" 
-                    />
-                  </div>
-                  {/* Team 2 */}
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="text-[10px] text-zinc-500 font-black">#{m.team2_id}</div>
-                    <div className="text-[11px] md:text-[14px] font-bold uppercase truncate leading-tight">
-                        <span className="text-purple-500">{playersMap[t2?.pointeur_id] || t2?.pointeur_id} <FavoriStar active={t2?.pointeur_id === favoriId} /></span><br className="md:hidden" />
-                        <span className="hidden md:inline"> & </span>
-                        <span className="text-orange-500">{playersMap[t2?.tireur_id] || t2?.tireur_id} <FavoriStar active={t2?.tireur_id === favoriId} /></span>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 group">
-				  {/* BOUTON IA : Positionné au-dessus et centré */}
-				   {!isTermine && (
-				    <button 
-				      onClick={() => setMatchToPredict({ match: m, t1, t2 })}
-				      className="mb-0 flex flex-col items-center gap-1 transition-all"
-				    >
-				      <div className="p-1.5 bg-zinc-800 rounded-full transition-colors  group-hover:bg-red-500 group-hover:scale-[1.3]">
-				        <Brain size={20} className="text-zinc-500 group-hover:text-white md:h-6 " />
-				      </div>
-				    </button>
-				   )}
-				   {isTermine && (
-				     <MatchPredictionButton
-				       gameId={m.id}
-				       mode="live"
-				       className="p-1.5 bg-zinc-800 rounded-full text-zinc-500 transition-colors hover:bg-emerald-500 hover:text-white hover:scale-[1.3]"
-				     />
-				   )}
-				  </div>
-                  <div className="flex shrink-0 group">
-                    {isTermine ? (
-                      <button onClick={() => unlockMatch(m.id)} disabled={savingMatch === m.id} aria-label="Déverrouiller le match pour modification" className="text-red-500 p-1 hover:text-white transition-colors group-hover:scale-[1.3] disabled:opacity-40">
-                        {savingMatch === m.id ? <Loader2 size={20} className="animate-spin" /> : <Edit2 size={20} className="md:w-6 md:h-6" />}
-                      </button>
-                    ) : (
-                      <button onClick={() => saveMatchResult(m.id)} disabled={savingMatch === m.id} className={'p-2 rounded-lg text-white transition-all bg-purple-500 active:bg-purple-700 group-hover:scale-[1.3]'}>
-                        {savingMatch === m.id ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                      </button>
-                    )}
-
-                  </div>
-                </div>
+              <LiveMatchCard
+                key={m.id}
+                match={m}
+                team1={t1}
+                team2={t2}
+                playersMap={playersMap}
+                favoriId={favoriId}
+                accentColor="red"
+                score={localScores[m.id] || { s1: '', s2: '' }}
+                onScoreChange={(team, value) => handleScoreChange(m.id, team, value)}
+                saving={savingMatch === m.id}
+                onSave={() => saveMatchResult(m.id)}
+                onUnlock={() => unlockMatch(m.id)}
+                onPredict={() => setMatchToPredict({ match: m, t1, t2 })}
+              />
             );
           })}
         </div>
