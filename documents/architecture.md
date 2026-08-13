@@ -295,7 +295,7 @@ Les réglages (`EloSettings`) sont stockés en base (table `settings`) et parsé
 `utils/live-stats.ts#calculateTeamsStats` agrège ensuite les deltas de matchs terminés (les 3 méthodes) pour afficher la progression cumulée d'une équipe (utilisé par le podium).
 
 ### Constitution des équipes et saisie live — 3 méthodes
-`app/live/(admin)/admin/page.tsx#fetchPlayersWithElo` récupère, pour chaque joueur, sa dernière valeur connue (`elo_history`, triée par `game_id` décroissant) pour les 3 méthodes — `skillMu`/`skillSigma` par défaut (`makeSkillRating()`) si le joueur n'a jamais joué. Propagé jusqu'à `live_selected` (`skill_mu_at_selection`/`skill_sigma_at_selection`) puis `live_teams` (`skill_mu_pointeur`/`skill_sigma_pointeur`/`skill_mu_tireur`/`skill_sigma_tireur`) via **deux points d'insertion distincts à garder synchronisés** : `syncTeamsToDatabase` (mode `auto`/tirage en direct) et `confirmAndCreateTournament` (lancement du tournoi).
+`app/live/(admin)/admin/page.tsx#fetchPlayersWithElo` récupère, pour chaque joueur, sa dernière valeur connue (`elo_history`, triée par `game_id` décroissant) pour les 3 méthodes — `skillMu`/`skillSigma` par défaut (`makeSkillRating()`) si le joueur n'a jamais joué. Propagé jusqu'à `live_selected` (`skill_mu_at_selection`/`skill_sigma_at_selection`) puis `live_teams` (`skill_mu_pointeur`/`skill_sigma_pointeur`/`skill_mu_tireur`/`skill_sigma_tireur`) via deux appelants — `syncTeamsToDatabase` (mode `auto`/tirage en direct, upsert continu) et `confirmAndCreateTournament` (lancement, insert) — qui partagent désormais la même construction de payload (`utils/live-teams.ts#buildTeamsPayload`, extraite le 2026-08-13 : auparavant deux blocs dupliqués à garder synchronisés manuellement).
 
 ---
 
