@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import {
   Trophy, Users, Target, Activity,
-  TrendingUp, BarChart3, ChevronRight, Zap, X,
+  TrendingUp, BarChart3, ChevronRight, Zap, X, Search,
   Flame, Skull, HeartPulse, Crosshair, Crown,
   Eye, ArrowUpRight, Rocket, ShieldOff, Swords, Frown, Focus, Handshake,
   Medal, ThumbsDown, Thermometer, ImageIcon, Waves, Shuffle
@@ -380,13 +380,24 @@ export default function StatsPage() {
           <h1 className="text-4xl font-black italic tracking-tighter uppercase">
             Stats <span className="text-red-600">Academy</span>
           </h1>
-          <button 
-            onClick={() => router.push('/live/super')}
-            className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors"
-            aria-label="Fermer"
-          >
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/tournois/recherche"
+              className="group flex items-center gap-2 px-4 py-3 bg-white/5 hover:bg-red-600/80 rounded-2xl transition-colors"
+            >
+              <Search size={16} className="text-red-600 group-hover:text-white transition-colors" />
+              <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-white transition-colors">
+                Recherche de matchs
+              </span>
+            </Link>
+            <button
+              onClick={() => router.push('/live/super')}
+              className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-colors"
+              aria-label="Fermer"
+            >
+              <X size={24} />
+            </button>
+          </div>
         </div>
         <div className="flex gap-4 mt-6 overflow-x-auto pb-2 no-scrollbar">
           {['global', 'scores', 'joueurs', 'duos', 'records', 'calibration', 'évolution', 'popularité'].map((tab) => (
