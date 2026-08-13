@@ -1,9 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { createClient as createServerClient } from '@/utils/supabase/server';
 import { calculatePstElo, calculateModernElo, calculateSkillRating, makeSkillRating, skillOrdinal, EloSettings, Rating } from '@/lib/elo-engine';
 
 export async function POST() {
   try {
+    // Route réservée à admin/super (mêmes rôles que le groupe live/(admin), qui l'appelle à
+    // chaque saisie de score). Sans cette vérification, n'importe qui connaissant l'URL (même
+    // non authentifié) pouvait déclencher un recalcul de l'historique ELO du tournoi live.
+    const authClient = await createServerClient();
+    const { data: role } = await authClient.rpc('get_my_role');
+    if (!role || !['admin', 'super'].includes(role)) {
+      return NextResponse.json({ success: false, error: 'Action réservée aux rôles admin/super' }, { status: 403 });
+    }
+
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY! // Nécessaire pour bypasser le RLS et DELETE

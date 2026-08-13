@@ -24,9 +24,8 @@ const BACKED_UP_TABLES = [
 
 export async function POST() {
   try {
-    // Contrairement à /api/admin/recompute-elo et /api/admin/live-elo (aucune vérification de
-    // rôle), on vérifie explicitement `super` ici : cette route expose un export complet des
-    // données de tournoi, plus sensible qu'un simple recalcul.
+    // Réservée à `super` (plus strict que recompute-elo/live-elo, admin/super) : cette route
+    // expose un export complet des données de tournoi, plus sensible qu'un simple recalcul.
     const authClient = await createServerClient();
     const { data: isSuper } = await authClient.rpc('is_super');
     if (!isSuper) {
