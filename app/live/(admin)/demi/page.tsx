@@ -9,6 +9,7 @@ import PredictionModal from '@/components/PredictionModal';
 import { ArrowLeft, ArrowRight, Brain, Save, Trophy, Loader2, Edit2, LayoutGrid, Dices, RefreshCw } from 'lucide-react';
 import { logActivity } from '@/utils/log-activity';
 import { simulateRandomScores } from '@/utils/simulate';
+import { calculatePouleStandings } from '@/utils/live-stats';
 import FavoriStar from '@/components/FavoriStar';
 import MatchPredictionButton from '@/components/MatchPredictionButton';
 import { useFavoriId } from '@/hooks/useFavoriId';
@@ -76,29 +77,11 @@ export default function LiveDemiPage() {
     setLoading(false);
   };
 
-  // Logique de classement recyclée pour le rappel
-  const calculateStandings = (pouleName: string) => {
-    const pouleTeams = teams.filter(t => t.poule === pouleName);
-    const pMatches = pouleMatches.filter(m => m.poule === pouleName && m.status === 'TERMINE');
-    const standings = pouleTeams.map(t => ({
-      id: t.id,
-      pName: playersMap[t.pointeur_id] || `ID:${t.pointeur_id}`,
-      tName: playersMap[t.tireur_id] || `ID:${t.tireur_id}`,
-      pts: 0, diff: 0
-    }));
-    pMatches.forEach(m => {
-      const t1 = standings.find(s => s.id === m.team1_id);
-      const t2 = standings.find(s => s.id === m.team2_id);
-      if (t1 && t2) {
-        t1.diff += (m.score_team1 - m.score_team2);
-        t2.diff += (m.score_team2 - m.score_team1);
-        if (m.score_team1 > m.score_team2) t1.pts += 3;
-        else if (m.score_team2 > m.score_team1) t2.pts += 3;
-        else { t1.pts += 1; t2.pts += 1; }
-      }
-    });
-    return standings.sort((a, b) => b.pts - a.pts || b.diff - a.diff);
-  };
+  // Réutilise le même calcul/tri que poules/finale/podium (points, diff, pour, puis
+  // confrontation directe) plutôt qu'une version "mini" locale — jusqu'ici divergente sur les
+  // égalités à 2 critères (pas de départage par "pour" ni par confrontation directe), ce qui
+  // pouvait afficher un ordre différent de celui déjà validé sur /live/poules pour les mêmes poules.
+  const calculateStandings = (pouleName: string) => calculatePouleStandings(pouleName, teams, pouleMatches, playersMap);
 
   const handleScoreChange = (matchId: number, team: 1 | 2, value: string) => {
     const numValue = value === '' ? '' : parseInt(value, 10);
