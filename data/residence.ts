@@ -311,7 +311,7 @@ export const residenceData = {
         "section": "principale", "col": 4, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non","step": "left"
       },
       {
-        "id": 38, "num": "38", "lot1957": 86, "ownerVerified": true, "occupant": "Floriot","pos":"haute",
+        "id": 38, "num": "38", "lot1957": 86, "ownerVerified": true, "occupant": "Florio","pos":"haute",
         "section": "principale", "col": 5, "colSpan": 1, "row": 6, "rowSpan": 2, "face": "both", "up": "non", "step": "right"
       },
       {
